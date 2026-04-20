@@ -26,6 +26,8 @@ export const I = {
   Phone: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="M6 3h3l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v3a2 2 0 0 1-2 2A18 18 0 0 1 4 5a2 2 0 0 1 2-2Z" /></svg>,
   Share: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m9 11 6-4M9 13l6 4" /></svg>,
   X: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="m6 6 12 12M18 6 6 18" /></svg>,
+  ChevronLeft: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="m15 18-6-6 6-6" /></svg>,
+  ChevronRight: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="m9 18 6-6-6-6" /></svg>,
   Car: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="M5 16h14l-1.5-6a2 2 0 0 0-2-1.5h-7a2 2 0 0 0-2 1.5L5 16ZM5 16v3h3v-3M19 16v3h-3v-3" /><circle cx="8" cy="16" r="1.5" /><circle cx="16" cy="16" r="1.5" /></svg>,
   Wifi: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M8.5 17a5 5 0 0 1 7 0" /><circle cx="12" cy="20" r="1" fill="currentColor" /></svg>,
   AC: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><rect x="3" y="5" width="18" height="8" rx="2" /><path d="M7 17v3M12 17v3M17 17v3" /></svg>,

@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
-import { Photo } from "@/components/photo";
+import { VenueGallery } from "@/components/venue-gallery";
 import { venues, getVenueBySlug } from "@/lib/data";
 import { venueGallery, venuePhotos, signatureResortsVideos } from "@/lib/images";
+import { Photo } from "@/components/photo";
 
 export function generateStaticParams() {
   return venues.map((v) => ({
@@ -77,15 +78,18 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         <span style={{ color: "var(--ink)" }}>{v.name}</span>
       </nav>
 
-      <div className="vd-gallery">
-        <Photo src={gallery[0]} alt={`${v.name} — ${v.scene}`} variant={v.ph} label={v.scene}>
-          <button className="vd-gallery-all"><I.Camera width={14} height={14} /> All {Math.max(gallery.length, 48)} photos</button>
-        </Photo>
-        <Photo src={gallery[1]} alt={`${v.name} ballroom`} variant={v.halls[1]?.ph || "v2"} label="ballroom · evening" />
-        <Photo src={gallery[2]} alt={`${v.name} baraat entry`} variant={v.halls[2]?.ph || "dusk"} label="baraat entry" />
-        <Photo src={gallery[3]} alt={`${v.name} mandap detail`} variant={v.halls[0]?.ph || "garden"} label="mandap · detail" />
-        <Photo src={gallery[4]} alt={`${v.name} bridal suite`} variant="rose" label="bridal suite · vanity" />
-      </div>
+      <VenueGallery
+        heroVariant={v.ph}
+        venueName={v.name}
+        images={[
+          { src: gallery[0], alt: `${v.name} — ${v.scene}`, label: v.scene },
+          { src: gallery[1], alt: `${v.name} ballroom`, label: "ballroom · evening", variant: v.halls[1]?.ph || "v2" },
+          { src: gallery[2], alt: `${v.name} baraat entry`, label: "baraat entry", variant: v.halls[2]?.ph || "dusk" },
+          { src: gallery[3], alt: `${v.name} mandap detail`, label: "mandap · detail", variant: v.halls[0]?.ph || "garden" },
+          { src: gallery[4], alt: `${v.name} bridal suite`, label: "bridal suite · vanity", variant: "rose" },
+          ...gallery.slice(5).map((src, i) => ({ src, alt: `${v.name} photo ${i + 6}`, label: "", variant: "v2" })),
+        ]}
+      />
 
       <header className="vd-header">
         <div>
