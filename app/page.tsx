@@ -20,9 +20,9 @@ export default function HomePage() {
       <section className="hero">
         <div className="hero-bg">
           <Photo
-            src={signatureResortsPhotos.hero}
+            src={signatureResortsPhotos.gallery[1]}
             variant="garden"
-            label="signature resorts · mandap lawn · wardha road"
+            label="signature resorts · pool · wardha road"
             style={{ height: "100%" }}
           />
           <div className="hero-overlay" />
@@ -62,10 +62,16 @@ export default function HomePage() {
       {/* SIGNATURE STRIP */}
       <section className="sig-strip">
         <div className="sig-inner">
-          <div className="sig-media ph garden has-img">
-            <img src={signatureResortsPhotos.gallery[3]} alt="Signature Resorts · landscaped grounds" loading="lazy" decoding="async" />
+          <Link
+            href={`/venues/nagpur/wardha-road/${signature.slug}`}
+            className="sig-media ph dusk has-img"
+            style={{ display: "block" }}
+            aria-label="View Signature Resorts details"
+          >
+            <img src={signatureResortsPhotos.gallery[1]} alt="Signature Resorts · pool at night" loading="lazy" decoding="async" />
             <span className="ph-label">signature resorts · 14 acres · wardha road</span>
-          </div>
+            <span className="sig-media-hover">View property →</span>
+          </Link>
           <div>
             <div className="eyebrow" style={{ color: "var(--brand)" }}>Our flagship</div>
             <h2 style={{ fontSize: "clamp(36px, 4vw, 56px)", lineHeight: 1.05, margin: "12px 0 20px" }}>

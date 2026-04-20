@@ -459,8 +459,46 @@
 @media (max-width: 900px) { .sig-strip { padding: 50px 24px; } }
 .sig-inner { max-width: var(--max-w); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
 @media (max-width: 900px) { .sig-inner { grid-template-columns: 1fr; gap: 30px; } }
-.sig-media { border-radius: var(--radius-lg); overflow: hidden; height: 420px; }
+.sig-media {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  height: 420px;
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+}
 @media (max-width: 900px) { .sig-media { height: 260px; } }
+
+/* Hover overlay on the clickable image */
+.sig-media::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0);
+  transition: background 0.25s;
+  border-radius: var(--radius-lg);
+}
+.sig-media:hover::after { background: rgba(0,0,0,0.18); }
+
+.sig-media-hover {
+  position: absolute;
+  bottom: 48px; left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: var(--brand);
+  color: #fff;
+  font-size: 13px; font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 999px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.22s, transform 0.22s;
+  z-index: 2;
+  pointer-events: none;
+}
+.sig-media:hover .sig-media-hover {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 
 /* ——— VENUE LISTING ——— */
 .vl-top {
