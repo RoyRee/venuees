@@ -6,7 +6,7 @@ import { SITE } from "@/lib/data";
 
 export const metadata = {
   title: "About us — Venuees.in",
-  description: "The Nagpur family behind Venuees.in — owner-operators of Signature Resorts and the platform for the orange city's wedding ecosystem.",
+  description: "Bsquare Hospitality — the Nagpur team behind Venuees.in, owner-operators of Signature Resorts and the platform for the orange city's wedding ecosystem.",
 };
 
 export default function AboutPage() {

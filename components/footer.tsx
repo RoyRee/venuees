@@ -7,9 +7,8 @@ export function Footer() {
         <div className="cols">
           <div>
             <div className="wordline">
-              Woven <em>in gold,</em>
-              <br />marigold
-              <br />& monsoon.
+              Crafted <em>for</em>
+              <br />celebrations.
             </div>
             <div style={{ marginTop: 24, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.7 }}>
               Plot 14, Ramdaspeth
@@ -62,7 +61,7 @@ export function Footer() {
           </div>
         </div>
         <div className="fine">
-          <span>© 2026 Venuees.in · All rights reserved · Nagpur, Maharashtra</span>
+          <span>© 2026 Venuees.in · A <strong>Bsquare Hospitality</strong> venture · Nagpur, Maharashtra</span>
           <span>Privacy · Terms · Sitemap</span>
         </div>
       </div>

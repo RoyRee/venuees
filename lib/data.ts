@@ -371,7 +371,8 @@ export const realWeddings: RealWedding[] = [
 
 export const SITE = {
   name: "Venuees.in",
-  tagline: "Nagpur's owner-operated wedding platform",
+  tagline: "Crafted for celebrations",
+  owner: "Bsquare Hospitality",
   phone: "+91 712 555 0180",
   address: "Plot 14, Ramdaspeth, Nagpur 440010",
   email: "hello@venuees.in",

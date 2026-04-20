@@ -21,14 +21,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Venuees.in — Nagpur's owner-operated wedding platform",
+  title: "Venuees.in — Crafted for celebrations",
   description:
-    "Wedding venues, vendors and planning in Nagpur. Owner-operated, transparent pricing, real availability. Featuring Signature Resorts and 40+ handpicked venues across the orange city.",
+    "Nagpur's wedding platform by Bsquare Hospitality. Transparent pricing, real availability, 40+ handpicked venues. Featuring Signature Resorts and the best of the orange city.",
   metadataBase: new URL("https://venuees.in"),
   openGraph: {
-    title: "Venuees.in — Nagpur weddings, done right",
+    title: "Venuees.in — Crafted for celebrations",
     description:
-      "Signature Resorts + 40 handpicked Nagpur venues. Owner-operated. Real availability. Transparent pricing.",
+      "Bsquare Hospitality's wedding platform. Signature Resorts + 40 handpicked Nagpur venues. Real availability. Transparent pricing.",
     type: "website",
   },
 };

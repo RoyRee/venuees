@@ -32,8 +32,7 @@ export default function HomePage() {
             Nagpur · est. {SITE.established}
           </div>
           <h1 className="hero-title">
-            Weddings woven <span className="italic-serif">in gold,</span>
-            <br />marigold & monsoon.
+            Crafted for <span className="italic-serif">celebrations.</span>
           </h1>
           <p className="hero-sub">
             Owner-operated venues and vetted vendors across Nagpur. No middlemen, no &ldquo;starting from&rdquo; pricing — the quote is the quote.
