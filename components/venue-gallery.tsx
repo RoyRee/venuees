@@ -28,6 +28,7 @@ function Lightbox({
   onClose,
   onPrev,
   onNext,
+  onGoTo,
 }: {
   images: GalleryImage[];
   index: number;
