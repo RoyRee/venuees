@@ -20,9 +20,9 @@ export default function HomePage() {
       <section className="hero">
         <div className="hero-bg">
           <Photo
-            src={signatureResortsPhotos.gallery[1]}
+            src={signatureResortsPhotos.hero}
             variant="garden"
-            label="signature resorts · pool · wardha road"
+            label="signature resorts · wardha road"
             style={{ height: "100%" }}
           />
           <div className="hero-overlay" />
