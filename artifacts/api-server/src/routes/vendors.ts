@@ -27,7 +27,7 @@ router.get("/vendors", async (req, res) => {
     const result = rows.map((r) => ({ ...r, primaryImage: imageMap.get(r.id) ?? null, images: [] }));
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch vendors", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch vendors" });
   }
 });
 
@@ -42,7 +42,7 @@ router.get("/vendors/:slug", async (req, res) => {
     const images = await db.select().from(vendorImagesTable).where(eq(vendorImagesTable.vendorId, vendor[0].id));
     res.json({ ...vendor[0], images });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch vendor", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch vendor" });
   }
 });
 

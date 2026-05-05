@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { venuesTable, venueHallsTable, venueImagesTable } from "@workspace/db/schema";
-import { eq, ilike, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -67,7 +67,7 @@ router.get("/venues", async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch venues", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch venues" });
   }
 });
 
@@ -92,7 +92,7 @@ router.get("/venues/:slug", async (req, res) => {
 
     res.json({ ...venue[0], halls, images });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch venue", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch venue" });
   }
 });
 

@@ -20,7 +20,7 @@ router.get("/real-weddings", async (_req, res) => {
     const result = rows.map((r) => ({ ...r, primaryImage: imageMap.get(r.id) ?? null, images: [] }));
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch real weddings", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch real weddings" });
   }
 });
 
@@ -35,7 +35,7 @@ router.get("/real-weddings/:slug", async (req, res) => {
     const images = await db.select().from(realWeddingImagesTable).where(eq(realWeddingImagesTable.weddingId, wedding[0].id));
     res.json({ ...wedding[0], images });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch real wedding", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch real wedding" });
   }
 });
 

@@ -1,5 +1,4 @@
 import { Switch, Route } from "wouter";
-import { useHashLocation } from "wouter/use-hash-location";
 import { ThemeSwitcher } from "./components/theme-switcher";
 import HomePage from "./pages/home";
 import VenuesListPage from "./pages/venues-list";

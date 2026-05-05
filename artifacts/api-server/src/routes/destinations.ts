@@ -10,7 +10,7 @@ router.get("/destinations", async (_req, res) => {
     const rows = await db.select().from(destinationsTable).where(eq(destinationsTable.isActive, true));
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch destinations", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch destinations" });
   }
 });
 
@@ -24,7 +24,7 @@ router.get("/destinations/:slug", async (req, res) => {
     }
     res.json(dest[0]);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch destination", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch destination" });
   }
 });
 

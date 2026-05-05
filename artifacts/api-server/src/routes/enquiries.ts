@@ -36,7 +36,7 @@ router.post("/enquiries", async (req, res) => {
 
     res.status(201).json({ ok: true, id: inserted.id });
   } catch (err) {
-    res.status(500).json({ message: "Failed to submit enquiry", error: String(err) });
+    res.status(500).json({ message: "Failed to submit enquiry" });
   }
 });
 
@@ -55,7 +55,7 @@ router.post("/newsletter", async (req, res) => {
     await db.insert(newsletterTable).values({ email, source: source ?? "footer" });
     res.status(201).json({ ok: true });
   } catch (err) {
-    res.status(500).json({ message: "Failed to subscribe", error: String(err) });
+    res.status(500).json({ message: "Failed to subscribe" });
   }
 });
 
@@ -91,7 +91,7 @@ router.post("/listings/apply", async (req, res) => {
 
     res.status(201).json({ ok: true, id: inserted.id });
   } catch (err) {
-    res.status(500).json({ message: "Failed to submit application", error: String(err) });
+    res.status(500).json({ message: "Failed to submit application" });
   }
 });
 

@@ -21,7 +21,7 @@ router.get("/getaways", async (_req, res) => {
     const result = rows.map((r) => ({ ...r, primaryImage: imageMap.get(r.id) ?? null, images: [] }));
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch getaways", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch getaways" });
   }
 });
 
@@ -36,7 +36,7 @@ router.get("/getaways/:slug", async (req, res) => {
     const images = await db.select().from(getawayImagesTable).where(eq(getawayImagesTable.getawayId, getaway[0].id));
     res.json({ ...getaway[0], images });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch getaway", error: String(err) });
+    res.status(500).json({ message: "Failed to fetch getaway" });
   }
 });
 
