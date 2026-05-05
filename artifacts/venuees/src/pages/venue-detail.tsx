@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link, useParams, Redirect } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { TopNav, MobileNav, MobileTabbar } from "../components/nav";
 import { Footer } from "../components/footer";
 import { I, Ornament, Stars } from "../components/icons";
 import { VenueGallery } from "../components/venue-gallery";
-import { getVenueBySlug } from "../lib/data";
+import { api, type Venue } from "../lib/api";
 import { venueGallery, venuePhotos, signatureResortsVideos } from "../lib/images";
 import { Photo } from "../components/photo";
 
@@ -29,11 +31,60 @@ function amenIcon(text: string): keyof typeof I {
   return "Check";
 }
 
-export default function VenueDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const v = getVenueBySlug(slug);
-  if (!v) return <Redirect to="/venues" />;
+function EnquiryForm({ venue }: { venue: Venue }) {
+  const [form, setForm] = useState({ name: "", phone: "+91 ", eventDate: "Dec 2026", guestCount: "150–500 guests", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+  const [submitErr, setSubmitErr] = useState("");
 
+  const mutation = useMutation({
+    mutationFn: () => api.enquiries.submit({
+      kind: "venue_enquiry",
+      venueSlug: venue.slug,
+      name: form.name,
+      phone: form.phone,
+      eventDate: form.eventDate,
+      guestCount: form.guestCount,
+      message: form.message,
+    }),
+    onSuccess: () => setSubmitted(true),
+    onError: (e: Error) => setSubmitErr(e.message),
+  });
+
+  if (submitted) {
+    return (
+      <div style={{ textAlign: "center", padding: "24px 0" }}>
+        <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
+        <h4 style={{ marginBottom: 8 }}>Got it!</h4>
+        <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>We'll have the venue owner call you within 2 hours.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
+      <input placeholder="Your name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+      <input placeholder="Phone · +91" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+      <input placeholder="Event date (or month)" value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} />
+      <select value={form.guestCount} onChange={(e) => setForm({ ...form, guestCount: e.target.value })}>
+        <option>Under 150 guests</option>
+        <option value="150–500 guests">150–500 guests</option>
+        <option value="500–1000 guests">500–1,000 guests</option>
+        <option value="1000+ guests">1,000+ guests</option>
+      </select>
+      <textarea placeholder="Anything specific? (optional)" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={2} style={{ resize: "none", fontSize: 14, padding: "10px 12px", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", fontFamily: "inherit" }} />
+      {submitErr && <p style={{ color: "red", fontSize: 12 }}>{submitErr}</p>}
+      <button className="btn btn-primary btn-lg" type="submit" disabled={mutation.isPending}>
+        {mutation.isPending ? "Sending…" : <>Request availability <I.Arrow width={14} height={14} /></>}
+      </button>
+      <button className="btn btn-ghost" type="button" style={{ width: "100%" }}>
+        <I.Phone width={14} height={14} /> Call {venue.isSignature ? "owner" : "venue"}
+      </button>
+      <div className="tinyline">No spam. No credit card. Expect a call in 2 hours.</div>
+    </form>
+  );
+}
+
+function VenueDetailContent({ v }: { v: Venue }) {
   const calDays = Array.from({ length: 30 }, (_, i) => {
     const state = i % 7 === 2 ? "booked" : i % 5 === 0 ? "limit" : "avail";
     return { n: i + 1, state };
@@ -58,15 +109,15 @@ export default function VenueDetailPage() {
       </nav>
 
       <VenueGallery
-        heroVariant={v.ph}
+        heroVariant={v.ph as "v2"}
         venueName={v.name}
         images={[
-          { src: gallery[0], alt: `${v.name} — ${v.scene}`, label: v.scene },
-          { src: gallery[1], alt: `${v.name} ballroom`, label: "ballroom · evening", variant: v.halls[1]?.ph || "v2" },
-          { src: gallery[2], alt: `${v.name} baraat entry`, label: "baraat entry", variant: v.halls[2]?.ph || "dusk" },
-          { src: gallery[3], alt: `${v.name} mandap detail`, label: "mandap · detail", variant: v.halls[0]?.ph || "garden" },
-          { src: gallery[4], alt: `${v.name} bridal suite`, label: "bridal suite · vanity", variant: "rose" },
-          ...gallery.slice(5).map((src, i) => ({ src, alt: `${v.name} photo ${i + 6}`, label: "", variant: "v2" })),
+          { src: v.images[0]?.url ?? gallery[0], alt: `${v.name}`, label: v.name.toLowerCase() },
+          { src: v.images[1]?.url ?? gallery[1], alt: `${v.name} ballroom`, label: "ballroom · evening", variant: (v.halls[1]?.ph || "v2") as "v2" },
+          { src: v.images[2]?.url ?? gallery[2], alt: `${v.name} baraat entry`, label: "baraat entry", variant: (v.halls[2]?.ph || "dusk") as "v2" },
+          { src: v.images[3]?.url ?? gallery[3], alt: `${v.name} mandap detail`, label: "mandap · detail", variant: (v.halls[0]?.ph || "garden") as "v2" },
+          { src: v.images[4]?.url ?? gallery[4], alt: `${v.name} bridal suite`, label: "bridal suite · vanity", variant: "rose" as "v2" },
+          ...gallery.slice(5).map((src, i) => ({ src, alt: `${v.name} photo ${i + 6}`, label: "", variant: "v2" as "v2" })),
         ]}
       />
 
@@ -80,7 +131,7 @@ export default function VenueDetailPage() {
           <h1>{v.name}</h1>
           <div className="vd-meta">
             <span><I.Pin width={13} height={13} /> {v.address}</span>
-            <span><Stars value={v.rating} size={13} /> {v.rating} · {v.reviews} reviews</span>
+            <span><Stars value={Number(v.rating)} size={13} /> {v.rating} · {v.reviews} reviews</span>
             <span><I.Flame width={13} height={13} /> {v.bookingsMonth} booked this month</span>
           </div>
           <div className="vd-badges">
@@ -108,24 +159,7 @@ export default function VenueDetailPage() {
           <div className="calendar-mini">
             <b>Dec 2026</b> · 19 dates still open · Mar 2027 filling fast
           </div>
-          <form>
-            <input placeholder="Your name" />
-            <input placeholder="Phone · +91" defaultValue="+91 " />
-            <input placeholder="Event date (or month)" defaultValue="Dec 2026" />
-            <select defaultValue="300">
-              <option>Under 150 guests</option>
-              <option value="300">150–500 guests</option>
-              <option>500–1,000 guests</option>
-              <option>1,000+ guests</option>
-            </select>
-            <button className="btn btn-primary btn-lg" type="button">
-              Request availability <I.Arrow width={14} height={14} />
-            </button>
-            <button className="btn btn-ghost" type="button" style={{ width: "100%" }}>
-              <I.Phone width={14} height={14} /> Call {v.isSignature ? "owner" : "venue"}
-            </button>
-            <div className="tinyline">No spam. No credit card. Expect a call in 2 hours.</div>
-          </form>
+          <EnquiryForm venue={v} />
         </aside>
       </header>
 
@@ -146,35 +180,36 @@ export default function VenueDetailPage() {
             <h2>About {v.name}</h2>
             <p>{v.description}</p>
             <div className="vd-quickspecs">
-              <div><div className="lbl">Guest capacity</div><div className="val">{v.capacity.min}–{v.capacity.max}<small>pax</small></div></div>
+              <div><div className="lbl">Guest capacity</div><div className="val">{v.capacityMin}–{v.capacityMax}<small>pax</small></div></div>
               <div><div className="lbl">Event halls</div><div className="val">{v.halls.length}<small>indoor + open</small></div></div>
               <div><div className="lbl">Parking</div><div className="val">{v.parking}<small>cars</small></div></div>
               <div><div className="lbl">Rooms</div><div className="val">{v.rooms || "—"}<small>{v.rooms ? "on-site" : "off-site"}</small></div></div>
-              <div><div className="lbl">Founded</div><div className="val">{v.isSignature ? 2012 : 2005}<small>operating</small></div></div>
             </div>
           </section>
 
-          <section className="vd-section">
-            <Ornament>HALLS &amp; CAPACITY</Ornament>
-            <h2>{v.halls.length} venues inside one address</h2>
-            <p style={{ marginBottom: 24 }}>Mix and match for multi-day weddings — haldi in the courtyard, sangeet by the pool, pheras in the ballroom, reception on the lawn.</p>
-            <div className="halls">
-              {v.halls.map((h, i) => (
-                <div key={i} className="hallcard">
-                  <Photo src={hallPhotos[i]} alt={`${v.name} — ${h.name}`} variant={h.ph} label={h.name.toLowerCase()} />
-                  <div className="body">
-                    <h4>{h.name}</h4>
-                    <div style={{ fontSize: 12, color: "var(--ink-mute)", marginBottom: 10 }}>{h.type} · {h.area}</div>
-                    <div className="specs">
-                      <div><b>{h.theatre}</b>Theatre</div>
-                      <div><b>{h.floating}</b>Floating</div>
-                      <div><b>{h.dining}</b>Dining</div>
+          {v.halls.length > 0 && (
+            <section className="vd-section">
+              <Ornament>HALLS &amp; CAPACITY</Ornament>
+              <h2>{v.halls.length} venues inside one address</h2>
+              <p style={{ marginBottom: 24 }}>Mix and match for multi-day weddings — haldi in the courtyard, sangeet by the pool, pheras in the ballroom, reception on the lawn.</p>
+              <div className="halls">
+                {v.halls.map((h, i) => (
+                  <div key={h.id} className="hallcard">
+                    <Photo src={hallPhotos[i]} alt={`${v.name} — ${h.name}`} variant={h.ph as "v2"} label={h.name.toLowerCase()} />
+                    <div className="body">
+                      <h4>{h.name}</h4>
+                      <div style={{ fontSize: 12, color: "var(--ink-mute)", marginBottom: 10 }}>{h.type} · {h.area}</div>
+                      <div className="specs">
+                        <div><b>{h.theatre}</b>Theatre</div>
+                        <div><b>{h.floating}</b>Floating</div>
+                        <div><b>{h.dining}</b>Dining</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="vd-section">
             <Ornament>PACKAGES</Ornament>
@@ -192,29 +227,30 @@ export default function VenueDetailPage() {
               <div><I.X width={14} height={14} style={{ color: "var(--ink-mute)" }} /> Add-on</div>
               <div><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> 1-photographer · half-day</div>
               <div><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> 2-photographer · 2-day + film</div>
-              <div className="rowlbl">Rooms</div><div>—</div><div>5 rooms · night of</div><div>20 rooms · 2 nights</div>
-              <div className="rowlbl" style={{ borderBottom: "none" }}>Day-of manager</div>
-              <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Included</div>
-              <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Included</div>
+              <div className="rowlbl">Day-of manager</div>
+              <div><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Included</div>
+              <div><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Included</div>
               <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Dedicated team of 3</div>
             </div>
           </section>
 
-          <section className="vd-section">
-            <Ornament>AMENITIES</Ornament>
-            <h2>What&rsquo;s included</h2>
-            <div className="amen-grid">
-              {v.amenities.map((a, i) => {
-                const IconComp = I[amenIcon(a)];
-                return (
-                  <div key={i} className="amen-cell">
-                    <IconComp width={22} height={22} />
-                    <span>{a}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          {v.amenities.length > 0 && (
+            <section className="vd-section">
+              <Ornament>AMENITIES</Ornament>
+              <h2>What&rsquo;s included</h2>
+              <div className="amen-grid">
+                {v.amenities.map((a, i) => {
+                  const IconComp = I[amenIcon(a)];
+                  return (
+                    <div key={i} className="amen-cell">
+                      <IconComp width={22} height={22} />
+                      <span>{a}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <section className="vd-section">
             <Ornament>AVAILABILITY</Ornament>
@@ -241,7 +277,7 @@ export default function VenueDetailPage() {
             <div className="rev-summary">
               <div>
                 <div className="rev-big">{v.rating}</div>
-                <Stars value={v.rating} size={18} />
+                <Stars value={Number(v.rating)} size={18} />
                 <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6 }}>{v.reviews} verified reviews</div>
               </div>
               <div className="rev-bars">
@@ -260,20 +296,6 @@ export default function VenueDetailPage() {
                 ))}
               </div>
             </div>
-            {[
-              { n: "Aarti M.", d: "Dec 2025 · 420 guests", t: "Our estimate was ₹18L and we closed at ₹17.89L. The Darbar ballroom looked exactly like the mock-up. Day-of manager Sneha was everywhere before I asked." },
-              { n: "Rohit K.", d: "Nov 2025 · 280 guests", t: "We had two grandmothers with wheelchairs — the ramps, the lift, and the reserved seating made the entire day easy. Food was regional Vidarbha done really well." },
-              { n: "Neha & Sahil", d: "Feb 2025 · 500 guests", t: "Hall, catering, décor, DJ, pandit — all under one roof. Zero coordination from us after the final walk-through." },
-            ].map((r) => (
-              <div key={r.n} className="rev-item">
-                <div className="ava ph rose" />
-                <div>
-                  <h5>{r.n}</h5>
-                  <div className="rev-meta">{r.d} · <Stars value={5} size={11} /></div>
-                  <p>{r.t}</p>
-                </div>
-              </div>
-            ))}
           </section>
 
           {v.isSignature && (
@@ -292,11 +314,6 @@ export default function VenueDetailPage() {
                     <video src={src} autoPlay muted loop playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   </a>
                 ))}
-              </div>
-              <div style={{ marginTop: 20, textAlign: "center" }}>
-                <a href="https://www.instagram.com/signature_resorts/" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
-                  Follow @signature_resorts on Instagram <I.Arrow width={14} height={14} />
-                </a>
               </div>
             </section>
           )}
@@ -342,4 +359,30 @@ export default function VenueDetailPage() {
       <MobileTabbar active="Venues" />
     </div>
   );
+}
+
+export default function VenueDetailPage() {
+  const { slug } = useParams<{ slug: string }>();
+
+  const { data: venue, isLoading, error } = useQuery({
+    queryKey: ["venue", slug],
+    queryFn: () => api.venues.get(slug!),
+    enabled: !!slug,
+  });
+
+  if (isLoading) {
+    return (
+      <div>
+        <MobileNav />
+        <TopNav />
+        <div style={{ padding: "80px 20px", textAlign: "center", color: "var(--ink-mute)" }}>
+          Loading venue…
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !venue) return <Redirect to="/venues" />;
+
+  return <VenueDetailContent v={venue} />;
 }

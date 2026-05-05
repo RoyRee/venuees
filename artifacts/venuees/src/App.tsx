@@ -12,6 +12,7 @@ import VendorsHubPage from "./pages/vendors-hub";
 import VendorCategoryPage from "./pages/vendor-category";
 import RealWeddingsHub from "./pages/real-weddings";
 import NotFound from "./pages/not-found";
+import ListYourBusinessPage from "./pages/list-your-business";
 
 function Router() {
   return (
@@ -37,9 +38,10 @@ function Router() {
       <Route path="/real-weddings" component={RealWeddingsHub} />
       <Route path="/real-weddings/:slug" component={RealWeddingsHub} />
 
+      <Route path="/list-your-business" component={ListYourBusinessPage} />
+
       <Route path="/about" component={() => <NotFound />} />
       <Route path="/blog" component={() => <NotFound />} />
-      <Route path="/list-your-business" component={() => <NotFound />} />
       <Route path="/event-management" component={() => <NotFound />} />
       <Route path="/event-management/:sub" component={() => <NotFound />} />
 

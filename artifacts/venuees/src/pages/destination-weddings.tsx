@@ -1,13 +1,36 @@
 import * as React from "react";
+import { useState } from "react";
 import { Link } from "wouter";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { TopNav, MobileNav, MobileTabbar } from "../components/nav";
 import { Footer } from "../components/footer";
 import { I, Ornament } from "../components/icons";
-import { destinations } from "../lib/data";
 import { Photo } from "../components/photo";
+import { api } from "../lib/api";
 import { destinationPhotos } from "../lib/images";
 
 export default function DestinationHubPage() {
+  const { data: destinations = [] } = useQuery({
+    queryKey: ["destinations"],
+    queryFn: () => api.destinations.list(),
+  });
+
+  const [form, setForm] = useState({ name: "", phone: "+91 ", destination: "Udaipur", month: "Dec 2026", guests: "80", budget: "₹25L – ₹50L", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+
+  const mutation = useMutation({
+    mutationFn: () => api.enquiries.submit({
+      kind: "contact",
+      name: form.name,
+      phone: form.phone,
+      message: `Destination: ${form.destination}\nMonth: ${form.month}\nGuests: ${form.guests}\nBudget: ${form.budget}\n${form.message}`,
+    }),
+    onSuccess: () => setSubmitted(true),
+  });
+
+  const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm({ ...form, [k]: e.target.value });
+
   return (
     <div className="dh">
       <MobileNav />
@@ -35,7 +58,7 @@ export default function DestinationHubPage() {
       <section className="dh-section" id="destinations">
         <Ornament>DESTINATIONS</Ornament>
         <h2 style={{ fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1.05, margin: "14px 0 10px" }}>
-          Six cities. <span className="italic-serif" style={{ color: "var(--brand)" }}>One fixer in Nagpur.</span>
+          {destinations.length ? `${destinations.length} cities` : "Six cities"}. <span className="italic-serif" style={{ color: "var(--brand)" }}>One fixer in Nagpur.</span>
         </h2>
         <p style={{ fontSize: 15, color: "var(--ink-soft)", maxWidth: 620, lineHeight: 1.6 }}>
           We&rsquo;ve shot weddings in each of these cities. We know which palace doesn&rsquo;t allow baraat drums, which resort in Goa charges per-head corkage, and which Jaisalmer dune is actually photogenic at sunrise.
@@ -43,11 +66,11 @@ export default function DestinationHubPage() {
         <div className="dh-destgrid">
           {destinations.map((d) => (
             <Link key={d.slug} href={`/destination-weddings/${d.slug}`} className={`dh-destcard ${d.feat ? "feat" : ""}`}>
-              <Photo src={destinationPhotos[d.slug]} variant={d.ph} label={`${d.city.toLowerCase()} · ${d.tag.toLowerCase()}`} style={{ height: "100%" }} />
+              <Photo src={destinationPhotos[d.slug]} variant={d.ph as "v2"} label={`${d.city.toLowerCase()} · ${d.tag.toLowerCase()}`} style={{ height: "100%" }} />
               <div className="dh-destcard-info">
                 <div className="ci">{d.city}<em>{d.tag}</em></div>
                 <div className="meta">
-                  <span>{d.venues} venues · from {d.from}</span>
+                  <span>{d.venues} venues · from {d.priceFrom}</span>
                   <span>{d.feat ? "Our most-booked" : "Explore →"}</span>
                 </div>
               </div>
@@ -113,26 +136,46 @@ export default function DestinationHubPage() {
             <h2>Your destination wedding, <span className="italic-serif">mapped in one call.</span></h2>
             <p>Tell us your dream city, rough dates, guest count, and budget. One of our senior planners will call you back with a shortlist of 3 venues, a day-by-day outline, and a transparent estimate. No deposit, no commitment.</p>
           </div>
-          <div className="enq-fields">
-            <div><label>Name</label><input placeholder="Your full name" /></div>
-            <div><label>Phone / WhatsApp</label><input placeholder="+91 " /></div>
-            <div className="row2">
-              <div><label>Destination</label>
-                <select><option>Udaipur</option><option>Goa</option><option>Jaipur</option><option>Coorg</option><option>Jaisalmer</option><option>Rishikesh</option><option>Not sure yet</option></select>
-              </div>
-              <div><label>Month</label>
-                <select><option>Nov 2026</option><option>Dec 2026</option><option>Jan 2027</option><option>Feb 2027</option></select>
-              </div>
+          {submitted ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", textAlign: "center", color: "#fff" }}>
+              <div style={{ fontSize: 56, marginBottom: 12 }}>✓</div>
+              <h3 style={{ color: "#fff", marginBottom: 8 }}>Enquiry received!</h3>
+              <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 14 }}>A planner will call within 2 hours with a free consultation.</p>
             </div>
-            <div className="row2">
-              <div><label>Guests</label><input defaultValue="80" /></div>
-              <div><label>Budget (INR)</label>
-                <select><option>Under ₹25L</option><option>₹25L – ₹50L</option><option>₹50L – ₹1Cr</option><option>₹1Cr+</option></select>
+          ) : (
+            <form className="enq-fields" onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
+              <div><label>Name</label><input placeholder="Your full name" value={form.name} onChange={update("name")} required /></div>
+              <div><label>Phone / WhatsApp</label><input placeholder="+91 " value={form.phone} onChange={update("phone")} required /></div>
+              <div className="row2">
+                <div><label>Destination</label>
+                  <select value={form.destination} onChange={update("destination")}>
+                    {destinations.map((d) => <option key={d.slug}>{d.city}</option>)}
+                    <option>Not sure yet</option>
+                  </select>
+                </div>
+                <div><label>Month</label>
+                  <select value={form.month} onChange={update("month")}>
+                    <option>Nov 2026</option><option>Dec 2026</option><option>Jan 2027</option><option>Feb 2027</option>
+                  </select>
+                </div>
               </div>
-            </div>
-            <div><label>Anything else?</label><textarea rows={3} placeholder="Preferred vibe, guest profile, specific dates..." /></div>
-            <button className="enq-submit">Get a plan · free consult</button>
-          </div>
+              <div className="row2">
+                <div><label>Guests</label><input value={form.guests} onChange={update("guests")} /></div>
+                <div><label>Budget (INR)</label>
+                  <select value={form.budget} onChange={update("budget")}>
+                    <option>Under ₹25L</option><option>₹25L – ₹50L</option><option>₹50L – ₹1Cr</option><option>₹1Cr+</option>
+                  </select>
+                </div>
+              </div>
+              <div><label>Anything else?</label>
+                <textarea rows={3} placeholder="Preferred vibe, guest profile, specific dates..." value={form.message} onChange={update("message")} />
+              </div>
+              {mutation.error && <p style={{ color: "#ffb3b3", fontSize: 12 }}>Something went wrong. Please try again.</p>}
+              <button className="enq-submit" type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? "Sending…" : "Get a plan · free consult"}
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
