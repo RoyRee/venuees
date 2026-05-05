@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Venuees.in"
+version = "1.0.0"
+id = "artifacts/venuees"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24672
+
+[services.development]
+run = "pnpm --filter @workspace/venuees run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/venuees", "run", "build" ]
+publicDir = "artifacts/venuees/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24672"
+BASE_PATH = "/"
