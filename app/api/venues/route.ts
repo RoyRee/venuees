@@ -3,6 +3,7 @@ import { db, venuesTable, venueImagesTable } from "@/lib/db";
 import { eq, and, ilike, or } from "drizzle-orm";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {

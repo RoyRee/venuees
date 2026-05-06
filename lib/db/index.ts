@@ -2,21 +2,38 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
-// Supabase exposes a direct PostgreSQL connection string in the dashboard:
-// Project Settings → Database → Connection string → URI (Transaction pooler for serverless)
-// Set this as DATABASE_URL in your environment.
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL is not set. Go to Supabase → Project Settings → Database → Connection string and add it to your .env.local file."
-  );
+// Initialization is intentionally lazy — deferred until the first db method call.
+// This prevents Next.js from throwing during build when DATABASE_URL is not set
+// at build time (it's only available at runtime/request time on Vercel).
+//
+// Get DATABASE_URL from: Supabase → Project Settings → Database →
+// Connection string → Transaction pooler URI (port 6543).
+
+type DrizzleClient = ReturnType<typeof drizzle<typeof schema>>;
+
+let _client: DrizzleClient | undefined;
+
+function getClient(): DrizzleClient {
+  if (_client) return _client;
+  if (!process.env.DATABASE_URL) {
+    throw new Error(
+      "DATABASE_URL is not set. Go to Supabase → Project Settings → Database → Connection string and add it to your .env.local file."
+    );
+  }
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  });
+  _client = drizzle(pool, { schema });
+  return _client;
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  // Supabase requires SSL in production
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+// Proxy so routes keep the same `db.select()` / `db.insert()` API.
+// `getClient()` is only called when a handler actually runs — never at build time.
+export const db: DrizzleClient = new Proxy({} as DrizzleClient, {
+  get(_, prop: string | symbol) {
+    return (getClient() as unknown as Record<string | symbol, unknown>)[prop];
+  },
 });
-
-export const db = drizzle(pool, { schema });
 
 export * from "./schema";

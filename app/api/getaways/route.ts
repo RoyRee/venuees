@@ -3,6 +3,7 @@ import { db, getawaysTable, getawayImagesTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {

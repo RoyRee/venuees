@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, enquiriesTable } from "@/lib/db";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const VALID_KINDS = new Set([
   "venue_enquiry",
