@@ -1,7 +1,7 @@
-import { pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const destinationsTable = pgTable("destinations", {
-  id:        serial("id").primaryKey(),
+  id:        integer("id").primaryKey().generatedByDefaultAsIdentity(),
   slug:      text("slug").notNull().unique(),
   city:      text("city").notNull(),
   tag:       text("tag").notNull(),

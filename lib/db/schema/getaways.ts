@@ -1,7 +1,7 @@
-import { pgTable, serial, text, integer, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const getawaysTable = pgTable("getaways", {
-  id:               serial("id").primaryKey(),
+  id:               integer("id").primaryKey().generatedByDefaultAsIdentity(),
   slug:             text("slug").notNull().unique(),
   name:             text("name").notNull(),
   location:         text("location").notNull(),
@@ -22,7 +22,7 @@ export const getawaysTable = pgTable("getaways", {
 });
 
 export const getawayImagesTable = pgTable("getaway_images", {
-  id:        serial("id").primaryKey(),
+  id:        integer("id").primaryKey().generatedByDefaultAsIdentity(),
   getawayId: integer("getaway_id").notNull().references(() => getawaysTable.id, { onDelete: "cascade" }),
   url:       text("url").notNull(),
   alt:       text("alt").notNull().default(""),

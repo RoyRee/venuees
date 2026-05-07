@@ -1,7 +1,7 @@
-import { pgTable, serial, text, integer, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, numeric, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const vendorsTable = pgTable("vendors", {
-  id:           serial("id").primaryKey(),
+  id:           integer("id").primaryKey().generatedByDefaultAsIdentity(),
   slug:         text("slug").notNull().unique(),
   category:     text("category").notNull(),
   categorySlug: text("category_slug").notNull(),
@@ -23,7 +23,7 @@ export const vendorsTable = pgTable("vendors", {
 });
 
 export const vendorImagesTable = pgTable("vendor_images", {
-  id:        serial("id").primaryKey(),
+  id:        integer("id").primaryKey().generatedByDefaultAsIdentity(),
   vendorId:  integer("vendor_id").notNull().references(() => vendorsTable.id, { onDelete: "cascade" }),
   url:       text("url").notNull(),
   alt:       text("alt").notNull().default(""),
