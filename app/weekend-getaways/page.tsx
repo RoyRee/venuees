@@ -2,7 +2,7 @@ import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
-import { getaways } from "@/lib/data";
+import { getGetaways } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { getawayPhotos } from "@/lib/images";
 
@@ -11,7 +11,8 @@ export const metadata = {
   description: "Forest villas, lake cottages and hill escapes within 4 hours of Nagpur. Pench, Tadoba, Khindsi, Chikhaldara and more.",
 };
 
-export default function GetawayHubPage() {
+export default async function GetawayHubPage() {
+  const getaways = await getGetaways();
   return (
     <div>
       <MobileNav />

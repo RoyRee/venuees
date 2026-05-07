@@ -4,17 +4,9 @@ import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
 import { VenueGallery } from "@/components/venue-gallery";
-import { venues, getVenueBySlug } from "@/lib/data";
 import { venueGallery, venuePhotos, signatureResortsVideos } from "@/lib/images";
+import { getVenueBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
-
-export function generateStaticParams() {
-  return venues.map((v) => ({
-    city: v.citySlug,
-    locality: v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-"),
-    slug: v.slug,
-  }));
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

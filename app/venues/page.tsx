@@ -3,8 +3,8 @@ import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Stars } from "@/components/icons";
 import { Photo } from "@/components/photo";
-import { venues } from "@/lib/data";
 import { venueHero } from "@/lib/images";
+import { getVenues } from "@/lib/db/queries";
 
 export const metadata = {
   title: "Wedding venues in Nagpur — Venuees.in",
@@ -24,7 +24,8 @@ const LOCALITIES = [
   "Wardha Road", "Ramdaspeth", "Civil Lines", "Koradi Road", "Katol Road", "MIHAN",
 ];
 
-export default function VenuesListPage() {
+export default async function VenuesListPage() {
+  const venues = await getVenues();
   const signature = venues.find((v) => v.isSignature)!;
   const rest = venues.filter((v) => !v.isSignature);
   const ordered = [signature, ...rest];

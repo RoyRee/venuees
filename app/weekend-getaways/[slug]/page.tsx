@@ -3,13 +3,9 @@ import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
-import { getaways, getGetawayBySlug } from "@/lib/data";
+import { getGetawayBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { getawayPhotos } from "@/lib/images";
-
-export function generateStaticParams() {
-  return getaways.map((g) => ({ slug: g.slug }));
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
