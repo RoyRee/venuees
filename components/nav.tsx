@@ -37,7 +37,7 @@ export function TopNav() {
       </ul>
       <div className="nav-right">
         <span className="city"><I.Pin width={13} height={13} /> Nagpur</span>
-        <a style={{ color: "var(--ink-soft)", cursor: "pointer" }}>Login</a>
+        <Link href="/login" style={{ color: "var(--ink-soft)", fontSize: 14 }}>Sign in</Link>
         <Link href="/contact" className="btn btn-primary btn-sm">Enquire</Link>
       </div>
     </nav>
