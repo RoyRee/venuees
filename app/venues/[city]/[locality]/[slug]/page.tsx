@@ -10,7 +10,7 @@ import { Photo } from "@/components/photo";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const v = getVenueBySlug(slug);
+  const v = await getVenueBySlug(slug);
   if (!v) return {};
   return {
     title: `${v.name} · ${v.locality} — Venuees.in`,
@@ -42,7 +42,7 @@ function amenIcon(text: string) {
 
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const v = getVenueBySlug(slug);
+  const v = await getVenueBySlug(slug);
   if (!v) return notFound();
 
   // Mock calendar data
