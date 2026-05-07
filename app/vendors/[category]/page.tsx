@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
-import { vendors, getVendorsByCategory } from "@/lib/data";
+import { getVendors } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { vendorPhotos } from "@/lib/images";
 
@@ -32,8 +32,7 @@ export default async function VendorCategoryPage({ params }: { params: Promise<{
   const { category } = await params;
   const meta = CATEGORY_META[category];
   if (!meta) return notFound();
-  const list = getVendorsByCategory(category);
-  // Extend list with more vendor cards for visual density
+  const list = await getVendors(category);
   const display = [...list, ...list].slice(0, 8);
 
   return (

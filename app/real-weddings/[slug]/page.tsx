@@ -3,22 +3,18 @@ import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
-import { realWeddings } from "@/lib/data";
-
-export function generateStaticParams() {
-  return realWeddings.map((w) => ({ slug: w.slug }));
-}
+import { getRealWeddingBySlug } from "@/lib/db/queries";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const w = realWeddings.find((x) => x.slug === slug);
+  const w = await getRealWeddingBySlug(slug);
   if (!w) return {};
   return { title: `${w.couple} · ${w.venue} — Real weddings · Venuees.in` };
 }
 
 export default async function RealWeddingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const w = realWeddings.find((x) => x.slug === slug);
+  const w = await getRealWeddingBySlug(slug);
   if (!w) return notFound();
 
   return (

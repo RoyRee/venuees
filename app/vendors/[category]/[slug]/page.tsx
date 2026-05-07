@@ -3,13 +3,9 @@ import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
-import { vendors, getVendorBySlug } from "@/lib/data";
+import { getVendorBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { vendorPhotos, venuePhotos } from "@/lib/images";
-
-export function generateStaticParams() {
-  return vendors.map((v) => ({ category: v.categorySlug, slug: v.slug }));
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
