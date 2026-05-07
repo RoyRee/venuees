@@ -1,7 +1,7 @@
-import { pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const realWeddingsTable = pgTable("real_weddings", {
-  id:        serial("id").primaryKey(),
+  id:        integer("id").primaryKey().generatedByDefaultAsIdentity(),
   slug:      text("slug").notNull().unique(),
   couple:    text("couple").notNull(),
   venue:     text("venue").notNull(),
@@ -15,7 +15,7 @@ export const realWeddingsTable = pgTable("real_weddings", {
 });
 
 export const realWeddingImagesTable = pgTable("real_wedding_images", {
-  id:            serial("id").primaryKey(),
+  id:            integer("id").primaryKey().generatedByDefaultAsIdentity(),
   realWeddingId: integer("real_wedding_id").notNull().references(() => realWeddingsTable.id, { onDelete: "cascade" }),
   url:           text("url").notNull(),
   alt:           text("alt").notNull().default(""),

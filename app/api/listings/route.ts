@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, listingApplicationsTable } from "@/lib/db";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const VALID_TYPES = new Set(["venue", "vendor", "getaway"]);
 

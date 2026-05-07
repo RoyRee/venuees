@@ -1,7 +1,7 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
 
 export const enquiriesTable = pgTable("enquiries", {
-  id:          serial("id").primaryKey(),
+  id:          integer("id").primaryKey().generatedByDefaultAsIdentity(),
   createdAt:   timestamp("created_at").notNull().defaultNow(),
   kind:        text("kind").notNull(),
   venueSlug:   text("venue_slug"),
@@ -20,14 +20,14 @@ export const enquiriesTable = pgTable("enquiries", {
 });
 
 export const newsletterTable = pgTable("newsletter_signups", {
-  id:        serial("id").primaryKey(),
+  id:        integer("id").primaryKey().generatedByDefaultAsIdentity(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   email:     text("email").notNull().unique(),
   source:    text("source"),
 });
 
 export const listingApplicationsTable = pgTable("listing_applications", {
-  id:           serial("id").primaryKey(),
+  id:           integer("id").primaryKey().generatedByDefaultAsIdentity(),
   createdAt:    timestamp("created_at").notNull().defaultNow(),
   businessName: text("business_name").notNull(),
   businessType: text("business_type").notNull(),

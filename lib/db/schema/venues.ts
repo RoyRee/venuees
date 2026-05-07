@@ -1,7 +1,7 @@
-import { pgTable, serial, text, integer, numeric, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, numeric, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 
 export const venuesTable = pgTable("venues", {
-  id:             serial("id").primaryKey(),
+  id:             integer("id").primaryKey().generatedByDefaultAsIdentity(),
   slug:           text("slug").notNull().unique(),
   name:           text("name").notNull(),
   citySlug:       text("city_slug").notNull().default("nagpur"),
@@ -32,7 +32,7 @@ export const venuesTable = pgTable("venues", {
 });
 
 export const venueHallsTable = pgTable("venue_halls", {
-  id:       serial("id").primaryKey(),
+  id:       integer("id").primaryKey().generatedByDefaultAsIdentity(),
   venueId:  integer("venue_id").notNull().references(() => venuesTable.id, { onDelete: "cascade" }),
   name:     text("name").notNull(),
   ph:       text("ph").notNull().default("v2"),
@@ -45,7 +45,7 @@ export const venueHallsTable = pgTable("venue_halls", {
 });
 
 export const venueImagesTable = pgTable("venue_images", {
-  id:        serial("id").primaryKey(),
+  id:        integer("id").primaryKey().generatedByDefaultAsIdentity(),
   venueId:   integer("venue_id").notNull().references(() => venuesTable.id, { onDelete: "cascade" }),
   url:       text("url").notNull(),
   alt:       text("alt").notNull().default(""),
