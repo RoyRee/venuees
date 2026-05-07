@@ -9,7 +9,7 @@ import { getawayPhotos } from "@/lib/images";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const g = getGetawayBySlug(slug);
+  const g = await getGetawayBySlug(slug);
   if (!g) return {};
   return { title: `${g.name} · ${g.location} — Venuees.in`, description: g.tagline };
 }
@@ -23,7 +23,7 @@ const ADDONS = [
 
 export default async function GetawayDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const g = getGetawayBySlug(slug);
+  const g = await getGetawayBySlug(slug);
   if (!g) return notFound();
 
   const nights = 2;

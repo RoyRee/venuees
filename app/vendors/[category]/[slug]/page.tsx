@@ -9,14 +9,14 @@ import { vendorPhotos, venuePhotos } from "@/lib/images";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const v = getVendorBySlug(slug);
+  const v = await getVendorBySlug(slug);
   if (!v) return {};
   return { title: `${v.name} · ${v.category} — Venuees.in`, description: v.tagline };
 }
 
 export default async function VendorDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const v = getVendorBySlug(slug);
+  const v = await getVendorBySlug(slug);
   if (!v) return notFound();
 
   return (
