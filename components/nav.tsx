@@ -3,6 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { I } from "./icons";
+import { NavUserButton } from "./nav-user-button";
 
 const LINKS = [
   { n: "Venues", href: "/venues" },
@@ -37,7 +38,7 @@ export function TopNav() {
       </ul>
       <div className="nav-right">
         <span className="city"><I.Pin width={13} height={13} /> Nagpur</span>
-        <Link href="/login" style={{ color: "var(--ink-soft)", fontSize: 14 }}>Sign in</Link>
+        <NavUserButton />
         <Link href="/contact" className="btn btn-primary btn-sm">Enquire</Link>
       </div>
     </nav>
@@ -81,6 +82,9 @@ export function MobileNav() {
               <li>
                 <Link href="/contact" onClick={() => setOpen(false)}>Contact <I.Arrow width={14} height={14} /></Link>
               </li>
+              <li>
+                <Link href="/dashboard" onClick={() => setOpen(false)}>My account <I.Arrow width={14} height={14} /></Link>
+              </li>
             </ul>
           </nav>
           <div style={{ marginTop: "auto", paddingTop: 30 }}>
@@ -101,7 +105,7 @@ export function MobileTabbar({ active = "Home" }: { active?: string }) {
     { k: "Venues", href: "/venues", icon: <I.Pin /> },
     { k: "Search", href: "/venues", icon: <I.Search /> },
     { k: "Saved", href: "/", icon: <I.Heart /> },
-    { k: "Me", href: "/", icon: <I.Users /> },
+    { k: "Me", href: "/dashboard", icon: <I.Users /> },
   ];
   return (
     <div className="mobile-tabbar">
