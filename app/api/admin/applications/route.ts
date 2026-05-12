@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
   const details = (app.details ?? {}) as Record<string, unknown>;
   const slug = slugify(app.businessName);
 
+  const whatsappNum = details.whatsapp ? String(details.whatsapp) : app.phone;
+
   if (app.listingType === "vendor") {
     const [vendor] = await db.insert(vendorsTable).values({
       slug,
@@ -44,11 +46,14 @@ export async function POST(request: NextRequest) {
       locality: app.locality ?? "",
       priceFrom: num(details.priceFrom),
       yearsExp: num(details.yearsExp),
+      completed: num(details.completed),
+      tagline: str(details.tagline),
       description: app.message ?? "",
+      scene: app.locality ?? "",
       contactName: app.contactName,
       contactPhone: app.phone,
       contactEmail: app.email,
-      whatsapp: app.phone,
+      whatsapp: whatsappNum,
       ownerUserId: app.userId ?? null,
       isActive: true,
     }).returning({ id: vendorsTable.id });
@@ -66,24 +71,37 @@ export async function POST(request: NextRequest) {
     }
   } else {
     // venue or getaway — both go into venuesTable
+    const address = details.fullAddress
+      ? String(details.fullAddress)
+      : `${app.locality ?? ""}, ${app.city}`;
+    // For getaways, "capacityMin" in the form means number of rooms
+    const roomCount = app.listingType === "getaway"
+      ? (num(details.capacityMin) || null)
+      : (num(details.rooms) || null);
+
     const [venue] = await db.insert(venuesTable).values({
       slug,
       name: app.businessName,
       type: app.businessType,
       typeSlug: slugify(app.businessType),
       locality: app.locality ?? "",
-      address: `${app.locality ?? ""}, ${app.city}`,
+      address,
       capacityMin: num(details.capacityMin),
       capacityMax: num(details.capacityMax),
       vegPlate: num(details.vegPlate),
       nvPlate: num(details.nvPlate),
       hallRent: num(details.hallRent),
+      minGuarantee: num(details.minGuarantee),
+      parking: num(details.parking),
+      rooms: roomCount,
+      tag: "New",
       description: app.message ?? "",
+      scene: app.locality ?? "",
       amenities: (app.amenities ?? []) as string[],
       contactName: app.contactName,
       contactPhone: app.phone,
       contactEmail: app.email,
-      whatsapp: app.phone,
+      whatsapp: whatsappNum,
       ownerUserId: app.userId ?? null,
       isActive: true,
     }).returning({ id: venuesTable.id });
@@ -115,4 +133,8 @@ function slugify(s: string) {
 function num(v: unknown): number {
   const n = parseInt(String(v ?? "0"), 10);
   return isNaN(n) ? 0 : n;
+}
+
+function str(v: unknown): string {
+  return v ? String(v) : "";
 }
