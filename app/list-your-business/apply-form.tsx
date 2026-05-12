@@ -1,6 +1,5 @@
 "use client";
 import { useState, useTransition, useRef } from "react";
-import { useRouter } from "next/navigation";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ListingType = "venue" | "vendor" | "getaway";
@@ -14,10 +13,8 @@ interface MediaFile {
 }
 
 interface FormState {
-  // Step 1
   listingType: ListingType | "";
   businessType: string;
-  // Step 2
   businessName: string;
   contactName: string;
   phone: string;
@@ -25,19 +22,15 @@ interface FormState {
   city: string;
   locality: string;
   website: string;
-  // Step 3 — venue
   capacityMin: string;
   capacityMax: string;
   vegPlate: string;
   nvPlate: string;
   hallRent: string;
-  // Step 3 — vendor
   priceFrom: string;
   yearsExp: string;
-  // Step 4
   description: string;
   amenities: string[];
-  // Step 5 — media (handled separately)
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -47,8 +40,8 @@ const GETAWAY_TYPES = ["Resort / Hotel", "Farmstay", "Heritage Property", "Villa
 const VENUE_AMENITIES = ["AC Halls", "Outdoor Lawn", "Parking", "In-house Catering", "Outside Catering Allowed", "DJ Allowed", "Valet Parking", "Bridal Suite", "Swimming Pool", "Accommodation", "Generator Backup", "Décor Allowed"];
 const IMAGE_LIMIT = 5;
 const VIDEO_LIMIT = 1;
-const IMAGE_MAX_MB = 2;
-const VIDEO_MAX_MB = 10;
+const IMAGE_MAX_BYTES = 600 * 1024;   // compress images to ≤600 KB
+const VIDEO_MAX_MB = 3;               // 3 MB base64 ≈ 4 MB, fits under Vercel 4.5 MB limit
 
 const EMPTY: FormState = {
   listingType: "", businessType: "",
@@ -63,13 +56,12 @@ function Steps({ current, total }: { current: number; total: number }) {
   return (
     <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
       {Array.from({ length: total }).map((_, i) => (
-        <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < current ? "var(--brand)" : i === current ? "var(--brand)" : "var(--line)", opacity: i === current ? 1 : i < current ? 0.5 : 0.25, transition: "all 0.2s" }} />
+        <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= current ? "var(--brand)" : "var(--line)", opacity: i === current ? 1 : i < current ? 0.5 : 0.25, transition: "all 0.2s" }} />
       ))}
     </div>
   );
 }
 
-// ── Field components ───────────────────────────────────────────────────────
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -82,12 +74,13 @@ const inp: React.CSSProperties = { width: "100%", padding: "10px 14px", fontSize
 
 // ── Main component ─────────────────────────────────────────────────────────
 export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string; prefillName?: string }) {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>({ ...EMPTY, email: prefillEmail ?? "", contactName: prefillName ?? "" });
   const [media, setMedia] = useState<MediaFile[]>([]);
   const [error, setError] = useState("");
+  const [submitLabel, setSubmitLabel] = useState("Submit application");
   const [isPending, startTransition] = useTransition();
+  const [submitted, setSubmitted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
 
@@ -97,18 +90,23 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
   // ── File handling ──────────────────────────────────────────────────────
   async function addFiles(files: FileList | null, type: "image" | "video") {
     if (!files) return;
-    const maxMB = type === "image" ? IMAGE_MAX_MB : VIDEO_MAX_MB;
     const currentCount = media.filter((m) => m.type === type).length;
     const limit = type === "image" ? IMAGE_LIMIT : VIDEO_LIMIT;
     const toAdd = Array.from(files).slice(0, limit - currentCount);
 
     for (const file of toAdd) {
-      if (file.size > maxMB * 1024 * 1024) {
-        setError(`${file.name} exceeds ${maxMB}MB limit.`);
+      if (type === "video" && file.size > VIDEO_MAX_MB * 1024 * 1024) {
+        setError(`Video must be under ${VIDEO_MAX_MB}MB. Try trimming it first.`);
         continue;
       }
-      const data = await toBase64(file);
-      setMedia((m) => [...m, { data, mimeType: file.type, fileName: file.name, type, preview: URL.createObjectURL(file) }]);
+      const preview = URL.createObjectURL(file);
+      if (type === "image") {
+        const { data, mimeType } = await compressImage(file, IMAGE_MAX_BYTES);
+        setMedia((m) => [...m, { data, mimeType, fileName: file.name, type, preview }]);
+      } else {
+        const data = await toBase64(file);
+        setMedia((m) => [...m, { data, mimeType: file.type, fileName: file.name, type, preview }]);
+      }
     }
     setError("");
   }
@@ -139,54 +137,108 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
     setStep((s) => s + 1);
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────
+  // ── Submit: two-phase ──────────────────────────────────────────────────
   function submit() {
     const err = validate();
     if (err) { setError(err); return; }
     setError("");
 
     startTransition(async () => {
-      const details: Record<string, unknown> = {};
-      if (form.listingType === "venue") {
-        details.capacityMin = form.capacityMin;
-        details.capacityMax = form.capacityMax;
-        details.vegPlate = form.vegPlate;
-        details.nvPlate = form.nvPlate;
-        details.hallRent = form.hallRent;
-      } else if (form.listingType === "vendor") {
-        details.priceFrom = form.priceFrom;
-        details.yearsExp = form.yearsExp;
-      }
+      try {
+        // Phase 1: submit form data
+        const details: Record<string, unknown> = {};
+        if (form.listingType === "venue") {
+          details.capacityMin = form.capacityMin;
+          details.capacityMax = form.capacityMax;
+          details.vegPlate = form.vegPlate;
+          details.nvPlate = form.nvPlate;
+          details.hallRent = form.hallRent;
+        } else if (form.listingType === "vendor") {
+          details.priceFrom = form.priceFrom;
+          details.yearsExp = form.yearsExp;
+        } else if (form.listingType === "getaway") {
+          details.capacityMin = form.capacityMin;
+          details.capacityMax = form.capacityMax;
+          details.vegPlate = form.vegPlate;
+          details.nvPlate = form.nvPlate;
+        }
 
-      const res = await fetch("/api/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingType: form.listingType,
-          businessName: form.businessName,
-          businessType: form.businessType,
-          contactName: form.contactName,
-          phone: form.phone,
-          email: form.email,
-          city: form.city,
-          locality: form.locality,
-          website: form.website,
-          message: form.description,
-          details,
-          amenities: form.amenities,
-          media: media.map((m) => ({ data: m.data, mimeType: m.mimeType, fileName: m.fileName, type: m.type })),
-        }),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setError(d.error ?? "Something went wrong. Please try again.");
-        return;
+        setSubmitLabel("Saving details…");
+        const res1 = await fetch("/api/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            listingType: form.listingType,
+            businessName: form.businessName,
+            businessType: form.businessType,
+            contactName: form.contactName,
+            phone: form.phone,
+            email: form.email,
+            city: form.city,
+            locality: form.locality,
+            website: form.website,
+            message: form.description,
+            details,
+            amenities: form.amenities,
+          }),
+        });
+        if (!res1.ok) {
+          const d = await res1.json().catch(() => ({}));
+          setError(d.error ?? "Something went wrong. Please try again.");
+          setSubmitLabel("Submit application");
+          return;
+        }
+        const { id } = await res1.json();
+
+        // Phase 2: upload each media file separately
+        const imageFiles = media.filter((m) => m.type === "image");
+        const videoFiles = media.filter((m) => m.type === "video");
+        const allMedia = [...imageFiles, ...videoFiles];
+
+        for (let i = 0; i < allMedia.length; i++) {
+          const m = allMedia[i];
+          setSubmitLabel(`Uploading ${m.type === "image" ? `photo ${imageFiles.indexOf(m) + 1} of ${imageFiles.length}` : "video"}…`);
+          const res2 = await fetch("/api/apply/media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              applicationId: id,
+              data: m.data,
+              mimeType: m.mimeType,
+              fileName: m.fileName,
+              type: m.type,
+              order: i,
+            }),
+          });
+          if (!res2.ok) {
+            setError(`Failed to upload ${m.type}. Please try again.`);
+            setSubmitLabel("Submit application");
+            return;
+          }
+        }
+
+        setSubmitted(true);
+      } catch {
+        setError("Network error. Please check your connection and try again.");
+        setSubmitLabel("Submit application");
       }
-      router.push("/dashboard?applied=1");
     });
   }
 
   const TOTAL_STEPS = 6;
+
+  // ── Success screen ─────────────────────────────────────────────────────
+  if (submitted) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px 0" }}>
+        <div style={{ width: 60, height: 60, borderRadius: "50%", background: "color-mix(in srgb,var(--brand) 12%,#fff)", border: "2px solid var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 26 }}>✓</div>
+        <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 28, color: "var(--ink)", marginBottom: 10 }}>Application submitted!</h2>
+        <p style={{ fontSize: 15, color: "var(--ink-soft)", maxWidth: 360, margin: "0 auto" }}>
+          We&rsquo;ll review your application within 48 hours and get back to you at <strong>{form.email}</strong>.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 560, margin: "0 auto" }}>
@@ -231,11 +283,11 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Basic details</h2>
             <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>How we reach you and identify your business.</p>
           </div>
-          <Field label="Business name"><input style={inp} value={form.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="e.g. Orange County Farms" required /></Field>
-          <Field label="Your name"><input style={inp} value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="Owner / manager name" required /></Field>
+          <Field label="Business name"><input style={inp} value={form.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="e.g. Orange County Farms" /></Field>
+          <Field label="Your name"><input style={inp} value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="Owner / manager name" /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Phone"><input style={inp} type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+91 " required /></Field>
-            <Field label="Email"><input style={inp} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="you@example.com" required /></Field>
+            <Field label="Phone"><input style={inp} type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+91 " /></Field>
+            <Field label="Email"><input style={inp} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="you@example.com" /></Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="City"><input style={inp} value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Nagpur" /></Field>
@@ -316,7 +368,7 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Photos & video</h2>
-            <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>Up to {IMAGE_LIMIT} photos (max {IMAGE_MAX_MB}MB each) and 1 video (max {VIDEO_MAX_MB}MB).</p>
+            <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>Up to {IMAGE_LIMIT} photos · 1 short video (max {VIDEO_MAX_MB}MB).</p>
           </div>
 
           {/* Photo grid */}
@@ -335,15 +387,16 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
                 </button>
               )}
             </div>
-            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple style={{ display: "none" }} onChange={(e) => addFiles(e.target.files, "image")} />
+            {/* accept="image/*" allows iPhone HEIC (auto-converted to JPEG by iOS) */}
+            <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => { addFiles(e.target.files, "image"); e.target.value = ""; }} />
           </div>
 
           {/* Video */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", display: "block", marginBottom: 8 }}>Intro video (optional)</label>
+            <label style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", display: "block", marginBottom: 8 }}>Intro video (optional, max {VIDEO_MAX_MB}MB)</label>
             {media.filter((m) => m.type === "video").length === 0 ? (
               <button type="button" onClick={() => videoRef.current?.click()} style={{ width: "100%", padding: "20px", borderRadius: 8, border: "2px dashed var(--line)", background: "var(--surface)", cursor: "pointer", color: "var(--ink-mute)", fontSize: 13 }}>
-                + Add video (MP4 / WebM, max {VIDEO_MAX_MB}MB)
+                + Add short video
               </button>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid var(--line)", borderRadius: 8 }}>
@@ -352,7 +405,7 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
                 <button type="button" onClick={() => removeMedia(media.findIndex((m) => m.type === "video"))} style={{ fontSize: 13, color: "#c00", background: "none", border: "none", cursor: "pointer" }}>Remove</button>
               </div>
             )}
-            <input ref={videoRef} type="file" accept="video/mp4,video/webm" style={{ display: "none" }} onChange={(e) => addFiles(e.target.files, "video")} />
+            <input ref={videoRef} type="file" accept="video/*" style={{ display: "none" }} onChange={(e) => { addFiles(e.target.files, "video"); e.target.value = ""; }} />
           </div>
         </div>
       )}
@@ -407,7 +460,7 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
         ) : (
           <button type="button" onClick={submit} disabled={isPending}
             style={{ flex: 2, padding: "12px", borderRadius: 8, border: "none", background: isPending ? "var(--ink-mute)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: isPending ? "not-allowed" : "pointer" }}>
-            {isPending ? "Submitting…" : "Submit application"}
+            {isPending ? submitLabel : "Submit application"}
           </button>
         )}
       </div>
@@ -416,6 +469,41 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+async function compressImage(file: File, maxBytes: number): Promise<{ data: string; mimeType: string }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      const MAX_DIM = 1920;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const scale = MAX_DIM / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+
+      let quality = 0.85;
+      let dataUrl = canvas.toDataURL("image/jpeg", quality);
+      // base64 is ~4/3 of raw bytes; keep reducing until under budget
+      while (dataUrl.length > maxBytes * (4 / 3) + 30 && quality > 0.3) {
+        quality -= 0.1;
+        dataUrl = canvas.toDataURL("image/jpeg", quality);
+      }
+      resolve({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      toBase64(file).then((data) => resolve({ data, mimeType: file.type }));
+    };
+    img.src = url;
+  });
+}
+
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

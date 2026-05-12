@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { listingApplicationsTable, listingApplicationMediaTable } from "@/lib/db/schema";
+import { listingApplicationsTable } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   const {
     listingType, businessName, businessType, contactName,
     phone, email, city, locality, website, message,
-    details, amenities, media = [],
+    details, amenities,
   } = body;
 
   if (!businessName || !businessType || !contactName || !phone || !email || !city) {
@@ -37,18 +37,5 @@ export async function POST(request: NextRequest) {
     status: "pending",
   }).returning({ id: listingApplicationsTable.id });
 
-  if (media.length > 0) {
-    await db.insert(listingApplicationMediaTable).values(
-      media.map((m: { data: string; mimeType: string; fileName: string; type: string }, i: number) => ({
-        applicationId: app.id,
-        data: m.data,
-        mimeType: m.mimeType,
-        fileName: m.fileName,
-        type: m.type ?? "image",
-        order: i,
-      }))
-    );
-  }
-
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, id: app.id });
 }
