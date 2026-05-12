@@ -5,6 +5,10 @@ import { getUserRole } from "@/lib/auth/role";
 import { db, listingApplicationsTable, venuesTable, vendorsTable } from "@/lib/db";
 import { eq, desc } from "drizzle-orm";
 
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Listings — Venuees.in" };
 
@@ -29,11 +33,35 @@ export default async function ListingsPage() {
     return <AdminListings venues={venues} vendors={vendors} />;
   }
 
-  const apps = await db.select().from(listingApplicationsTable)
-    .where(eq(listingApplicationsTable.userId, user.id))
-    .orderBy(desc(listingApplicationsTable.createdAt));
-  const myVenues  = await db.select().from(venuesTable).where(eq(venuesTable.ownerUserId, user.id));
-  const myVendors = await db.select().from(vendorsTable).where(eq(vendorsTable.ownerUserId, user.id));
+  const [apps, myVenues, myVendors] = await Promise.all([
+    db.select({
+      id: listingApplicationsTable.id,
+      businessName: listingApplicationsTable.businessName,
+      businessType: listingApplicationsTable.businessType,
+      status: listingApplicationsTable.status,
+      createdAt: listingApplicationsTable.createdAt,
+      rejectionNote: listingApplicationsTable.rejectionNote,
+      details: listingApplicationsTable.details,
+    }).from(listingApplicationsTable)
+      .where(eq(listingApplicationsTable.userId, user.id))
+      .orderBy(desc(listingApplicationsTable.createdAt)),
+    db.select({
+      id: venuesTable.id,
+      name: venuesTable.name,
+      slug: venuesTable.slug,
+      locality: venuesTable.locality,
+      citySlug: venuesTable.citySlug,
+      isActive: venuesTable.isActive,
+    }).from(venuesTable).where(eq(venuesTable.ownerUserId, user.id)),
+    db.select({
+      id: vendorsTable.id,
+      name: vendorsTable.name,
+      slug: vendorsTable.slug,
+      category: vendorsTable.category,
+      categorySlug: vendorsTable.categorySlug,
+      isActive: vendorsTable.isActive,
+    }).from(vendorsTable).where(eq(vendorsTable.ownerUserId, user.id)),
+  ]);
 
   return <VendorListings apps={apps} venues={myVenues} vendors={myVendors} />;
 }
@@ -76,16 +104,28 @@ function AdminListings({ venues, vendors }: {
 }
 
 function VendorListings({ apps, venues, vendors }: {
-  apps: { id: number; businessName: string; businessType: string; status: string; createdAt: Date; rejectionNote: string | null }[];
-  venues: { id: number; name: string; slug: string; isActive: boolean }[];
-  vendors: { id: number; name: string; slug: string; isActive: boolean }[];
+  apps: { id: number; businessName: string; businessType: string; status: string; createdAt: Date; rejectionNote: string | null; details: Record<string, unknown> | null }[];
+  venues: { id: number; name: string; slug: string; locality: string; citySlug: string; isActive: boolean }[];
+  vendors: { id: number; name: string; slug: string; category: string; categorySlug: string; isActive: boolean }[];
 }) {
   const hasLive = venues.length > 0 || vendors.length > 0;
+
+  // Separate new applications from edit-request applications
+  const editApps = apps.filter((a) => (a.details as Record<string, unknown> | null)?._isEdit === true);
+  const newApps  = apps.filter((a) => (a.details as Record<string, unknown> | null)?._isEdit !== true);
+
   return (
     <div>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>My listing</h1>
-        <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>Your listing status and details.</p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 32 }}>
+        <div>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>My listings</h1>
+          <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>
+            {venues.length + vendors.length} live · {newApps.length} application{newApps.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <Link href="/list-your-business" className="btn btn-primary" style={{ textDecoration: "none", whiteSpace: "nowrap" }}>
+          + Add another listing
+        </Link>
       </div>
 
       {hasLive && (
@@ -93,19 +133,66 @@ function VendorListings({ apps, venues, vendors }: {
           <h2 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 14 }}>Live listings</h2>
           <div style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
             {[
-              ...venues.map((v) => ({ ...v, href: `/venues/nagpur/${v.slug}` })),
-              ...vendors.map((v) => ({ ...v, href: `/vendors/${v.slug}` })),
+              ...venues.map((v) => ({
+                id: v.id,
+                name: v.name,
+                sub: v.locality,
+                href: `/venues/${v.citySlug ?? "nagpur"}/${slugify(v.locality)}/${v.slug}`,
+                editHref: `/dashboard/listings/edit/venue/${v.id}`,
+              })),
+              ...vendors.map((v) => ({
+                id: v.id,
+                name: v.name,
+                sub: v.category,
+                href: `/vendors/${v.categorySlug}/${v.slug}`,
+                editHref: `/dashboard/listings/edit/vendor/${v.id}`,
+              })),
             ].map((item, i, arr) => (
-              <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: i < arr.length - 1 ? "1px solid var(--line)" : "none", fontSize: 14 }}>
-                <span style={{ fontWeight: 600, color: "var(--ink)" }}>{item.name}</span>
-                <Link href={item.href} style={{ fontSize: 13, color: "var(--brand)" }}>View on site →</Link>
+              <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "16px 20px", borderBottom: i < arr.length - 1 ? "1px solid var(--line)" : "none", fontSize: 14 }}>
+                <div>
+                  <span style={{ fontWeight: 600, color: "var(--ink)" }}>{item.name}</span>
+                  <span style={{ color: "var(--ink-mute)", marginLeft: 8, fontSize: 12 }}>{item.sub}</span>
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <Link href={item.editHref} style={{ fontSize: 13, color: "var(--ink-soft)", textDecoration: "none", padding: "5px 12px", border: "1px solid var(--line)", borderRadius: 6 }}>
+                    Edit listing
+                  </Link>
+                  <Link href={item.href} style={{ fontSize: 13, color: "var(--brand)", textDecoration: "none" }}>
+                    View on site →
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
         </section>
       )}
 
-      {apps.map((app) => {
+      {/* Edit requests */}
+      {editApps.length > 0 && (
+        <section style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 14 }}>Pending edits</h2>
+          {editApps.map((app) => {
+            const st = STATUS_COLOR[app.status] ?? STATUS_COLOR.pending;
+            return (
+              <div key={app.id} style={{ padding: "16px 20px", border: "1px solid var(--line)", borderRadius: "var(--radius-md)", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600, fontSize: 15, color: "var(--ink)" }}>{app.businessName}</span>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", background: "#eef", color: "#448" }}>Edit request</span>
+                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", background: st.bg, color: st.color }}>{app.status}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--ink-mute)" }}>
+                    Submitted {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      {/* New listing applications */}
+      {newApps.map((app) => {
         const st = STATUS_COLOR[app.status] ?? STATUS_COLOR.pending;
         return (
           <div key={app.id} style={{ padding: "20px 24px", border: "1px solid var(--line)", borderRadius: "var(--radius-md)", marginBottom: 16 }}>
@@ -123,9 +210,9 @@ function VendorListings({ apps, venues, vendors }: {
         );
       })}
 
-      {!hasLive && apps.length === 0 && (
+      {!hasLive && newApps.length === 0 && (
         <div style={{ padding: "48px 36px", border: "1px solid var(--line)", borderRadius: "var(--radius-md)", textAlign: "center" }}>
-          <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--ink)", marginBottom: 10 }}>No listing yet</div>
+          <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--ink)", marginBottom: 10 }}>No listings yet</div>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 24 }}>Submit an application to get started.</p>
           <Link href="/list-your-business" className="btn btn-primary">Apply for a listing →</Link>
         </div>
