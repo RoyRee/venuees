@@ -35,8 +35,12 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
 
   const images = media.filter((m) => m.type === "image");
   const videos = media.filter((m) => m.type === "video");
-  const details = (app.details ?? {}) as Record<string, string | number | null | undefined>;
+  const rawDetails = (app.details ?? {}) as Record<string, unknown>;
+  const details    = rawDetails as Record<string, string | number | null | undefined>;
   const st = STATUS_STYLE[app.status] ?? STATUS_STYLE.pending;
+  const isEdit     = rawDetails._isEdit === true;
+  const linkedType = isEdit ? String(rawDetails._linkedType ?? "") : "";
+  const linkedId   = isEdit ? Number(rawDetails._linkedId ?? 0) : 0;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -44,6 +48,26 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
       <Link href="/dashboard/applications" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-mute)", textDecoration: "none", marginBottom: 20 }}>
         ← All applications
       </Link>
+
+      {/* Edit request banner */}
+      {isEdit && (
+        <div style={{ marginBottom: 20, padding: "14px 18px", background: "#eef", border: "1px solid #99c", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#448", marginRight: 8 }}>Edit request</span>
+            <span style={{ fontSize: 14, color: "var(--ink)" }}>
+              Approving this will <strong>update</strong> the existing {linkedType} listing — not create a new one.
+            </span>
+          </div>
+          {linkedId > 0 && (
+            <Link
+              href={linkedType === "vendor" ? `/vendors` : `/venues`}
+              style={{ fontSize: 13, color: "#448", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}
+            >
+              Browse {linkedType}s →
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
@@ -195,7 +219,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
             <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>Details</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {Object.entries(details).filter(([k, v]) => v && !["fullAddress","instagram","whatsapp"].includes(k)).map(([k, v]) => (
+                {Object.entries(details).filter(([k, v]) => v && !["fullAddress","instagram","whatsapp"].includes(k) && !k.startsWith("_")).map(([k, v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
                     <span style={{ color: "var(--ink-mute)", textTransform: "capitalize" }}>{k.replace(/([A-Z])/g, " $1")}</span>
                     <span style={{ fontWeight: 600, color: "var(--ink)", textAlign: "right", maxWidth: "55%" }}>{String(v)}</span>

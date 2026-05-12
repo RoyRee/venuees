@@ -54,6 +54,7 @@ export default async function ApplicationsPage() {
                 const appMedia = mediaByApp[a.id] ?? [];
                 const images = appMedia.filter((m) => m.type === "image");
                 const details = (a.details ?? {}) as Record<string, unknown>;
+                const isEdit = details._isEdit === true;
                 return (
                   <div key={a.id} style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
                     {/* Photo strip — clickable */}
@@ -79,7 +80,8 @@ export default async function ApplicationsPage() {
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                             <span style={{ fontWeight: 700, fontSize: 16, color: "var(--ink)" }}>{a.businessName}</span>
                             <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", background: st.bg, color: st.color }}>{a.status}</span>
-                            {a.listingType && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "var(--surface)", color: "var(--ink-mute)", border: "1px solid var(--line)", textTransform: "capitalize" }}>{a.listingType}</span>}
+                            {isEdit && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", background: "#eef", color: "#448" }}>Edit request</span>}
+                            {a.listingType && !isEdit && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "var(--surface)", color: "var(--ink-mute)", border: "1px solid var(--line)", textTransform: "capitalize" }}>{a.listingType}</span>}
                           </div>
                           <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
                             {a.businessType} · {a.city}{a.locality ? `, ${a.locality}` : ""}
@@ -93,10 +95,10 @@ export default async function ApplicationsPage() {
                         {a.contactName} · <a href={`tel:${a.phone}`} style={{ color: "var(--brand)" }}>{a.phone}</a> · <a href={`mailto:${a.email}`} style={{ color: "var(--brand)" }}>{a.email}</a>
                       </div>
 
-                      {/* Details grid */}
+                      {/* Details grid — hide internal _keys */}
                       {Object.keys(details).length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginBottom: 10 }}>
-                          {Object.entries(details).filter(([, v]) => v).map(([k, v]) => (
+                          {Object.entries(details).filter(([k, v]) => v && !k.startsWith("_")).map(([k, v]) => (
                             <span key={k} style={{ fontSize: 12, color: "var(--ink-soft)" }}>
                               <span style={{ color: "var(--ink-mute)", textTransform: "capitalize" }}>{k.replace(/([A-Z])/g, " $1")}:</span> {String(v)}
                             </span>
