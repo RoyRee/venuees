@@ -6,6 +6,8 @@ import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
 import { VenueGallery } from "@/components/venue-gallery";
 import { venueGallery, venuePhotos, signatureResortsVideos } from "@/lib/images";
+import { db, venueImagesTable, venuesTable } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { getVenueBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 
@@ -52,9 +54,37 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
     return { n: i + 1, state };
   });
 
-  // Real photography — gallery + per-hall — fall back to stripe gradient if missing.
+  // Fetch uploaded photos + contact info from DB in parallel
+  const [dbImages, contactRows] = await Promise.all([
+    db.select({ url: venueImagesTable.url, alt: venueImagesTable.alt, order: venueImagesTable.order })
+      .from(venueImagesTable)
+      .innerJoin(venuesTable, eq(venueImagesTable.venueId, venuesTable.id))
+      .where(eq(venuesTable.slug, slug))
+      .orderBy(venueImagesTable.order),
+    db.select({ contactName: venuesTable.contactName, contactPhone: venuesTable.contactPhone, contactEmail: venuesTable.contactEmail, whatsapp: venuesTable.whatsapp })
+      .from(venuesTable)
+      .where(eq(venuesTable.slug, slug))
+      .limit(1),
+  ]);
+  const contact = contactRows[0] ?? null;
+
+  // If DB images exist, use them; otherwise fall back to static photography library
   const gallery = venueGallery(v.slug);
   const hallPhotos = venuePhotos[v.slug]?.halls ?? [];
+  const galleryImages = dbImages.length > 0
+    ? dbImages.map((img, i) => ({
+        src: img.url,
+        alt: img.alt || `${v.name} photo ${i + 1}`,
+        label: i === 0 ? v.locality : "",
+      }))
+    : [
+        { src: gallery[0], alt: `${v.name} — ${v.scene}`, label: v.scene },
+        { src: gallery[1], alt: `${v.name} ballroom`, label: "ballroom · evening", variant: v.halls[1]?.ph || "v2" },
+        { src: gallery[2], alt: `${v.name} baraat entry`, label: "baraat entry", variant: v.halls[2]?.ph || "dusk" },
+        { src: gallery[3], alt: `${v.name} mandap detail`, label: "mandap · detail", variant: v.halls[0]?.ph || "garden" },
+        { src: gallery[4], alt: `${v.name} bridal suite`, label: "bridal suite · vanity", variant: "rose" },
+        ...gallery.slice(5).map((src, i) => ({ src, alt: `${v.name} photo ${i + 6}`, label: "" })),
+      ];
 
   return (
     <div className="venue-detail">
@@ -74,14 +104,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
       <VenueGallery
         heroVariant={v.ph}
         venueName={v.name}
-        images={[
-          { src: gallery[0], alt: `${v.name} — ${v.scene}`, label: v.scene },
-          { src: gallery[1], alt: `${v.name} ballroom`, label: "ballroom · evening", variant: v.halls[1]?.ph || "v2" },
-          { src: gallery[2], alt: `${v.name} baraat entry`, label: "baraat entry", variant: v.halls[2]?.ph || "dusk" },
-          { src: gallery[3], alt: `${v.name} mandap detail`, label: "mandap · detail", variant: v.halls[0]?.ph || "garden" },
-          { src: gallery[4], alt: `${v.name} bridal suite`, label: "bridal suite · vanity", variant: "rose" },
-          ...gallery.slice(5).map((src, i) => ({ src, alt: `${v.name} photo ${i + 6}`, label: "", variant: "v2" })),
-        ]}
+        images={galleryImages}
       />
 
       <header className="vd-header">
@@ -98,11 +121,13 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <span><I.Flame width={13} height={13} /> {v.bookingsMonth} booked this month</span>
           </div>
           <div className="vd-badges">
-            <span className="chip">Alcohol permitted</span>
-            <span className="chip">DJ till late</span>
-            {v.rooms && <span className="chip">{v.rooms} rooms on-site</span>}
-            <span className="chip">In-house catering</span>
-            <span className="chip">{v.parking} car parking</span>
+            {v.amenities.length > 0
+              ? v.amenities.slice(0, 6).map((a) => <span key={a} className="chip">{a}</span>)
+              : <>
+                  {v.rooms && <span className="chip">{v.rooms} rooms on-site</span>}
+                  {v.parking > 0 && <span className="chip">{v.parking} car parking</span>}
+                </>
+            }
           </div>
         </div>
         <aside className="vd-sidebar">
@@ -135,9 +160,22 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <button className="btn btn-primary btn-lg" type="button">
               Request availability <I.Arrow width={14} height={14} />
             </button>
-            <button className="btn btn-ghost" type="button" style={{ width: "100%" }}>
-              <I.Phone width={14} height={14} /> Call {v.isSignature ? "owner" : "venue"}
-            </button>
+            {contact?.contactPhone ? (
+              <div style={{ display: "flex", gap: 8 }}>
+                <a href={`tel:${contact.contactPhone}`} className="btn btn-ghost" style={{ flex: 1, textDecoration: "none", textAlign: "center" }}>
+                  <I.Phone width={14} height={14} /> Call
+                </a>
+                {contact.whatsapp && (
+                  <a href={`https://wa.me/91${contact.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ flex: 1, textDecoration: "none", textAlign: "center" }}>
+                    WhatsApp
+                  </a>
+                )}
+              </div>
+            ) : (
+              <button className="btn btn-ghost" type="button" style={{ width: "100%" }}>
+                <I.Phone width={14} height={14} /> Call venue
+              </button>
+            )}
             <div className="tinyline">No spam. No credit card. Expect a call in 2 hours.</div>
           </form>
         </aside>

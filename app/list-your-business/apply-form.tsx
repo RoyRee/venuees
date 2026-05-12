@@ -18,17 +18,28 @@ interface FormState {
   businessName: string;
   contactName: string;
   phone: string;
+  whatsapp: string;
   email: string;
   city: string;
   locality: string;
+  fullAddress: string;
   website: string;
+  instagram: string;
+  // venue
   capacityMin: string;
   capacityMax: string;
   vegPlate: string;
   nvPlate: string;
   hallRent: string;
+  minGuarantee: string;
+  parking: string;
+  rooms: string;
+  // vendor
   priceFrom: string;
   yearsExp: string;
+  tagline: string;
+  completed: string;
+  // shared
   description: string;
   amenities: string[];
 }
@@ -45,9 +56,11 @@ const VIDEO_MAX_MB = 3;               // 3 MB base64 ≈ 4 MB, fits under Vercel
 
 const EMPTY: FormState = {
   listingType: "", businessType: "",
-  businessName: "", contactName: "", phone: "", email: "", city: "Nagpur", locality: "", website: "",
+  businessName: "", contactName: "", phone: "", whatsapp: "", email: "",
+  city: "Nagpur", locality: "", fullAddress: "", website: "", instagram: "",
   capacityMin: "", capacityMax: "", vegPlate: "", nvPlate: "", hallRent: "",
-  priceFrom: "", yearsExp: "",
+  minGuarantee: "", parking: "", rooms: "",
+  priceFrom: "", yearsExp: "", tagline: "", completed: "",
   description: "", amenities: [],
 };
 
@@ -147,20 +160,32 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
       try {
         // Phase 1: submit form data
         const details: Record<string, unknown> = {};
+        // Common fields
+        if (form.fullAddress) details.fullAddress = form.fullAddress;
+        if (form.instagram)   details.instagram   = form.instagram;
+        if (form.whatsapp)    details.whatsapp    = form.whatsapp;
+
         if (form.listingType === "venue") {
-          details.capacityMin = form.capacityMin;
-          details.capacityMax = form.capacityMax;
-          details.vegPlate = form.vegPlate;
-          details.nvPlate = form.nvPlate;
-          details.hallRent = form.hallRent;
+          details.capacityMin   = form.capacityMin;
+          details.capacityMax   = form.capacityMax;
+          details.vegPlate      = form.vegPlate;
+          details.nvPlate       = form.nvPlate;
+          details.hallRent      = form.hallRent;
+          details.parking       = form.parking;
+          details.rooms         = form.rooms;
+          details.minGuarantee  = form.minGuarantee;
         } else if (form.listingType === "vendor") {
-          details.priceFrom = form.priceFrom;
-          details.yearsExp = form.yearsExp;
+          details.priceFrom  = form.priceFrom;
+          details.yearsExp   = form.yearsExp;
+          details.tagline    = form.tagline;
+          details.completed  = form.completed;
         } else if (form.listingType === "getaway") {
-          details.capacityMin = form.capacityMin;
-          details.capacityMax = form.capacityMax;
-          details.vegPlate = form.vegPlate;
-          details.nvPlate = form.nvPlate;
+          details.capacityMin  = form.capacityMin;
+          details.capacityMax  = form.capacityMax;
+          details.vegPlate     = form.vegPlate;
+          details.nvPlate      = form.nvPlate;
+          details.parking      = form.parking;
+          details.minGuarantee = form.minGuarantee;
         }
 
         setSubmitLabel("Saving details…");
@@ -176,7 +201,7 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
             email: form.email,
             city: form.city,
             locality: form.locality,
-            website: form.website,
+            website: form.website || form.instagram || null,
             message: form.description,
             details,
             amenities: form.amenities,
@@ -284,16 +309,21 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
             <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>How we reach you and identify your business.</p>
           </div>
           <Field label="Business name"><input style={inp} value={form.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="e.g. Orange County Farms" /></Field>
-          <Field label="Your name"><input style={inp} value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="Owner / manager name" /></Field>
+          <Field label="Owner / manager name"><input style={inp} value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="Your full name" /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Phone"><input style={inp} type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+91 " /></Field>
-            <Field label="Email"><input style={inp} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="you@example.com" /></Field>
+            <Field label="WhatsApp (if different)"><input style={inp} type="tel" value={form.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} placeholder="+91 " /></Field>
           </div>
+          <Field label="Email"><input style={inp} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="you@example.com" /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="City"><input style={inp} value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Nagpur" /></Field>
             <Field label="Locality / area"><input style={inp} value={form.locality} onChange={(e) => set("locality", e.target.value)} placeholder="e.g. Civil Lines" /></Field>
           </div>
-          <Field label="Website / Instagram (optional)"><input style={inp} value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="URL or @handle" /></Field>
+          <Field label="Full address (shown on listing)"><input style={inp} value={form.fullAddress} onChange={(e) => set("fullAddress", e.target.value)} placeholder="e.g. Plot 12, Wardha Road, Nagpur – 440025" /></Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Website (optional)"><input style={inp} value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://yoursite.com" /></Field>
+            <Field label="Instagram (optional)"><input style={inp} value={form.instagram} onChange={(e) => set("instagram", e.target.value)} placeholder="@yourhandle" /></Field>
+          </div>
         </div>
       )}
 
@@ -315,6 +345,11 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
               <Field label="NV plate (₹)"><input style={inp} type="number" value={form.nvPlate} onChange={(e) => set("nvPlate", e.target.value)} placeholder="1000" /></Field>
               <Field label="Hall rent (₹)"><input style={inp} type="number" value={form.hallRent} onChange={(e) => set("hallRent", e.target.value)} placeholder="50000" /></Field>
             </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <Field label="Car parking spaces"><input style={inp} type="number" value={form.parking} onChange={(e) => set("parking", e.target.value)} placeholder="100" /></Field>
+              <Field label="Rooms on-site (0 if none)"><input style={inp} type="number" value={form.rooms} onChange={(e) => set("rooms", e.target.value)} placeholder="0" /></Field>
+              <Field label="Min booking guarantee (₹)"><input style={inp} type="number" value={form.minGuarantee} onChange={(e) => set("minGuarantee", e.target.value)} placeholder="500000" /></Field>
+            </div>
           </>}
 
           {form.listingType === "vendor" && <>
@@ -322,16 +357,27 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
               <Field label="Starting price (₹)"><input style={inp} type="number" value={form.priceFrom} onChange={(e) => set("priceFrom", e.target.value)} placeholder="25000" /></Field>
               <Field label="Years of experience"><input style={inp} type="number" value={form.yearsExp} onChange={(e) => set("yearsExp", e.target.value)} placeholder="5" /></Field>
             </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Weddings completed"><input style={inp} type="number" value={form.completed} onChange={(e) => set("completed", e.target.value)} placeholder="80" /></Field>
+              <div>{/* spacer */}</div>
+            </div>
+            <Field label="Your tagline (shown on listing — what makes you unique)">
+              <input style={inp} value={form.tagline} onChange={(e) => set("tagline", e.target.value)} placeholder='e.g. "We tell stories, not just take photos."' />
+            </Field>
           </>}
 
           {form.listingType === "getaway" && <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <Field label="No. of rooms"><input style={inp} type="number" value={form.capacityMin} onChange={(e) => set("capacityMin", e.target.value)} placeholder="10" /></Field>
+              <Field label="No. of rooms / cottages"><input style={inp} type="number" value={form.capacityMin} onChange={(e) => set("capacityMin", e.target.value)} placeholder="10" /></Field>
               <Field label="Max guests"><input style={inp} type="number" value={form.capacityMax} onChange={(e) => set("capacityMax", e.target.value)} placeholder="40" /></Field>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <Field label="Weekday rate (₹/night)"><input style={inp} type="number" value={form.vegPlate} onChange={(e) => set("vegPlate", e.target.value)} placeholder="8000" /></Field>
               <Field label="Weekend rate (₹/night)"><input style={inp} type="number" value={form.nvPlate} onChange={(e) => set("nvPlate", e.target.value)} placeholder="12000" /></Field>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Car parking spaces"><input style={inp} type="number" value={form.parking} onChange={(e) => set("parking", e.target.value)} placeholder="20" /></Field>
+              <Field label="Min booking guarantee (₹)"><input style={inp} type="number" value={form.minGuarantee} onChange={(e) => set("minGuarantee", e.target.value)} placeholder="0" /></Field>
             </div>
           </>}
         </div>

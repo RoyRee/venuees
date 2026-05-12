@@ -130,6 +130,11 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                 </div>
               )}
 
+              {/* Tagline (vendor) */}
+              {details.tagline && (
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, fontStyle: "italic", color: "var(--brand)", marginBottom: 10 }}>&ldquo;{String(details.tagline)}&rdquo;</p>
+              )}
+
               {/* Description */}
               {app.message && (
                 <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.65, marginBottom: 12 }}>{app.message}</p>
@@ -159,15 +164,28 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
           <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 18 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>Contact</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>{app.contactName}</div>
-            <a href={`tel:${app.phone}`} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "var(--brand)", textDecoration: "none", marginBottom: 6 }}>
+            <a href={`tel:${app.phone}`} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "var(--brand)", textDecoration: "none", marginBottom: 4 }}>
               📞 {app.phone}
             </a>
-            <a href={`mailto:${app.email}`} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--brand)", textDecoration: "none", wordBreak: "break-all" }}>
+            {details.whatsapp && String(details.whatsapp) !== app.phone && (
+              <a href={`https://wa.me/91${String(details.whatsapp).replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--brand)", textDecoration: "none", marginBottom: 4 }}>
+                💬 WhatsApp: {String(details.whatsapp)}
+              </a>
+            )}
+            <a href={`mailto:${app.email}`} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--brand)", textDecoration: "none", wordBreak: "break-all", marginBottom: 4 }}>
               ✉ {app.email}
             </a>
+            {details.fullAddress && (
+              <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>📍 {String(details.fullAddress)}</div>
+            )}
             {app.website && (
-              <a href={app.website} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: 12, color: "var(--ink-mute)", marginTop: 8, wordBreak: "break-all" }}>
+              <a href={app.website} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: 12, color: "var(--ink-mute)", marginTop: 6, wordBreak: "break-all" }}>
                 🔗 {app.website}
+              </a>
+            )}
+            {details.instagram && (
+              <a href={`https://instagram.com/${String(details.instagram).replace("@","")}`} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: 12, color: "var(--ink-mute)", marginTop: 4 }}>
+                📸 {String(details.instagram)}
               </a>
             )}
           </div>
@@ -177,10 +195,10 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
             <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>Details</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {Object.entries(details).filter(([, v]) => v).map(([k, v]) => (
+                {Object.entries(details).filter(([k, v]) => v && !["fullAddress","instagram","whatsapp"].includes(k)).map(([k, v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
                     <span style={{ color: "var(--ink-mute)", textTransform: "capitalize" }}>{k.replace(/([A-Z])/g, " $1")}</span>
-                    <span style={{ fontWeight: 600, color: "var(--ink)" }}>{String(v)}</span>
+                    <span style={{ fontWeight: 600, color: "var(--ink)", textAlign: "right", maxWidth: "55%" }}>{String(v)}</span>
                   </div>
                 ))}
               </div>
