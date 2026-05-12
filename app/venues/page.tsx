@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Stars } from "@/components/icons";
+import { SaveButton } from "@/components/save-button";
 import { Photo } from "@/components/photo";
 import { venueHero } from "@/lib/images";
 import { getVenues } from "@/lib/db/queries";
@@ -127,7 +128,7 @@ export default async function VenuesListPage() {
                     <span className="badge-assured">{v.tag}</span>
                     {v.isSignature && <span className="badge-assured" style={{ background: "var(--brand)", color: "#fff" }}>Signature</span>}
                   </div>
-                  <button className="save" aria-label="Save"><I.Heart width={16} height={16} /></button>
+                  <SaveButton type="venue" slug={v.slug} size={16} />
                   <div className="badges-bot"><I.Camera width={11} height={11} /> 48</div>
                 </Photo>
                 <div className="vcard-body">

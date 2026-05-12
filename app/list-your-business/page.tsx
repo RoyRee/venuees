@@ -2,13 +2,21 @@ import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { ApplyForm } from "./apply-form";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "List your business — Venuees.in",
   description: "Partner with Venuees.in. Flat annual listing · zero commission on bookings · transparent analytics for venue owners and wedding vendors across Nagpur.",
 };
 
-export default function ListYourBusinessPage() {
+export default async function ListYourBusinessPage() {
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase!.auth.getUser();
+  const prefillEmail = user?.email ?? "";
+  const prefillName = user?.user_metadata?.full_name ?? "";
   return (
     <div className="dh">
       <MobileNav />
@@ -78,19 +86,7 @@ export default function ListYourBusinessPage() {
             <h2>Apply to list <span className="italic-serif">on Venuees.in</span></h2>
             <p>Tell us about your business. We&rsquo;ll revert within 5 business days with a fit / no-fit and the next steps.</p>
           </div>
-          <div className="enq-fields">
-            <div><label>Business name</label><input placeholder="e.g. Orange County Farms" /></div>
-            <div><label>Owner name</label><input placeholder="Your full name" /></div>
-            <div className="row2">
-              <div><label>Phone</label><input placeholder="+91 " /></div>
-              <div><label>Category</label>
-                <select><option>Venue · hotel</option><option>Venue · lawn</option><option>Venue · heritage</option><option>Venue · farmhouse</option><option>Photography</option><option>Décor</option><option>Catering</option><option>Makeup</option><option>Music/DJ</option><option>Other vendor</option></select>
-              </div>
-            </div>
-            <div><label>Website / Instagram / portfolio link</label><input placeholder="URL" /></div>
-            <div><label>Tell us about your work</label><textarea rows={4} placeholder="Years in business, last 3 weddings, capacity..." /></div>
-            <button className="enq-submit">Submit application</button>
-          </div>
+          <ApplyForm prefillEmail={prefillEmail} prefillName={prefillName} />
         </div>
       </section>
 
