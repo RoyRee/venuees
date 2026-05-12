@@ -59,17 +59,13 @@ export default async function ApplicationsPage() {
                     {/* Photo strip — clickable */}
                     <Link href={`/dashboard/applications/${a.id}`} style={{ display: "block", textDecoration: "none" }}>
                       {images.length > 0 ? (
-                        <div style={{ display: "flex", gap: 2, height: 140, overflow: "hidden", position: "relative" }}>
+                        <div className="app-strip">
                           {images.slice(0, 4).map((img, i) => (
                             <div key={i} style={{ flex: 1, overflow: "hidden" }}>
                               <img src={`data:${img.mimeType};base64,${img.data}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             </div>
                           ))}
-                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "all 0.2s" }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = "1"; (e.currentTarget as HTMLDivElement).style.background = "rgba(0,0,0,0.35)"; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = "0"; (e.currentTarget as HTMLDivElement).style.background = "rgba(0,0,0,0)"; }}>
-                            <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, background: "rgba(0,0,0,0.5)", padding: "8px 18px", borderRadius: 20 }}>View all details →</span>
-                          </div>
+                          <div className="app-strip-overlay">View all details →</div>
                         </div>
                       ) : (
                         <div style={{ height: 60, background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "var(--ink-mute)" }}>No photos · tap to view details</div>

@@ -269,12 +269,23 @@
   align-items: start;
 }
 @media (max-width: 760px) {
-  .app-detail-grid {
-    grid-template-columns: 1fr;
-  }
-  .app-detail-grid > :last-child {
-    position: static !important;
-  }
+  .app-detail-grid { grid-template-columns: 1fr; }
+  .app-detail-grid > :last-child { position: static !important; }
+}
+
+/* Application list photo strip */
+.app-strip {
+  display: flex; gap: 2px; height: 140px; overflow: hidden; position: relative;
+}
+.app-strip-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600;
+  opacity: 0; transition: all 0.2s;
+}
+.app-strip:hover .app-strip-overlay {
+  opacity: 1; background: rgba(0,0,0,0.38);
 }
 
 /* Utility */
