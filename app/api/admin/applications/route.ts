@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
-import { db, listingApplicationsTable } from "@/lib/db";
+import { db } from "@/lib/db";
+import { listingApplicationsTable, listingApplicationMediaTable, venuesTable, vendorsTable, venueImagesTable, vendorImagesTable } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -15,11 +16,103 @@ export async function POST(request: NextRequest) {
   if (role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id, action, note } = await request.json();
-  if (!id || !["approve", "reject"].includes(action)) return NextResponse.json({ error: "Invalid" }, { status: 400 });
+  if (!id || !["approve", "reject"].includes(action))
+    return NextResponse.json({ error: "Invalid" }, { status: 400 });
+
+  if (action === "reject") {
+    await db.update(listingApplicationsTable)
+      .set({ status: "rejected", rejectionNote: note ?? null })
+      .where(eq(listingApplicationsTable.id, id));
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Approve: create live listing ──────────────────────────────────────
+  const [app] = await db.select().from(listingApplicationsTable).where(eq(listingApplicationsTable.id, id));
+  if (!app) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const media = await db.select().from(listingApplicationMediaTable).where(eq(listingApplicationMediaTable.applicationId, id));
+  const details = (app.details ?? {}) as Record<string, unknown>;
+  const slug = slugify(app.businessName);
+
+  if (app.listingType === "vendor") {
+    const [vendor] = await db.insert(vendorsTable).values({
+      slug,
+      name: app.businessName,
+      category: app.businessType,
+      categorySlug: slugify(app.businessType),
+      city: app.city,
+      locality: app.locality ?? "",
+      priceFrom: num(details.priceFrom),
+      yearsExp: num(details.yearsExp),
+      description: app.message ?? "",
+      contactName: app.contactName,
+      contactPhone: app.phone,
+      contactEmail: app.email,
+      whatsapp: app.phone,
+      ownerUserId: app.userId ?? null,
+      isActive: true,
+    }).returning({ id: vendorsTable.id });
+
+    if (media.length > 0) {
+      await db.insert(vendorImagesTable).values(
+        media.filter((m) => m.type === "image").map((m, i) => ({
+          vendorId: vendor.id,
+          url: `data:${m.mimeType};base64,${m.data}`,
+          alt: app.businessName,
+          isPrimary: i === 0,
+          order: i,
+        }))
+      );
+    }
+  } else {
+    // venue or getaway — both go into venuesTable
+    const [venue] = await db.insert(venuesTable).values({
+      slug,
+      name: app.businessName,
+      type: app.businessType,
+      typeSlug: slugify(app.businessType),
+      locality: app.locality ?? "",
+      address: `${app.locality ?? ""}, ${app.city}`,
+      capacityMin: num(details.capacityMin),
+      capacityMax: num(details.capacityMax),
+      vegPlate: num(details.vegPlate),
+      nvPlate: num(details.nvPlate),
+      hallRent: num(details.hallRent),
+      description: app.message ?? "",
+      amenities: (app.amenities ?? []) as string[],
+      contactName: app.contactName,
+      contactPhone: app.phone,
+      contactEmail: app.email,
+      whatsapp: app.phone,
+      ownerUserId: app.userId ?? null,
+      isActive: true,
+    }).returning({ id: venuesTable.id });
+
+    if (media.length > 0) {
+      await db.insert(venueImagesTable).values(
+        media.filter((m) => m.type === "image").map((m, i) => ({
+          venueId: venue.id,
+          url: `data:${m.mimeType};base64,${m.data}`,
+          alt: app.businessName,
+          isPrimary: i === 0,
+          order: i,
+        }))
+      );
+    }
+  }
 
   await db.update(listingApplicationsTable)
-    .set({ status: action === "approve" ? "approved" : "rejected", rejectionNote: note ?? null })
+    .set({ status: "approved" })
     .where(eq(listingApplicationsTable.id, id));
 
   return NextResponse.json({ ok: true });
+}
+
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function num(v: unknown): number {
+  const n = parseInt(String(v ?? "0"), 10);
+  return isNaN(n) ? 0 : n;
 }

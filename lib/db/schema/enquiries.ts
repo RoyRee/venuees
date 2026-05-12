@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
 
 export const enquiriesTable = pgTable("enquiries", {
   id:          integer("id").primaryKey().generatedByDefaultAsIdentity(),
@@ -31,6 +31,7 @@ export const listingApplicationsTable = pgTable("listing_applications", {
   id:             integer("id").primaryKey().generatedByDefaultAsIdentity(),
   createdAt:      timestamp("created_at").notNull().defaultNow(),
   userId:         text("user_id"),
+  listingType:    text("listing_type"),
   businessName:   text("business_name").notNull(),
   businessType:   text("business_type").notNull(),
   category:       text("category"),
@@ -41,8 +42,20 @@ export const listingApplicationsTable = pgTable("listing_applications", {
   locality:       text("locality").notNull().default(""),
   website:        text("website"),
   message:        text("message"),
+  details:        jsonb("details").$type<Record<string, unknown>>(),
+  amenities:      jsonb("amenities").$type<string[]>(),
   status:         text("status").notNull().default("pending"),
   rejectionNote:  text("rejection_note"),
+});
+
+export const listingApplicationMediaTable = pgTable("listing_application_media", {
+  id:            integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  applicationId: integer("application_id").notNull().references(() => listingApplicationsTable.id, { onDelete: "cascade" }),
+  data:          text("data").notNull(),
+  mimeType:      text("mime_type").notNull(),
+  fileName:      text("file_name"),
+  type:          text("type").notNull().default("image"),
+  order:         integer("order").notNull().default(0),
 });
 
 export type Enquiry                   = typeof enquiriesTable.$inferSelect;
@@ -50,3 +63,4 @@ export type InsertEnquiry             = typeof enquiriesTable.$inferInsert;
 export type NewsletterSignup          = typeof newsletterTable.$inferSelect;
 export type ListingApplication        = typeof listingApplicationsTable.$inferSelect;
 export type InsertListingApplication  = typeof listingApplicationsTable.$inferInsert;
+export type ListingApplicationMedia   = typeof listingApplicationMediaTable.$inferSelect;

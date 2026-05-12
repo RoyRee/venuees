@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
-import { db, listingApplicationsTable } from "@/lib/db";
-import { desc } from "drizzle-orm";
+import { db, listingApplicationsTable, listingApplicationMediaTable } from "@/lib/db";
+import { eq, desc } from "drizzle-orm";
 import { ApplicationActions } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +23,18 @@ export default async function ApplicationsPage() {
   if (role !== "admin") redirect("/dashboard");
 
   const apps = await db.select().from(listingApplicationsTable).orderBy(desc(listingApplicationsTable.createdAt));
+
+  const mediaByApp: Record<number, { id: number; applicationId: number; data: string; mimeType: string; fileName: string | null; type: string; order: number }[]> = {};
+  if (apps.length > 0) {
+    const allMedia = await db.select().from(listingApplicationMediaTable);
+    for (const m of allMedia) {
+      if (!mediaByApp[m.applicationId]) mediaByApp[m.applicationId] = [];
+      mediaByApp[m.applicationId].push(m);
+    }
+  }
+
   const pending = apps.filter((a) => a.status === "pending");
-  const others = apps.filter((a) => a.status !== "pending");
+  const others  = apps.filter((a) => a.status !== "pending");
 
   return (
     <div>
@@ -36,32 +46,71 @@ export default async function ApplicationsPage() {
       {[{ title: "Pending review", items: pending }, { title: "Reviewed", items: others }].map(({ title, items }) =>
         items.length === 0 ? null : (
           <section key={title} style={{ marginBottom: 40 }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 16 }}>{title}</h2>
-            <div style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
-              {items.map((a, i) => {
+            <h2 style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 14 }}>{title}</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {items.map((a) => {
                 const st = STATUS_STYLE[a.status] ?? STATUS_STYLE.pending;
+                const appMedia = mediaByApp[a.id] ?? [];
+                const images = appMedia.filter((m) => m.type === "image");
+                const details = (a.details ?? {}) as Record<string, unknown>;
                 return (
-                  <div key={a.id} style={{ padding: "20px 24px", borderBottom: i < items.length - 1 ? "1px solid var(--line)" : "none" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-                      <div style={{ flex: 1, minWidth: 200 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                          <span style={{ fontWeight: 700, fontSize: 16, color: "var(--ink)" }}>{a.businessName}</span>
-                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", background: st.bg, color: st.color }}>{a.status}</span>
-                        </div>
-                        <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 4 }}>
-                          {a.businessType} · {a.city}{a.locality ? `, ${a.locality}` : ""}
-                        </div>
-                        <div style={{ fontSize: 13, color: "var(--ink-mute)" }}>
-                          {a.contactName} · {a.phone} · {a.email}
-                        </div>
-                        {a.website && <div style={{ fontSize: 12, color: "var(--brand)", marginTop: 4 }}><a href={a.website} target="_blank" rel="noopener noreferrer">{a.website}</a></div>}
-                        {a.message && <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 8, fontStyle: "italic" }}>&ldquo;{a.message}&rdquo;</div>}
-                        {a.rejectionNote && <div style={{ fontSize: 12, color: "#c00", marginTop: 6 }}>Note: {a.rejectionNote}</div>}
-                        <div style={{ fontSize: 11, color: "var(--ink-mute)", marginTop: 8 }}>
-                          {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                        </div>
+                  <div key={a.id} style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+                    {/* Photo strip */}
+                    {images.length > 0 && (
+                      <div style={{ display: "flex", gap: 2, height: 120, overflow: "hidden" }}>
+                        {images.slice(0, 4).map((img, i) => (
+                          <div key={i} style={{ flex: 1, overflow: "hidden" }}>
+                            <img src={`data:${img.mimeType};base64,${img.data}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          </div>
+                        ))}
                       </div>
-                      {a.status === "pending" && <ApplicationActions id={a.id} />}
+                    )}
+
+                    <div style={{ padding: "18px 20px" }}>
+                      {/* Header row */}
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                            <span style={{ fontWeight: 700, fontSize: 16, color: "var(--ink)" }}>{a.businessName}</span>
+                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", background: st.bg, color: st.color }}>{a.status}</span>
+                            {a.listingType && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "var(--surface)", color: "var(--ink-mute)", border: "1px solid var(--line)", textTransform: "capitalize" }}>{a.listingType}</span>}
+                          </div>
+                          <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+                            {a.businessType} · {a.city}{a.locality ? `, ${a.locality}` : ""}
+                          </div>
+                        </div>
+                        {a.status === "pending" && <ApplicationActions id={a.id} />}
+                      </div>
+
+                      {/* Contact */}
+                      <div style={{ fontSize: 13, color: "var(--ink-mute)", marginBottom: 10 }}>
+                        {a.contactName} · <a href={`tel:${a.phone}`} style={{ color: "var(--brand)" }}>{a.phone}</a> · <a href={`mailto:${a.email}`} style={{ color: "var(--brand)" }}>{a.email}</a>
+                      </div>
+
+                      {/* Details grid */}
+                      {Object.keys(details).length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginBottom: 10 }}>
+                          {Object.entries(details).filter(([, v]) => v).map(([k, v]) => (
+                            <span key={k} style={{ fontSize: 12, color: "var(--ink-soft)" }}>
+                              <span style={{ color: "var(--ink-mute)", textTransform: "capitalize" }}>{k.replace(/([A-Z])/g, " $1")}:</span> {String(v)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {a.amenities && a.amenities.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                          {a.amenities.map((am) => <span key={am} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink-soft)" }}>{am}</span>)}
+                        </div>
+                      )}
+
+                      {a.message && <div style={{ fontSize: 13, color: "var(--ink-soft)", fontStyle: "italic", marginBottom: 8 }}>&ldquo;{a.message}&rdquo;</div>}
+                      {a.website && <div style={{ fontSize: 12, marginBottom: 8 }}><a href={a.website} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)" }}>{a.website}</a></div>}
+                      {a.rejectionNote && <div style={{ fontSize: 12, color: "#c00" }}>Rejection note: {a.rejectionNote}</div>}
+
+                      <div style={{ fontSize: 11, color: "var(--ink-mute)", marginTop: 8 }}>
+                        {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {images.length} photo{images.length !== 1 ? "s" : ""}{appMedia.some((m) => m.type === "video") ? " · 1 video" : ""}
+                      </div>
                     </div>
                   </div>
                 );
