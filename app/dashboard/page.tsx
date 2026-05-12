@@ -30,8 +30,8 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 36 }}>
-        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(26px, 6vw, 36px)", color: "var(--ink)", marginBottom: 6 }}>
           Hello, {name}.
         </h1>
         <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>
@@ -40,16 +40,18 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 40 }}>
+      <div className="dash-stats">
         {[
           { label: "Total enquiries", value: enquiries.length, sub: `${newEnquiries} new` },
           { label: "Listing status", value: applications.length ? (pendingApplication ? "Under review" : "Active") : "Not listed", sub: applications.length ? applications[0].businessName : "Apply below" },
           { label: "Account", value: "Active", sub: user.email ?? "" },
         ].map((s) => (
-          <div key={s.label} style={{ padding: "24px 28px", border: "1px solid var(--line)", borderRadius: "var(--radius-md)", background: "#fff" }}>
-            <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 10 }}>{s.label}</div>
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 28, color: "var(--ink)", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>{s.sub}</div>
+          <div key={s.label} className="dash-stat-card">
+            <div style={{ flex: 1 }}>
+              <div className="dash-stat-label">{s.label}</div>
+              <div className="dash-stat-value">{s.value}</div>
+              <div className="dash-stat-sub">{s.sub}</div>
+            </div>
           </div>
         ))}
       </div>
@@ -91,11 +93,11 @@ export default async function DashboardPage() {
 
       {/* CTA if no listing */}
       {applications.length === 0 && (
-        <section style={{ padding: "32px 36px", background: "var(--surface-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--line)" }}>
-          <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--ink)", marginBottom: 8 }}>
+        <section style={{ padding: "24px 20px", background: "var(--surface-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--line)" }}>
+          <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink)", marginBottom: 8 }}>
             List your venue or service
           </h2>
-          <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 20, maxWidth: 520 }}>
+          <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 20 }}>
             Join 42+ venues and vendors on Venuees.in. Submit your listing — we review within 48 hours and go live after a quick call.
           </p>
           <Link href="/listings" className="btn btn-primary">

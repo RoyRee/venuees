@@ -233,7 +233,32 @@
 .theme-float button:hover { transform: scale(1.1); }
 .theme-float button.active { border-color: var(--ink); }
 @media (max-width: 900px) {
-  .theme-float { bottom: 78px; }
+  .theme-float { bottom: 80px; right: 12px; }
+}
+
+/* ——— Dashboard page layouts ——— */
+.dash-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px;
+}
+.dash-stat-card {
+  padding: 24px 20px; border: 1px solid var(--line);
+  border-radius: var(--radius-md); background: var(--bg);
+}
+.dash-stat-label {
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-mute); margin-bottom: 10px;
+}
+.dash-stat-value {
+  font-family: var(--font-serif); font-size: 26px; color: var(--ink); margin-bottom: 4px;
+  word-break: break-word;
+}
+.dash-stat-sub { font-size: 12px; color: var(--ink-soft); word-break: break-all; }
+
+@media (max-width: 900px) {
+  .dash-stats { grid-template-columns: 1fr; gap: 12px; margin-bottom: 28px; }
+  .dash-stat-card { padding: 18px 16px; display: flex; align-items: center; gap: 16px; }
+  .dash-stat-label { margin-bottom: 4px; }
+  .dash-stat-value { font-size: 22px; margin-bottom: 2px; }
 }
 
 /* Utility */
