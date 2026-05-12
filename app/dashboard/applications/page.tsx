@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, listingApplicationsTable, listingApplicationMediaTable } from "@/lib/db";
@@ -55,16 +56,25 @@ export default async function ApplicationsPage() {
                 const details = (a.details ?? {}) as Record<string, unknown>;
                 return (
                   <div key={a.id} style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
-                    {/* Photo strip */}
-                    {images.length > 0 && (
-                      <div style={{ display: "flex", gap: 2, height: 120, overflow: "hidden" }}>
-                        {images.slice(0, 4).map((img, i) => (
-                          <div key={i} style={{ flex: 1, overflow: "hidden" }}>
-                            <img src={`data:${img.mimeType};base64,${img.data}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    {/* Photo strip — clickable */}
+                    <Link href={`/dashboard/applications/${a.id}`} style={{ display: "block", textDecoration: "none" }}>
+                      {images.length > 0 ? (
+                        <div style={{ display: "flex", gap: 2, height: 140, overflow: "hidden", position: "relative" }}>
+                          {images.slice(0, 4).map((img, i) => (
+                            <div key={i} style={{ flex: 1, overflow: "hidden" }}>
+                              <img src={`data:${img.mimeType};base64,${img.data}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </div>
+                          ))}
+                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "all 0.2s" }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = "1"; (e.currentTarget as HTMLDivElement).style.background = "rgba(0,0,0,0.35)"; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = "0"; (e.currentTarget as HTMLDivElement).style.background = "rgba(0,0,0,0)"; }}>
+                            <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, background: "rgba(0,0,0,0.5)", padding: "8px 18px", borderRadius: 20 }}>View all details →</span>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      ) : (
+                        <div style={{ height: 60, background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "var(--ink-mute)" }}>No photos · tap to view details</div>
+                      )}
+                    </Link>
 
                     <div style={{ padding: "18px 20px" }}>
                       {/* Header row */}
@@ -108,8 +118,13 @@ export default async function ApplicationsPage() {
                       {a.website && <div style={{ fontSize: 12, marginBottom: 8 }}><a href={a.website} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)" }}>{a.website}</a></div>}
                       {a.rejectionNote && <div style={{ fontSize: 12, color: "#c00" }}>Rejection note: {a.rejectionNote}</div>}
 
-                      <div style={{ fontSize: 11, color: "var(--ink-mute)", marginTop: 8 }}>
-                        {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {images.length} photo{images.length !== 1 ? "s" : ""}{appMedia.some((m) => m.type === "video") ? " · 1 video" : ""}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10, flexWrap: "wrap", gap: 8 }}>
+                        <div style={{ fontSize: 11, color: "var(--ink-mute)" }}>
+                          {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {images.length} photo{images.length !== 1 ? "s" : ""}{appMedia.some((m) => m.type === "video") ? " · 1 video" : ""}
+                        </div>
+                        <Link href={`/dashboard/applications/${a.id}`} style={{ fontSize: 12, color: "var(--brand)", fontWeight: 600, textDecoration: "none" }}>
+                          View full details + preview →
+                        </Link>
                       </div>
                     </div>
                   </div>

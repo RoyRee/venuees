@@ -261,6 +261,22 @@
   .dash-stat-value { font-size: 22px; margin-bottom: 2px; }
 }
 
+/* Application detail page grid */
+.app-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .app-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .app-detail-grid > :last-child {
+    position: static !important;
+  }
+}
+
 /* Utility */
 .container { max-width: var(--max-w); margin: 0 auto; padding: 0 40px; }
 @media (max-width: 900px) { .container { padding: 0 20px; } }
