@@ -53,7 +53,7 @@ export default async function ListYourBusinessPage() {
       <section className="dh-section" style={{ paddingTop: 0 }}>
         <Ornament>PRICING</Ornament>
         <h2 style={{ fontSize: "clamp(32px, 4vw, 48px)", margin: "14px 0 28px" }}>Three tiers · billed annually</h2>
-        <div className="vgrid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <div className="vgrid">
           {[
             { n: "Essential", p: "₹24,000 / year", tag: "For solo vendors", f: ["1 listing", "Basic profile + 20 photos", "Up to 30 leads/year", "Dashboard analytics", "Standard support"] },
             { n: "Assured", p: "₹72,000 / year", tag: "For small operators", f: ["Up to 3 listings", "Premium profile + unlimited photos", "Unlimited leads", "Priority placement in category", "Dedicated account manager"] },
@@ -80,11 +80,11 @@ export default async function ListYourBusinessPage() {
         </p>
       </section>
 
-      <section id="apply">
-        <div className="enq-form">
-          <div>
-            <h2>Apply to list <span className="italic-serif">on Venuees.in</span></h2>
-            <p>Tell us about your business. We&rsquo;ll revert within 5 business days with a fit / no-fit and the next steps.</p>
+      <section id="apply" style={{ padding: "60px 20px", background: "var(--surface-warm, #FFFCF8)" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto" }}>
+          <div style={{ marginBottom: 32, textAlign: "center" }}>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink)", marginBottom: 8 }}>Apply to list <span className="italic-serif" style={{ color: "var(--brand)" }}>on Venuees.in</span></h2>
+            <p style={{ fontSize: 15, color: "var(--ink-soft)", maxWidth: 440, margin: "0 auto" }}>Tell us about your business. We&rsquo;ll review within 48 hours.</p>
           </div>
           <ApplyForm prefillEmail={prefillEmail} prefillName={prefillName} />
         </div>
