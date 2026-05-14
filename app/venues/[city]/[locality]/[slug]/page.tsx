@@ -43,16 +43,36 @@ function amenIcon(text: string) {
   return "Check";
 }
 
+function buildCalendar(blockedDates: string[]) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const label = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const days = Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const isBlocked = blockedDates.includes(dateStr);
+    return { n: day, state: isBlocked ? "booked" : "avail" };
+  });
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  return { label, days, firstDayOfWeek };
+}
+
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const v = await getVenueBySlug(slug);
   if (!v) return notFound();
 
-  // Mock calendar data
-  const calDays = Array.from({ length: 30 }, (_, i) => {
-    const state = i % 7 === 2 ? "booked" : i % 5 === 0 ? "limit" : "avail";
-    return { n: i + 1, state };
-  });
+  const meta = v.meta ?? {};
+  const halls = v.halls.length > 0 ? v.halls : (meta.halls ?? []);
+  const packages = meta.packages ?? [];
+  const reviewItems = meta.reviewItems ?? [];
+  const locationInfo = meta.locationInfo ?? {};
+  const blockedDates = meta.blockedDates ?? [];
+
+  const cal = buildCalendar(blockedDates);
+  const availableCount = cal.days.filter((d) => d.state === "avail").length;
 
   // Fetch uploaded photos + contact info from DB in parallel
   const [dbImages, contactRows] = await Promise.all([
@@ -145,12 +165,12 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             </div>
           </div>
           <div className="calendar-mini">
-            <b>Dec 2026</b> · 19 dates still open · Mar 2027 filling fast
+            <b>{cal.label}</b> · {availableCount} date{availableCount !== 1 ? "s" : ""} still open
           </div>
           <form>
             <input placeholder="Your name" />
             <input placeholder="Phone · +91" defaultValue="+91 " />
-            <input placeholder="Event date (or month)" defaultValue="Dec 2026" />
+            <input placeholder="Event date (or month)" />
             <select defaultValue="300">
               <option>Under 150 guests</option>
               <option value="300">150–500 guests</option>
@@ -183,11 +203,11 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
       <div className="vd-tabs">
         <button className="active">Overview</button>
-        <button>Halls & capacity</button>
-        <button>Packages</button>
-        <button>Amenities</button>
+        {halls.length > 0 && <button>Halls & capacity</button>}
+        {packages.length > 0 && <button>Packages</button>}
+        {v.amenities.length > 0 && <button>Amenities</button>}
         <button>Availability</button>
-        <button>Reviews ({v.reviews})</button>
+        <button>Reviews ({reviewItems.length > 0 ? reviewItems.length : v.reviews})</button>
         <button>Location</button>
       </div>
 
@@ -205,135 +225,175 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
               </div>
               <div>
                 <div className="lbl">Event halls</div>
-                <div className="val">{v.halls.length}<small>indoor + open</small></div>
+                <div className="val">{halls.length || "—"}<small>indoor + open</small></div>
               </div>
               <div>
                 <div className="lbl">Parking</div>
-                <div className="val">{v.parking}<small>cars</small></div>
+                <div className="val">{v.parking || "—"}<small>cars</small></div>
               </div>
               <div>
                 <div className="lbl">Rooms</div>
                 <div className="val">{v.rooms || "—"}<small>{v.rooms ? "on-site" : "off-site"}</small></div>
               </div>
               <div>
-                <div className="lbl">Founded</div>
-                <div className="val">{v.isSignature ? 2012 : 2005}<small>operating</small></div>
+                <div className="lbl">Veg plate</div>
+                <div className="val">₹{v.vegPlate.toLocaleString("en-IN")}<small>/plate</small></div>
               </div>
             </div>
           </section>
 
           {/* Halls */}
-          <section className="vd-section">
-            <Ornament>HALLS & CAPACITY</Ornament>
-            <h2>{v.halls.length} venues inside one address</h2>
-            <p style={{ marginBottom: 24 }}>
-              Mix and match for multi-day weddings — haldi in the courtyard, sangeet by the pool, pheras in the ballroom, reception on the lawn.
-            </p>
-            <div className="halls">
-              {v.halls.map((h, i) => (
-                <div key={i} className="hallcard">
-                  <Photo src={hallPhotos[i]} alt={`${v.name} — ${h.name}`} variant={h.ph} label={h.name.toLowerCase()} />
-                  <div className="body">
-                    <h4>{h.name}</h4>
-                    <div style={{ fontSize: 12, color: "var(--ink-mute)", marginBottom: 10 }}>
-                      {h.type} · {h.area}
-                    </div>
-                    <div className="specs">
-                      <div><b>{h.theatre}</b>Theatre</div>
-                      <div><b>{h.floating}</b>Floating</div>
-                      <div><b>{h.dining}</b>Dining</div>
+          {halls.length > 0 && (
+            <section className="vd-section">
+              <Ornament>HALLS & CAPACITY</Ornament>
+              <h2>{halls.length} venue{halls.length !== 1 ? "s" : ""} inside one address</h2>
+              <p style={{ marginBottom: 24 }}>
+                Mix and match for multi-day weddings — haldi in the courtyard, sangeet by the pool, pheras in the ballroom, reception on the lawn.
+              </p>
+              <div className="halls">
+                {halls.map((h, i) => (
+                  <div key={i} className="hallcard">
+                    <Photo src={hallPhotos[i]} alt={`${v.name} — ${h.name}`} variant={(h as { ph?: string }).ph ?? "v2"} label={h.name.toLowerCase()} />
+                    <div className="body">
+                      <h4>{h.name}</h4>
+                      <div style={{ fontSize: 12, color: "var(--ink-mute)", marginBottom: 10 }}>
+                        {h.type} · {h.area}
+                      </div>
+                      <div className="specs">
+                        <div><b>{h.theatre}</b>Theatre</div>
+                        <div><b>{h.floating}</b>Floating</div>
+                        <div><b>{h.dining}</b>Dining</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Packages */}
-          <section className="vd-section">
-            <Ornament>PACKAGES</Ornament>
-            <h2>Three ways to wed here</h2>
-            <p style={{ marginBottom: 28 }}>All-inclusive pricing per plate — covers venue, catering, basic décor, and day-of coordination. Upgrade any layer separately.</p>
-            <div className="pkgs">
-              <div className="h rowlbl">Starts at</div>
-              <div className="h">
-                <div className="pname">Essential</div>
-                <div className="pprice">₹{v.vegPlate.toLocaleString("en-IN")}<small style={{ fontSize: 13, color: "var(--ink-soft)", marginLeft: 4 }}>/plate</small></div>
+          {packages.length > 0 ? (
+            <section className="vd-section">
+              <Ornament>PACKAGES</Ornament>
+              <h2>Pricing packages</h2>
+              <p style={{ marginBottom: 28 }}>All-inclusive pricing per plate. Upgrade any layer separately.</p>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${packages.length}, 1fr)`, gap: 16 }}>
+                {packages.map((pkg, i) => (
+                  <div key={i} style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+                    <div style={{ padding: "16px 20px", background: i === Math.floor(packages.length / 2) ? "var(--brand)" : "var(--surface)", color: i === Math.floor(packages.length / 2) ? "#fff" : "var(--ink)" }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{pkg.name}</div>
+                      <div style={{ fontSize: 22, fontFamily: "var(--font-serif)", fontWeight: 700 }}>
+                        ₹{pkg.pricePerPlate.toLocaleString("en-IN")}
+                        <span style={{ fontSize: 13, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>/plate</span>
+                      </div>
+                    </div>
+                    <div style={{ padding: "16px 20px" }}>
+                      {pkg.features.map((feat, fi) => (
+                        <div key={fi} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, fontSize: 13, color: "var(--ink-soft)" }}>
+                          <I.Check width={14} height={14} style={{ color: "var(--brand)", flexShrink: 0, marginTop: 1 }} />
+                          {feat}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="h feat">
-                <div className="pname" style={{ color: "#fff" }}>Signature</div>
-                <div className="pprice" style={{ color: "#fff" }}>₹{(v.vegPlate + 400).toLocaleString("en-IN")}<small style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginLeft: 4 }}>/plate</small></div>
+            </section>
+          ) : (
+            // Fallback static packages when none defined
+            <section className="vd-section">
+              <Ornament>PACKAGES</Ornament>
+              <h2>Three ways to wed here</h2>
+              <p style={{ marginBottom: 28 }}>All-inclusive pricing per plate — covers venue, catering, basic décor, and day-of coordination.</p>
+              <div className="pkgs">
+                <div className="h rowlbl">Starts at</div>
+                <div className="h">
+                  <div className="pname">Essential</div>
+                  <div className="pprice">₹{v.vegPlate.toLocaleString("en-IN")}<small style={{ fontSize: 13, color: "var(--ink-soft)", marginLeft: 4 }}>/plate</small></div>
+                </div>
+                <div className="h feat">
+                  <div className="pname" style={{ color: "#fff" }}>Signature</div>
+                  <div className="pprice" style={{ color: "#fff" }}>₹{(v.vegPlate + 400).toLocaleString("en-IN")}<small style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginLeft: 4 }}>/plate</small></div>
+                </div>
+                <div className="h">
+                  <div className="pname">Royal</div>
+                  <div className="pprice">₹{(v.vegPlate + 850).toLocaleString("en-IN")}<small style={{ fontSize: 13, color: "var(--ink-soft)", marginLeft: 4 }}>/plate</small></div>
+                </div>
+
+                <div className="rowlbl">Venue rental</div>
+                <div>1 hall · 6 hours</div>
+                <div>2 halls · 10 hours</div>
+                <div>Whole property · 24h</div>
+
+                <div className="rowlbl">Menu courses</div>
+                <div>12 items · 1 live station</div>
+                <div>18 items · 3 live stations</div>
+                <div>26 items · 5 stations + dessert bar</div>
+
+                <div className="rowlbl">Décor</div>
+                <div>Classic marigold + lights</div>
+                <div>Themed mandap · floral ceiling</div>
+                <div>Full installation by Studio Rang</div>
+
+                <div className="rowlbl">Photography</div>
+                <div><I.X width={14} height={14} style={{ color: "var(--ink-mute)" }} /> Add-on</div>
+                <div><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> 1-photographer · half-day</div>
+                <div><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> 2-photographer · 2-day + film</div>
+
+                <div className="rowlbl">Rooms</div>
+                <div>—</div>
+                <div>5 rooms · night of</div>
+                <div>20 rooms · 2 nights</div>
+
+                <div className="rowlbl" style={{ borderBottom: "none" }}>Day-of manager</div>
+                <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Included</div>
+                <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Included</div>
+                <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Dedicated team of 3</div>
               </div>
-              <div className="h">
-                <div className="pname">Royal</div>
-                <div className="pprice">₹{(v.vegPlate + 850).toLocaleString("en-IN")}<small style={{ fontSize: 13, color: "var(--ink-soft)", marginLeft: 4 }}>/plate</small></div>
-              </div>
-
-              <div className="rowlbl">Venue rental</div>
-              <div>1 hall · 6 hours</div>
-              <div>2 halls · 10 hours</div>
-              <div>Whole property · 24h</div>
-
-              <div className="rowlbl">Menu courses</div>
-              <div>12 items · 1 live station</div>
-              <div>18 items · 3 live stations</div>
-              <div>26 items · 5 stations + dessert bar</div>
-
-              <div className="rowlbl">Décor</div>
-              <div>Classic marigold + lights</div>
-              <div>Themed mandap · floral ceiling</div>
-              <div>Full installation by Studio Rang</div>
-
-              <div className="rowlbl">Photography</div>
-              <div><I.X width={14} height={14} style={{ color: "var(--ink-mute)" }} /> Add-on</div>
-              <div><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> 1-photographer · half-day</div>
-              <div><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> 2-photographer · 2-day + film</div>
-
-              <div className="rowlbl">Rooms</div>
-              <div>—</div>
-              <div>5 rooms · night of</div>
-              <div>20 rooms · 2 nights</div>
-
-              <div className="rowlbl" style={{ borderBottom: "none" }}>Day-of manager</div>
-              <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Included</div>
-              <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Included</div>
-              <div style={{ borderBottom: "none" }}><I.Check width={14} height={14} style={{ color: "var(--accent)" }} /> Dedicated team of 3</div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Amenities */}
-          <section className="vd-section">
-            <Ornament>AMENITIES</Ornament>
-            <h2>What&rsquo;s included</h2>
-            <div className="amen-grid">
-              {v.amenities.map((a, i) => {
-                const IconComp = I[amenIcon(a)];
-                return (
-                  <div key={i} className="amen-cell">
-                    <IconComp width={22} height={22} />
-                    <span>{a}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          {v.amenities.length > 0 && (
+            <section className="vd-section">
+              <Ornament>AMENITIES</Ornament>
+              <h2>What&rsquo;s included</h2>
+              <div className="amen-grid">
+                {v.amenities.map((a, i) => {
+                  const IconComp = I[amenIcon(a)];
+                  return (
+                    <div key={i} className="amen-cell">
+                      <IconComp width={22} height={22} />
+                      <span>{a}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {/* Availability */}
           <section className="vd-section">
             <Ornament>AVAILABILITY</Ornament>
-            <h2>December 2026</h2>
-            <p style={{ marginBottom: 20 }}>Live availability from our bookings system. Sunday muhurtas are in high demand between Nov–Feb.</p>
+            <h2>{cal.label}</h2>
+            <p style={{ marginBottom: 20 }}>
+              {blockedDates.length > 0
+                ? `${availableCount} dates available · ${blockedDates.length} already booked.`
+                : "Live availability from our bookings system. Sunday muhurtas are in high demand between Nov–Feb."}
+            </p>
             <div className="cal-head">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (<div key={d}>{d}</div>))}
             </div>
             <div className="cal">
-              {calDays.map((d) => (
+              {Array.from({ length: cal.firstDayOfWeek }, (_, i) => (
+                <div key={`pad-${i}`} className="day" style={{ visibility: "hidden" }} />
+              ))}
+              {cal.days.map((d) => (
                 <div key={d.n} className={`day ${d.state}`}>{d.n}</div>
               ))}
             </div>
             <div className="cal-legend">
               <span><span className="dot" style={{ background: "var(--mehendi)" }} /> Available</span>
-              <span><span className="dot" style={{ background: "var(--accent)" }} /> Only 1 slot</span>
               <span><span className="dot" style={{ background: "var(--line)" }} /> Booked</span>
             </div>
           </section>
@@ -342,42 +402,67 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
           <section className="vd-section">
             <Ornament>REVIEWS</Ornament>
             <h2>What couples say</h2>
-            <div className="rev-summary">
-              <div>
-                <div className="rev-big">{v.rating}</div>
-                <Stars value={v.rating} size={18} />
-                <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6 }}>{v.reviews} verified reviews</div>
-              </div>
-              <div className="rev-bars">
-                {[
-                  { l: "Venue & ambience", v: 98 },
-                  { l: "Food", v: 94 },
-                  { l: "Staff", v: 96 },
-                  { l: "Value for money", v: 88 },
-                  { l: "Punctuality", v: 92 },
-                ].map((r) => (
-                  <div key={r.l}>
-                    <span>{r.l}</span>
-                    <div className="rev-bar-fill"><div style={{ width: `${r.v}%` }} /></div>
-                    <span style={{ textAlign: "right" }}>{(r.v / 20).toFixed(1)}</span>
+            {reviewItems.length > 0 ? (
+              <>
+                <div className="rev-summary">
+                  <div>
+                    <div className="rev-big">{v.rating || "5.0"}</div>
+                    <Stars value={v.rating || 5} size={18} />
+                    <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6 }}>{reviewItems.length} verified review{reviewItems.length !== 1 ? "s" : ""}</div>
+                  </div>
+                </div>
+                {reviewItems.map((r, i) => (
+                  <div key={i} className="rev-item">
+                    <div className="ava ph rose" />
+                    <div>
+                      <h5>{r.name}</h5>
+                      <div className="rev-meta">{r.date} · <Stars value={5} size={11} /></div>
+                      <p>{r.text}</p>
+                    </div>
                   </div>
                 ))}
-              </div>
-            </div>
-            {[
-              { n: "Aarti M.", d: "Dec 2025 · 420 guests", t: "Our estimate was ₹18L and we closed at ₹17.89L. The Darbar ballroom looked exactly like the mock-up. Day-of manager Sneha was everywhere before I asked." },
-              { n: "Rohit K.", d: "Nov 2025 · 280 guests", t: "We had two grandmothers with wheelchairs — the ramps, the lift, and the reserved seating made the entire day easy. Food was regional Vidarbha done really well." },
-              { n: "Neha & Sahil", d: "Feb 2025 · 500 guests", t: "Hall, catering, décor, DJ, pandit — all under one roof. Zero coordination from us after the final walk-through." },
-            ].map((r) => (
-              <div key={r.n} className="rev-item">
-                <div className="ava ph rose" />
-                <div>
-                  <h5>{r.n}</h5>
-                  <div className="rev-meta">{r.d} · <Stars value={5} size={11} /></div>
-                  <p>{r.t}</p>
+              </>
+            ) : (
+              // Fallback static reviews
+              <>
+                <div className="rev-summary">
+                  <div>
+                    <div className="rev-big">{v.rating}</div>
+                    <Stars value={v.rating} size={18} />
+                    <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6 }}>{v.reviews} verified reviews</div>
+                  </div>
+                  <div className="rev-bars">
+                    {[
+                      { l: "Venue & ambience", v: 98 },
+                      { l: "Food", v: 94 },
+                      { l: "Staff", v: 96 },
+                      { l: "Value for money", v: 88 },
+                      { l: "Punctuality", v: 92 },
+                    ].map((r) => (
+                      <div key={r.l}>
+                        <span>{r.l}</span>
+                        <div className="rev-bar-fill"><div style={{ width: `${r.v}%` }} /></div>
+                        <span style={{ textAlign: "right" }}>{(r.v / 20).toFixed(1)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+                {[
+                  { n: "Aarti M.", d: "Dec 2025 · 420 guests", t: "Our estimate was ₹18L and we closed at ₹17.89L. The Darbar ballroom looked exactly like the mock-up. Day-of manager Sneha was everywhere before I asked." },
+                  { n: "Rohit K.", d: "Nov 2025 · 280 guests", t: "We had two grandmothers with wheelchairs — the ramps, the lift, and the reserved seating made the entire day easy. Food was regional Vidarbha done really well." },
+                  { n: "Neha & Sahil", d: "Feb 2025 · 500 guests", t: "Hall, catering, décor, DJ, pandit — all under one roof. Zero coordination from us after the final walk-through." },
+                ].map((r) => (
+                  <div key={r.n} className="rev-item">
+                    <div className="ava ph rose" />
+                    <div>
+                      <h5>{r.n}</h5>
+                      <div className="rev-meta">{r.d} · <Stars value={5} size={11} /></div>
+                      <p>{r.t}</p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </section>
 
           {/* Instagram feed — Signature Resorts only */}
@@ -422,11 +507,26 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <div className="ph ocean" style={{ height: 300, borderRadius: "var(--radius-md)", marginTop: 16 }}>
               <span className="ph-label">map · {v.locality.toLowerCase()}</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginTop: 20, fontSize: 13, color: "var(--ink-soft)" }}>
-              <div><b style={{ display: "block", color: "var(--ink)" }}>Airport</b>12 min · Dr. B.R. Ambedkar Intl</div>
-              <div><b style={{ display: "block", color: "var(--ink)" }}>Railway</b>18 min · Nagpur Junction</div>
-              <div><b style={{ display: "block", color: "var(--ink)" }}>Hotel cluster</b>Ramdaspeth · 8 min</div>
-            </div>
+            {(locationInfo.airport || locationInfo.railway || locationInfo.hotelCluster) ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginTop: 20, fontSize: 13, color: "var(--ink-soft)" }}>
+                {locationInfo.airport && (
+                  <div><b style={{ display: "block", color: "var(--ink)" }}>Airport</b>{locationInfo.airport}</div>
+                )}
+                {locationInfo.railway && (
+                  <div><b style={{ display: "block", color: "var(--ink)" }}>Railway</b>{locationInfo.railway}</div>
+                )}
+                {locationInfo.hotelCluster && (
+                  <div><b style={{ display: "block", color: "var(--ink)" }}>Hotel cluster</b>{locationInfo.hotelCluster}</div>
+                )}
+              </div>
+            ) : (
+              // Fallback static location
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginTop: 20, fontSize: 13, color: "var(--ink-soft)" }}>
+                <div><b style={{ display: "block", color: "var(--ink)" }}>Airport</b>12 min · Dr. B.R. Ambedkar Intl</div>
+                <div><b style={{ display: "block", color: "var(--ink)" }}>Railway</b>18 min · Nagpur Junction</div>
+                <div><b style={{ display: "block", color: "var(--ink)" }}>Hotel cluster</b>Ramdaspeth · 8 min</div>
+              </div>
+            )}
           </section>
         </main>
 
