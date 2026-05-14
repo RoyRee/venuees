@@ -1,8 +1,9 @@
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
-import { realWeddings } from "@/lib/data";
+import { getRealWeddings } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { realWeddingPhotos } from "@/lib/images";
 
@@ -11,7 +12,8 @@ export const metadata = {
   description: "Actual weddings we hosted in Nagpur and beyond. Photos, numbers, notes from the couples.",
 };
 
-export default function RealWeddingsHub() {
+export default async function RealWeddingsHub() {
+  const realWeddings = await getRealWeddings();
   return (
     <div>
       <MobileNav />

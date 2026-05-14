@@ -1,9 +1,10 @@
+export const dynamic = "force-dynamic";
 import * as React from "react";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
-import { destinations } from "@/lib/data";
+import { getDestinations } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { destinationPhotos } from "@/lib/images";
 
@@ -12,7 +13,8 @@ export const metadata = {
   description: "End-to-end destination weddings from Nagpur. Udaipur, Goa, Jaipur, Coorg, Jaisalmer, Rishikesh. Venues, vendors, travel and stay for your full guest list.",
 };
 
-export default function DestinationHubPage() {
+export default async function DestinationHubPage() {
+  const destinations = await getDestinations();
   return (
     <div className="dh">
       <MobileNav />

@@ -1,10 +1,11 @@
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
-import { vendors } from "@/lib/data";
 import { Photo } from "@/components/photo";
 import { vendorPhotos } from "@/lib/images";
+import { getVendors } from "@/lib/db/queries";
 
 export const metadata = {
   title: "Wedding vendors in Nagpur — Venuees.in",
@@ -21,7 +22,8 @@ const CATEGORIES = [
   { slug: "pandits", name: "Pandits", count: 15 },
 ];
 
-export default function VendorsHubPage() {
+export default async function VendorsHubPage() {
+  const vendors = await getVendors();
   return (
     <div>
       <MobileNav />

@@ -2,13 +2,21 @@ import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { ApplyForm } from "./apply-form";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "List your business — Venuees.in",
   description: "Partner with Venuees.in. Flat annual listing · zero commission on bookings · transparent analytics for venue owners and wedding vendors across Nagpur.",
 };
 
-export default function ListYourBusinessPage() {
+export default async function ListYourBusinessPage() {
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase!.auth.getUser();
+  const prefillEmail = user?.email ?? "";
+  const prefillName = user?.user_metadata?.full_name ?? "";
   return (
     <div className="dh">
       <MobileNav />
@@ -45,7 +53,7 @@ export default function ListYourBusinessPage() {
       <section className="dh-section" style={{ paddingTop: 0 }}>
         <Ornament>PRICING</Ornament>
         <h2 style={{ fontSize: "clamp(32px, 4vw, 48px)", margin: "14px 0 28px" }}>Three tiers · billed annually</h2>
-        <div className="vgrid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <div className="vgrid">
           {[
             { n: "Essential", p: "₹24,000 / year", tag: "For solo vendors", f: ["1 listing", "Basic profile + 20 photos", "Up to 30 leads/year", "Dashboard analytics", "Standard support"] },
             { n: "Assured", p: "₹72,000 / year", tag: "For small operators", f: ["Up to 3 listings", "Premium profile + unlimited photos", "Unlimited leads", "Priority placement in category", "Dedicated account manager"] },
@@ -72,25 +80,13 @@ export default function ListYourBusinessPage() {
         </p>
       </section>
 
-      <section id="apply">
-        <div className="enq-form">
-          <div>
-            <h2>Apply to list <span className="italic-serif">on Venuees.in</span></h2>
-            <p>Tell us about your business. We&rsquo;ll revert within 5 business days with a fit / no-fit and the next steps.</p>
+      <section id="apply" style={{ padding: "60px 20px", background: "var(--surface-warm, #FFFCF8)" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto" }}>
+          <div style={{ marginBottom: 32, textAlign: "center" }}>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink)", marginBottom: 8 }}>Apply to list <span className="italic-serif" style={{ color: "var(--brand)" }}>on Venuees.in</span></h2>
+            <p style={{ fontSize: 15, color: "var(--ink-soft)", maxWidth: 440, margin: "0 auto" }}>Tell us about your business. We&rsquo;ll review within 48 hours.</p>
           </div>
-          <div className="enq-fields">
-            <div><label>Business name</label><input placeholder="e.g. Orange County Farms" /></div>
-            <div><label>Owner name</label><input placeholder="Your full name" /></div>
-            <div className="row2">
-              <div><label>Phone</label><input placeholder="+91 " /></div>
-              <div><label>Category</label>
-                <select><option>Venue · hotel</option><option>Venue · lawn</option><option>Venue · heritage</option><option>Venue · farmhouse</option><option>Photography</option><option>Décor</option><option>Catering</option><option>Makeup</option><option>Music/DJ</option><option>Other vendor</option></select>
-              </div>
-            </div>
-            <div><label>Website / Instagram / portfolio link</label><input placeholder="URL" /></div>
-            <div><label>Tell us about your work</label><textarea rows={4} placeholder="Years in business, last 3 weddings, capacity..." /></div>
-            <button className="enq-submit">Submit application</button>
-          </div>
+          <ApplyForm prefillEmail={prefillEmail} prefillName={prefillName} />
         </div>
       </section>
 

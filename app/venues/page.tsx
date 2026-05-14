@@ -1,10 +1,12 @@
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Stars } from "@/components/icons";
+import { SaveButton } from "@/components/save-button";
 import { Photo } from "@/components/photo";
-import { venues } from "@/lib/data";
 import { venueHero } from "@/lib/images";
+import { getVenues } from "@/lib/db/queries";
 
 export const metadata = {
   title: "Wedding venues in Nagpur — Venuees.in",
@@ -24,7 +26,8 @@ const LOCALITIES = [
   "Wardha Road", "Ramdaspeth", "Civil Lines", "Koradi Road", "Katol Road", "MIHAN",
 ];
 
-export default function VenuesListPage() {
+export default async function VenuesListPage() {
+  const venues = await getVenues();
   const signature = venues.find((v) => v.isSignature)!;
   const rest = venues.filter((v) => !v.isSignature);
   const ordered = [signature, ...rest];
@@ -125,7 +128,7 @@ export default function VenuesListPage() {
                     <span className="badge-assured">{v.tag}</span>
                     {v.isSignature && <span className="badge-assured" style={{ background: "var(--brand)", color: "#fff" }}>Signature</span>}
                   </div>
-                  <button className="save" aria-label="Save"><I.Heart width={16} height={16} /></button>
+                  <SaveButton type="venue" slug={v.slug} size={16} />
                   <div className="badges-bot"><I.Camera width={11} height={11} /> 48</div>
                 </Photo>
                 <div className="vcard-body">

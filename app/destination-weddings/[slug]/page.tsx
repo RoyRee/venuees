@@ -1,26 +1,23 @@
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
-import { destinations, getDestinationBySlug } from "@/lib/data";
+import { getDestinationBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { destinationPhotos } from "@/lib/images";
 
-export function generateStaticParams() {
-  return destinations.map((d) => ({ slug: d.slug }));
-}
-
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const d = getDestinationBySlug(slug);
+  const d = await getDestinationBySlug(slug);
   if (!d) return {};
   return { title: `Destination weddings in ${d.city} — Venuees.in`, description: `${d.tag} · ${d.venues} curated venues · Destination weddings from Nagpur.` };
 }
 
 export default async function DestinationDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const d = getDestinationBySlug(slug);
+  const d = await getDestinationBySlug(slug);
   if (!d) return notFound();
 
   return (

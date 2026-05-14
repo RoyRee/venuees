@@ -1,13 +1,18 @@
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
 import { Photo } from "@/components/photo";
-import { venues, getaways, destinations, realWeddings, SITE } from "@/lib/data";
+import { SITE } from "@/lib/data";
 import { venueHero, getawayPhotos, destinationPhotos, realWeddingPhotos, signatureResortsPhotos } from "@/lib/images";
 import { HeroSearch } from "@/components/hero-search";
+import { getVenues, getGetaways, getDestinations, getRealWeddings } from "@/lib/db/queries";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [venues, getaways, destinations, realWeddings] = await Promise.all([
+    getVenues(), getGetaways(), getDestinations(), getRealWeddings(),
+  ]);
   const signature = venues.find((v) => v.isSignature)!;
   const featured = venues.filter((v) => !v.isSignature).slice(0, 4);
 

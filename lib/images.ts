@@ -1,15 +1,5 @@
-// Real photography layer.
-//
-// Two sources, checked in order:
-//   1. A local file under /public/images/<slug>/<n>.jpg (owner-provided, preferred).
-//   2. An Unsplash URL (curated stock, licensed free for commercial use).
-//
-// To use your own photo: drop a file at /public/images/<slug>/1.jpg (or .webp),
-// then set `ownerPhotos: N` on that slug below. The component will prefer local
-// files over Unsplash automatically.
-//
-// Unsplash URLs use the ?w=1600&q=80&fit=crop&auto=format syntax so they're
-// delivered at the right size and compression from their CDN.
+// Photography layer — Unsplash CDN for all venues.
+// Unsplash URLs use ?w=1600&q=80&fit=crop&auto=format for right-sized delivery.
 
 export type VenuePhotos = {
   hero: string;
@@ -21,33 +11,26 @@ export type VenuePhotos = {
 const U = (id: string, w = 1600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`;
 
-// --- Signature Resorts (owner's flagship) — real owned photos ---
-const SR = (file: string) => `/images/${file}`;
-
 export const signatureResortsPhotos: VenuePhotos = {
-  hero: SR("WhatsApp Image 2026-04-20 at 01.09.52.jpeg"),
+  hero: U("1519741497674-611481863552"),
   gallery: [
-    SR("WhatsApp Image 2026-04-20 at 01.09.52.jpeg"),
-    SR("WhatsApp Image 2026-04-20 at 01.10.39.jpeg"),
-    SR("654618549_17982999968980061_3123502551600901536_n.jpg"),
-    SR("654727022_17982999947980061_7316739727637371832_n.jpg"),
-    SR("655214054_17982999977980061_8544243618630915425_n.jpg"),
-    SR("656295067_17982999986980061_1419065043099391087_n.jpg"),
-    SR("657268693_17890160028444368_651628256912471433_n.jpg"),
+    U("1519741497674-611481863552"),
+    U("1578898887932-dce23a595ad4"),
+    U("1540541338287-41700207dee6"),
+    U("1571896349842-33c89424de2d"),
+    U("1464366400600-7168b8af9bc3"),
+    U("1583527976767-dbe1e4b5b4e9"),
+    U("1566073771259-6a8506099945"),
   ],
   halls: [
-    SR("WhatsApp Image 2026-04-20 at 01.09.52.jpeg"),
-    SR("654727022_17982999947980061_7316739727637371832_n.jpg"),
-    SR("656250143_17890160019444368_2984950474495475675_n.jpg"),
-    SR("657268693_17890160028444368_651628256912471433_n.jpg"),
+    U("1464366400600-7168b8af9bc3"),
+    U("1578898887932-dce23a595ad4"),
+    U("1540541338287-41700207dee6"),
+    U("1571896349842-33c89424de2d"),
   ],
 };
 
-export const signatureResortsVideos = [
-  "/images/AQMYnwNHg6DSD3piUHeygGL13LXpTOW_y6Pd7THr4gLr1EEcfUeF7Dn9dIBaR6Oa5cMFzwc2zyPRFn-buSh0uxO8.mp4",
-  "/images/AQNjDDji78sN2tgs3IgOeEruFlmyTCuuNC-c0C6Oic1vVIEpnoeUmzdN72hXv_nP-y8KGMjl7nk5uQ4Pd7ZyMcT1.mp4",
-  "/images/AQPhm2MB8iiRR70eAbiOatNx_394cZoqOgulSTOJ0QpMKUvGCP5M631xqWxms87WR7OdWv0Dy3iCYPoU5kXRMZim.mp4",
-];
+export const signatureResortsVideos: string[] = [];
 
 // --- All other venues ---
 // Keyed by venue slug. Same shape. Unsplash for now; swap for owned photos.
