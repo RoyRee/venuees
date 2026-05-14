@@ -16,6 +16,42 @@ export const cities: City[] = [
   { slug: "mumbai", name: "Mumbai", state: "Maharashtra", tagline: "Coming 2026", active: false },
 ];
 
+export type VenuePackage = {
+  name: string;
+  pricePerPlate: number;
+  features: string[];
+};
+
+export type VenueReviewItem = {
+  name: string;
+  date: string;
+  text: string;
+};
+
+export type VenueLocationInfo = {
+  airport?: string;
+  railway?: string;
+  hotelCluster?: string;
+  googleMapsUrl?: string;
+};
+
+export type VenueHallData = {
+  name: string;
+  type: string;
+  area: string;
+  theatre: number;
+  floating: number;
+  dining: number;
+};
+
+export type VenueMeta = {
+  halls?: VenueHallData[];
+  packages?: VenuePackage[];
+  reviewItems?: VenueReviewItem[];
+  locationInfo?: VenueLocationInfo;
+  blockedDates?: string[];
+};
+
 export type Venue = {
   slug: string;
   name: string;
@@ -41,6 +77,7 @@ export type Venue = {
   halls: { name: string; ph: PhTheme; type: string; area: string; theatre: number; floating: number; dining: number }[];
   rooms?: number;
   parking: number;
+  meta?: VenueMeta;
 };
 
 // All content is Nagpur, with Signature Resorts flagged as prime property.
