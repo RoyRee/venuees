@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
+import { EventEnquiryForm } from "@/components/enquiry-form";
 
 export const metadata = {
   title: "Event management in Nagpur — Venuees.in",
@@ -82,20 +83,7 @@ export default function EventMgmtPage() {
             <h2>Have an event coming up?</h2>
             <p>Share the dates, guest count and rough vision — we&rsquo;ll reply within a business day with a scope and a first-pass estimate. No pitch deck fluff.</p>
           </div>
-          <div className="enq-fields">
-            <div><label>Name</label><input placeholder="Your full name" /></div>
-            <div><label>Phone / WhatsApp</label><input placeholder="+91 " /></div>
-            <div className="row2">
-              <div><label>Event type</label><select><option>Wedding</option><option>Corporate</option><option>Birthday/anniversary</option><option>Festival party</option><option>Other</option></select></div>
-              <div><label>Guests</label><input defaultValue="120" /></div>
-            </div>
-            <div className="row2">
-              <div><label>Date</label><input placeholder="DD Mon YYYY" /></div>
-              <div><label>Budget</label><select><option>Under ₹5L</option><option>₹5L – ₹25L</option><option>₹25L+</option><option>Not sure</option></select></div>
-            </div>
-            <div><label>Brief</label><textarea rows={3} placeholder="Theme, audience, must-haves..." /></div>
-            <button className="enq-submit">Send brief</button>
-          </div>
+          <EventEnquiryForm />
         </div>
       </section>
 

@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { getVendorBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { vendorPhotos, venuePhotos } from "@/lib/images";
+import { EnquiryForm } from "@/components/enquiry-form";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -97,37 +98,14 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
               <small>Final price varies by event days + team size</small>
             </div>
           </div>
-          <form>
-            <input placeholder="Your name" />
-            <input placeholder="Phone · +91" defaultValue="+91 " />
-            <input placeholder="Wedding date" defaultValue="Dec 2026" />
-            <select defaultValue="1">
-              <option value="1">1 day · single event</option>
-              <option>2 days · sangeet + wedding</option>
-              <option>3 days · haldi + sangeet + wedding</option>
-              <option>Full week · destination</option>
-            </select>
-            <button className="btn btn-primary btn-lg" type="button" style={{ width: "100%" }}>
-              Check availability <I.Arrow width={14} height={14} />
-            </button>
-            {contact?.contactPhone ? (
-              <div style={{ display: "flex", gap: 8 }}>
-                <a href={`tel:${contact.contactPhone}`} className="btn btn-ghost" style={{ flex: 1, textDecoration: "none", textAlign: "center" }}>
-                  <I.Phone width={14} height={14} /> Call
-                </a>
-                {contact.whatsapp && (
-                  <a href={`https://wa.me/91${contact.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ flex: 1, textDecoration: "none", textAlign: "center" }}>
-                    WhatsApp
-                  </a>
-                )}
-              </div>
-            ) : (
-              <button className="btn btn-ghost" type="button" style={{ width: "100%" }}>
-                <I.Phone width={14} height={14} /> Call {v.name.split(" ")[0]}
-              </button>
-            )}
-            <div className="tinyline">Free consult · No advance required · Reply within 4 hours</div>
-          </form>
+          <EnquiryForm
+            kind="vendor_enquiry"
+            vendorSlug={v.slug}
+            venueName={v.name}
+            contactPhone={contact?.contactPhone ?? undefined}
+            whatsapp={contact?.whatsapp ?? undefined}
+            variant="sidebar"
+          />
         </aside>
       </header>
 
