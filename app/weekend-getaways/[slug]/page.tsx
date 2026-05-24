@@ -7,6 +7,7 @@ import { I, Ornament, Stars } from "@/components/icons";
 import { getGetawayBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { getawayPhotos } from "@/lib/images";
+import { EnquiryForm } from "@/components/enquiry-form";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -182,12 +183,12 @@ export default async function GetawayDetailPage({ params }: { params: Promise<{ 
             <div className="total"><span>Total · {nights} nights</span><span>₹{total.toLocaleString("en-IN")}</span></div>
           </div>
 
-          <button className="btn btn-primary btn-lg" style={{ width: "100%", marginTop: 14 }}>
-            Request this stay <I.Arrow width={14} height={14} />
-          </button>
-          <div className="tinyline" style={{ fontSize: 11, color: "var(--ink-mute)", textAlign: "center", marginTop: 8 }}>
-            Owner replies within 2 hours · No charge until confirmed
-          </div>
+          <EnquiryForm
+            kind="getaway_enquiry"
+            getawaySlug={g.slug}
+            venueName={g.name}
+            variant="sidebar"
+          />
         </aside>
       </header>
 
