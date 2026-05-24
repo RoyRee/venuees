@@ -35,8 +35,8 @@ export const I = {
   Utensils: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="M7 3v7a2 2 0 1 0 4 0V3M9 10v11M17 3c-2 0-3 2-3 5s1 5 3 5v8" /></svg>,
 };
 
-export const Ornament = ({ children = "BROWSE" }: { children?: React.ReactNode }) => (
-  <div className="ornament">
+export const Ornament = ({ children = "BROWSE", style }: { children?: React.ReactNode; style?: React.CSSProperties }) => (
+  <div className="ornament" style={style}>
     <div className="line" />
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <circle cx="12" cy="12" r="2.5" />

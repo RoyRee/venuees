@@ -102,7 +102,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let destUrls: MetadataRoute.Sitemap = [];
   try {
     const destinations = await db
-      .select({ slug: destinationsTable.slug, updatedAt: destinationsTable.updatedAt })
+      .select({ slug: destinationsTable.slug, updatedAt: destinationsTable.createdAt })
       .from(destinationsTable)
       .where(eq(destinationsTable.isActive, true));
 
