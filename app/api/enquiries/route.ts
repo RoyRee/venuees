@@ -86,7 +86,7 @@ async function sendNotifications(row: typeof enquiriesTable.$inferInsert) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return; // Resend not configured — skip silently
 
-  const { Resend } = await import("resend");
+  const { Resend } = await import(/* webpackIgnore: true */ "resend");
   const resend = new Resend(apiKey);
 
   const label = kindLabel(row.kind ?? "");
