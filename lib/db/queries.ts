@@ -1,5 +1,5 @@
 import { db, venuesTable, venueHallsTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, ilike } from "drizzle-orm";
 import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme } from "@/lib/data";
 
 // ─── Venues ──────────────────────────────────────────────────────────────────
@@ -45,8 +45,19 @@ function toVenue(r: typeof venuesTable.$inferSelect, halls: typeof venueHallsTab
   };
 }
 
-export async function getVenues(): Promise<Venue[]> {
-  const rows = await db.select().from(venuesTable).where(eq(venuesTable.isActive, true));
+export async function getVenues(q?: string): Promise<Venue[]> {
+  const conditions = q?.trim()
+    ? and(
+        eq(venuesTable.isActive, true),
+        or(
+          ilike(venuesTable.name,     `%${q}%`),
+          ilike(venuesTable.locality, `%${q}%`),
+          ilike(venuesTable.typeSlug, `%${q}%`),
+          ilike(venuesTable.type,     `%${q}%`),
+        )
+      )
+    : eq(venuesTable.isActive, true);
+  const rows = await db.select().from(venuesTable).where(conditions);
   if (!rows.length) return [];
   const allHalls = await db.select().from(venueHallsTable);
   const byVenue = new Map<number, typeof allHalls>();

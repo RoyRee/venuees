@@ -26,11 +26,16 @@ const LOCALITIES = [
   "Wardha Road", "Ramdaspeth", "Civil Lines", "Koradi Road", "Katol Road", "MIHAN",
 ];
 
-export default async function VenuesListPage() {
-  const venues = await getVenues();
-  const signature = venues.find((v) => v.isSignature)!;
+export default async function VenuesListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; type?: string }>;
+}) {
+  const { q } = await searchParams;
+  const venues = await getVenues(q);
+  const signature = !q ? venues.find((v) => v.isSignature) : undefined;
   const rest = venues.filter((v) => !v.isSignature);
-  const ordered = [signature, ...rest];
+  const ordered = signature ? [signature, ...rest] : rest;
 
   return (
     <div>
@@ -42,10 +47,24 @@ export default async function VenuesListPage() {
           <nav className="vd-breadcrumb" style={{ borderBottom: "none", padding: 0, marginBottom: 14 }}>
             <Link href="/">Home</Link> <span className="sep">/</span> <span>Nagpur venues</span>
           </nav>
-          <h1>Wedding venues in <span className="italic-serif" style={{ color: "var(--brand)" }}>Nagpur.</span></h1>
-          <p style={{ fontSize: 15, color: "var(--ink-soft)", maxWidth: 580, lineHeight: 1.6 }}>
-            {ordered.length} handpicked halls across the orange city — from Signature Resorts on Wardha Road to heritage havelis in Civil Lines. Every venue is pre-visited, owner-verified, and priced without &ldquo;starting from&rdquo; surprises.
-          </p>
+          {q ? (
+            <>
+              <h1>Results for <span className="italic-serif" style={{ color: "var(--brand)" }}>&ldquo;{q}&rdquo;</span></h1>
+              <p style={{ fontSize: 15, color: "var(--ink-soft)", maxWidth: 580, lineHeight: 1.6 }}>
+                {ordered.length === 0
+                  ? "No venues matched — try a different term."
+                  : `${ordered.length} venue${ordered.length !== 1 ? "s" : ""} found · `}
+                <Link href="/venues" style={{ color: "var(--brand)" }}>Clear search</Link>
+              </p>
+            </>
+          ) : (
+            <>
+              <h1>Wedding venues in <span className="italic-serif" style={{ color: "var(--brand)" }}>Nagpur.</span></h1>
+              <p style={{ fontSize: 15, color: "var(--ink-soft)", maxWidth: 580, lineHeight: 1.6 }}>
+                {ordered.length} handpicked halls across the orange city — from Signature Resorts on Wardha Road to heritage havelis in Civil Lines. Every venue is pre-visited, owner-verified, and priced without &ldquo;starting from&rdquo; surprises.
+              </p>
+            </>
+          )}
           <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
             {TYPES.map((t) => (
               <Link key={t.slug} href={`/venues?type=${t.slug}`} className="chip outline">{t.label}</Link>
