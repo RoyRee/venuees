@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
@@ -80,7 +81,9 @@ export default async function VendorCategoryPage({
       </div>
 
       <div className="vl-body">
-        <VendorFilters basePath={basePath} />
+        <Suspense fallback={<aside className="vl-filters" style={{ opacity: 0.4 }} />}>
+          <VendorFilters basePath={basePath} />
+        </Suspense>
 
         <main>
           <div className="vl-results-head">
@@ -94,6 +97,7 @@ export default async function VendorCategoryPage({
             </div>
             <div className="vl-sort">
               Sort by
+              <Suspense fallback={<select><option>Recommended</option></select>}>
               <SortSelect
                 basePath={basePath}
                 options={[
@@ -104,6 +108,7 @@ export default async function VendorCategoryPage({
                   { value: "bookings",   label: "Most booked" },
                 ]}
               />
+              </Suspense>
             </div>
           </div>
 
