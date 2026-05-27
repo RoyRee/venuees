@@ -7,6 +7,7 @@ import { Photo } from "@/components/photo";
 import { SITE } from "@/lib/data";
 import { venueHero, getawayPhotos, destinationPhotos, realWeddingPhotos, signatureResortsPhotos } from "@/lib/images";
 import { HeroSearch } from "@/components/hero-search";
+import { CarouselWrap } from "@/components/carousel-wrap";
 import { getVenues, getGetaways, getDestinations, getRealWeddings } from "@/lib/db/queries";
 
 export default async function HomePage() {
@@ -112,6 +113,7 @@ export default async function HomePage() {
           </div>
           <Link href="/venues" className="block-link">All 42 venues <I.Arrow width={12} height={12} /></Link>
         </div>
+        <CarouselWrap count={featured.length}>
         <div className="vgrid">
           {featured.map((v) => (
             <Link key={v.slug} href={`/venues/nagpur/${v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-")}/${v.slug}`} className="vcard">
@@ -147,6 +149,7 @@ export default async function HomePage() {
             </Link>
           ))}
         </div>
+        </CarouselWrap>
       </section>
 
       {/* WEEKEND GETAWAY */}
@@ -164,6 +167,7 @@ export default async function HomePage() {
               All getaways <I.Arrow width={14} height={14} />
             </Link>
           </div>
+          <CarouselWrap count={Math.min(getaways.length, 3)}>
           <div className="gcards">
             {getaways.slice(0, 3).map((g) => (
               <Link key={g.slug} href={`/weekend-getaways/${g.slug}`} className="gcard">
@@ -185,6 +189,7 @@ export default async function HomePage() {
               </Link>
             ))}
           </div>
+          </CarouselWrap>
         </div>
       </section>
 

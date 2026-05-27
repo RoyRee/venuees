@@ -51,10 +51,10 @@ const DESTINATIONS = [
 type Tab = "venues" | "getaways" | "destinations" | "vendors";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "venues", label: "Venues" },
-  { id: "getaways", label: "Weekend getaways" },
-  { id: "destinations", label: "Destination weddings" },
-  { id: "vendors", label: "Vendors" },
+  { id: "venues",       label: "Venues" },
+  { id: "getaways",     label: "Getaways" },
+  { id: "vendors",      label: "Vendors" },
+  { id: "destinations", label: "Destinations" },
 ];
 
 // ── Field sub-components ──────────────────────────────────────────────────────
