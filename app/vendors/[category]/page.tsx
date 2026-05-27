@@ -3,8 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
-import { I, Ornament, Stars } from "@/components/icons";
+import { I, Stars } from "@/components/icons";
+import { SaveButton } from "@/components/save-button";
 import { getVendors } from "@/lib/db/queries";
+import { VendorFilters } from "@/components/vendor-filters";
+import { SortSelect } from "@/components/sort-select";
 import { Photo } from "@/components/photo";
 import { vendorPhotos } from "@/lib/images";
 
@@ -29,12 +32,35 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   return { title: `${meta.name} in Nagpur — Venuees.in`, description: meta.blurb };
 }
 
-export default async function VendorCategoryPage({ params }: { params: Promise<{ category: string }> }) {
+type SP = {
+  sort?: string; maxPrice?: string;
+  minYears?: string; locality?: string; minRating?: string;
+};
+
+export default async function VendorCategoryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ category: string }>;
+  searchParams: Promise<SP>;
+}) {
   const { category } = await params;
   const meta = CATEGORY_META[category];
   if (!meta) return notFound();
-  const list = await getVendors(category);
-  const display = [...list, ...list].slice(0, 8);
+
+  const sp = await searchParams;
+  const basePath = `/vendors/${category}`;
+
+  const list = await getVendors({
+    categorySlug: category,
+    maxPrice:  sp.maxPrice  ? Number(sp.maxPrice)  : undefined,
+    minYears:  sp.minYears  ? Number(sp.minYears)  : undefined,
+    locality:  sp.locality,
+    minRating: sp.minRating ? Number(sp.minRating) : undefined,
+    sort:      sp.sort,
+  });
+
+  const hasFilters = !!(sp.maxPrice || sp.minYears || sp.locality || sp.minRating);
 
   return (
     <div>
@@ -44,7 +70,9 @@ export default async function VendorCategoryPage({ params }: { params: Promise<{
       <div className="vl-top">
         <div className="vl-top-inner">
           <nav className="vd-breadcrumb" style={{ borderBottom: "none", padding: 0, marginBottom: 14 }}>
-            <Link href="/">Home</Link> <span className="sep">/</span> <Link href="/vendors">Vendors</Link> <span className="sep">/</span> <span>{meta.name}</span>
+            <Link href="/">Home</Link> <span className="sep">/</span>
+            <Link href="/vendors">Vendors</Link> <span className="sep">/</span>
+            <span>{meta.name}</span>
           </nav>
           <h1>{meta.name} <span className="italic-serif" style={{ color: "var(--brand)" }}>in Nagpur.</span></h1>
           <p style={{ fontSize: 15, color: "var(--ink-soft)", maxWidth: 640, lineHeight: 1.6 }}>{meta.blurb}</p>
@@ -52,83 +80,76 @@ export default async function VendorCategoryPage({ params }: { params: Promise<{
       </div>
 
       <div className="vl-body">
-        <aside className="vl-filters">
-          <div className="f-group">
-            <h6>Price</h6>
-            <div className="f-range">
-              <input type="range" min={10000} max={500000} defaultValue={150000} />
-              <div className="bounds"><span>₹10k</span><span>₹5L+</span></div>
-            </div>
-          </div>
-          <div className="f-group">
-            <h6>Experience</h6>
-            <label><input type="checkbox" /> 2+ years</label>
-            <label><input type="checkbox" /> 5+ years</label>
-            <label><input type="checkbox" /> 10+ years</label>
-          </div>
-          <div className="f-group">
-            <h6>Locality</h6>
-            <label><input type="checkbox" /> Dharampeth</label>
-            <label><input type="checkbox" /> Civil Lines</label>
-            <label><input type="checkbox" /> Sitabuldi</label>
-            <label><input type="checkbox" /> Ramdaspeth</label>
-            <label><input type="checkbox" /> Laxmi Nagar</label>
-          </div>
-          <div className="f-group" style={{ borderBottom: "none" }}>
-            <h6>Availability</h6>
-            <label><input type="checkbox" /> Next 30 days</label>
-            <label><input type="checkbox" /> Open for destination weddings</label>
-          </div>
-        </aside>
+        <VendorFilters basePath={basePath} />
 
         <main>
           <div className="vl-results-head">
-            <div className="vl-count"><b>{list.length > 0 ? list.length : 8}</b> {meta.name.toLowerCase()} · Nagpur</div>
+            <div className="vl-count">
+              <b>{list.length}</b> {meta.name.toLowerCase()} · Nagpur
+              {hasFilters && (
+                <Link href={basePath} style={{ marginLeft: 10, fontSize: 12, color: "var(--brand)" }}>
+                  Clear filters
+                </Link>
+              )}
+            </div>
             <div className="vl-sort">
               Sort by
-              <select defaultValue="rec">
-                <option value="rec">Recommended</option>
-                <option value="price-asc">Price · low to high</option>
-                <option value="rating">Rating</option>
-                <option value="bookings">Most booked</option>
-              </select>
+              <SortSelect
+                basePath={basePath}
+                options={[
+                  { value: "rec",        label: "Recommended" },
+                  { value: "price-asc",  label: "Price · low to high" },
+                  { value: "price-desc", label: "Price · high to low" },
+                  { value: "rating",     label: "Rating" },
+                  { value: "bookings",   label: "Most booked" },
+                ]}
+              />
             </div>
           </div>
 
-          <div className="vl-grid">
-            {display.map((v, i) => (
-              <Link key={`${v.slug}-${i}`} href={`/vendors/${v.categorySlug}/${v.slug}`} className="vcard">
-                <Photo src={vendorPhotos[v.slug]} variant={v.ph} label={v.scene} className="vcard-img" style={{ height: 240 }}>
-                  <div className="badges-top">
-                    <span className="badge-assured">{v.yearsExp} yr pro</span>
-                  </div>
-                  <button className="save" aria-label="Save"><I.Heart width={16} height={16} /></button>
-                </Photo>
-                <div className="vcard-body">
-                  <div className="vcard-row1">
-                    <span className="chip outline">{v.locality}</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-                      <Stars value={v.rating} size={12} /> {v.rating} <span style={{ color: "var(--ink-mute)", marginLeft: 4 }}>({v.reviews})</span>
-                    </span>
-                  </div>
-                  <h3 className="vcard-name">{v.name}</h3>
-                  <p style={{ fontSize: 13, color: "var(--ink-soft)", fontStyle: "italic", margin: "4px 0 10px" }}>&ldquo;{v.tagline}&rdquo;</p>
-                  <div className="vcard-specs">
-                    <span>{v.completed} weddings</span>
-                    <span>·</span>
-                    <span>{v.yearsExp} yrs experience</span>
-                  </div>
-                  <div className="vcard-price">
-                    <div>
-                      <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Starts at</div>
-                      <b>₹{v.priceFrom.toLocaleString("en-IN")}</b>
+          {list.length === 0 ? (
+            <div style={{ padding: "60px 0", textAlign: "center" }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
+              <h3 style={{ marginBottom: 8 }}>No vendors matched</h3>
+              <p style={{ color: "var(--ink-soft)", marginBottom: 20 }}>Try adjusting the filters.</p>
+              <Link href={basePath} className="btn btn-primary">Clear filters</Link>
+            </div>
+          ) : (
+            <div className="vl-grid">
+              {list.map((v) => (
+                <Link key={v.slug} href={`/vendors/${v.categorySlug}/${v.slug}`} className="vcard">
+                  <Photo src={vendorPhotos[v.slug]} variant={v.ph} label={v.scene} className="vcard-img" style={{ height: 240 }}>
+                    <div className="badges-top">
+                      <span className="badge-assured">{v.yearsExp} yr pro</span>
                     </div>
-                    <span className="chip">View work</span>
+                    <SaveButton type="vendor" slug={v.slug} size={16} />
+                  </Photo>
+                  <div className="vcard-body">
+                    <div className="vcard-row1">
+                      <span className="chip outline">{v.locality}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+                        <Stars value={v.rating} size={12} /> {v.rating} <span style={{ color: "var(--ink-mute)", marginLeft: 4 }}>({v.reviews})</span>
+                      </span>
+                    </div>
+                    <h3 className="vcard-name">{v.name}</h3>
+                    <p style={{ fontSize: 13, color: "var(--ink-soft)", fontStyle: "italic", margin: "4px 0 10px" }}>&ldquo;{v.tagline}&rdquo;</p>
+                    <div className="vcard-specs">
+                      <span>{v.completed} weddings</span>
+                      <span>·</span>
+                      <span>{v.yearsExp} yrs experience</span>
+                    </div>
+                    <div className="vcard-price">
+                      <div>
+                        <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Starts at</div>
+                        <b>₹{v.priceFrom.toLocaleString("en-IN")}</b>
+                      </div>
+                      <span className="chip">View work</span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </main>
       </div>
 

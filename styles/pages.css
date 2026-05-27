@@ -516,13 +516,55 @@
   position: sticky; top: 20px;
   max-height: calc(100vh - 40px); overflow-y: auto;
 }
-@media (max-width: 1000px) { .vl-filters { position: static; max-height: none; } }
+@media (max-width: 1000px) {
+  .vl-filters {
+    display: none; /* hidden by default on mobile */
+    position: fixed; inset: 0; z-index: 45;
+    border-radius: 0; overflow-y: auto;
+    padding: 20px 20px 100px;
+    max-height: 100dvh;
+  }
+  .vl-filters.mobile-open { display: block; }
+}
 .vl-filters h6 { font-family: var(--font-sans); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-mute); margin: 18px 0 10px; font-weight: 600; }
 .vl-filters .f-group { padding-bottom: 14px; border-bottom: 1px dashed var(--line); margin-bottom: 6px; }
-.vl-filters label { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; color: var(--ink-soft); cursor: pointer; }
+.vl-filters label { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; color: var(--ink-soft); cursor: pointer; transition: color 0.15s; }
 .vl-filters label input { accent-color: var(--brand); }
+.vl-filters label.f-active { color: var(--ink); font-weight: 500; }
+.vl-filters label:hover { color: var(--ink); }
 .vl-filters .f-range input { width: 100%; accent-color: var(--brand); }
 .vl-filters .f-range .bounds { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-mute); margin-top: 4px; }
+
+/* Filter header (active count + clear all) */
+.f-header { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); margin-bottom: 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.f-clear-all { margin-left: auto; font-size: 12px; color: var(--brand); background: none; border: none; cursor: pointer; padding: 0; }
+.f-close-btn { display: none; background: none; border: none; cursor: pointer; color: var(--ink-soft); margin-left: 4px; }
+@media (max-width: 1000px) { .f-close-btn { display: flex; } }
+
+/* Filter chip selectors (capacity, price) */
+.f-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.f-chip { font-size: 12px; padding: 5px 11px; border-radius: 20px; border: 1px solid var(--line-soft); background: var(--bg); color: var(--ink-soft); cursor: pointer; transition: all 0.15s; }
+.f-chip:hover { border-color: var(--brand); color: var(--brand); }
+.f-chip.active { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+
+/* Loading indicator */
+.f-loading { font-size: 12px; color: var(--ink-mute); text-align: center; padding: 8px 0; }
+.filter-pending { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); display: inline-block; margin-left: 4px; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:0.3 } }
+
+/* Mobile "Filters" toggle button */
+.filter-toggle-btn {
+  display: none;
+  align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line-soft);
+  border-radius: 8px; padding: 9px 14px; cursor: pointer;
+  margin-bottom: 16px;
+}
+.filter-toggle-btn:hover { border-color: var(--brand); }
+@media (max-width: 1000px) { .filter-toggle-btn { display: flex; } }
+
+.filter-badge { background: var(--brand); color: var(--brand-ink); font-size: 10px; font-weight: 700; border-radius: 10px; padding: 1px 6px; margin-left: 2px; }
 
 .vl-results-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
 .vl-count { font-size: 14px; color: var(--ink-soft); }

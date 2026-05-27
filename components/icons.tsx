@@ -33,6 +33,7 @@ export const I = {
   AC: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><rect x="3" y="5" width="18" height="8" rx="2" /><path d="M7 17v3M12 17v3M17 17v3" /></svg>,
   Music: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="M9 18V5l10-2v13" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="16" r="2" /></svg>,
   Utensils: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="M7 3v7a2 2 0 1 0 4 0V3M9 10v11M17 3c-2 0-3 2-3 5s1 5 3 5v8" /></svg>,
+  SlidersH: (p: P) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...sw} {...p}><path d="M4 6h16M8 6V4M8 6v2M4 12h16M16 12v-2M16 12v2M4 18h16M12 18v-2M12 18v2" /></svg>,
 };
 
 export const Ornament = ({ children = "BROWSE", style }: { children?: React.ReactNode; style?: React.CSSProperties }) => (
