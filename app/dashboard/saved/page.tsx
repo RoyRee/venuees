@@ -19,7 +19,7 @@ export default async function SavedPage() {
 
   const [venues, vendors] = await Promise.all([
     venueSlugs.length ? db.select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug, locality: venuesTable.locality, type: venuesTable.type, contactPhone: venuesTable.contactPhone, whatsapp: venuesTable.whatsapp }).from(venuesTable).where(inArray(venuesTable.slug, venueSlugs)) : Promise.resolve([]),
-    vendorSlugs.length ? db.select({ id: vendorsTable.id, name: vendorsTable.name, slug: vendorsTable.slug, category: vendorsTable.category, contactPhone: vendorsTable.contactPhone, whatsapp: vendorsTable.whatsapp }).from(vendorsTable).where(inArray(vendorsTable.slug, vendorSlugs)) : Promise.resolve([]),
+    vendorSlugs.length ? db.select({ id: vendorsTable.id, name: vendorsTable.name, slug: vendorsTable.slug, category: vendorsTable.category, categorySlug: vendorsTable.categorySlug, contactPhone: vendorsTable.contactPhone, whatsapp: vendorsTable.whatsapp }).from(vendorsTable).where(inArray(vendorsTable.slug, vendorSlugs)) : Promise.resolve([]),
   ]);
 
   return (
@@ -54,7 +54,7 @@ export default async function SavedPage() {
                     WhatsApp
                   </a>
                 )}
-                <Link href={`/venues/nagpur/${v.slug}`} style={{ fontSize: 13, padding: "7px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", textDecoration: "none" }}>
+                <Link href={`/venues/nagpur/${v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-")}/${v.slug}`} style={{ fontSize: 13, padding: "7px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", textDecoration: "none" }}>
                   View →
                 </Link>
               </div>
@@ -77,7 +77,7 @@ export default async function SavedPage() {
                     WhatsApp
                   </a>
                 )}
-                <Link href={`/vendors/${v.slug}`} style={{ fontSize: 13, padding: "7px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", textDecoration: "none" }}>
+                <Link href={`/vendors/${v.categorySlug}/${v.slug}`} style={{ fontSize: 13, padding: "7px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", textDecoration: "none" }}>
                   View →
                 </Link>
               </div>
