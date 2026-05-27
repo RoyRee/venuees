@@ -1102,10 +1102,20 @@
 }
 .enq-fields input::placeholder, .enq-fields textarea::placeholder { color: rgba(255,255,255,0.55); }
 .enq-fields .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .enq-fields .row2 { grid-template-columns: 1fr; } }
 .enq-submit {
   background: var(--brand-ink); color: var(--brand);
   padding: 14px 20px; border-radius: 10px; font-weight: 600;
   width: 100%; font-size: 14px; cursor: pointer;
+}
+
+/* Contact page two-column layout */
+.contact-grid {
+  max-width: var(--max-w); margin: 0 auto;
+  display: grid; grid-template-columns: 1.3fr 1fr; gap: 60px;
+}
+@media (max-width: 900px) {
+  .contact-grid { grid-template-columns: 1fr; gap: 32px; padding: 0 4px; }
 }
 
 /* Generic page hero (simpler inside hubs) */

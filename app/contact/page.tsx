@@ -24,7 +24,7 @@ export default function ContactPage() {
       </section>
 
       <section className="block" style={{ paddingTop: 0 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 60 }} className="vl-body">
+        <div className="contact-grid">
           <div style={{ background: "var(--brand)", color: "#fff", padding: 48, borderRadius: "var(--radius-lg)" }}>
             <h2 style={{ color: "#fff", fontSize: "clamp(30px, 4vw, 48px)", lineHeight: 1.05, marginBottom: 20 }}>
               Enquire
