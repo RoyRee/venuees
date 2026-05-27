@@ -1,5 +1,5 @@
 import { db, venuesTable, venueHallsTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable } from "@/lib/db";
-import { eq, and, or, ilike } from "drizzle-orm";
+import { eq, and, or, ilike, gte, lte, sql, asc, desc, SQL } from "drizzle-orm";
 import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme } from "@/lib/data";
 
 // ─── Venues ──────────────────────────────────────────────────────────────────
@@ -45,19 +45,85 @@ function toVenue(r: typeof venuesTable.$inferSelect, halls: typeof venueHallsTab
   };
 }
 
-export async function getVenues(q?: string): Promise<Venue[]> {
-  const conditions = q?.trim()
-    ? and(
-        eq(venuesTable.isActive, true),
-        or(
-          ilike(venuesTable.name,     `%${q}%`),
-          ilike(venuesTable.locality, `%${q}%`),
-          ilike(venuesTable.typeSlug, `%${q}%`),
-          ilike(venuesTable.type,     `%${q}%`),
-        )
-      )
-    : eq(venuesTable.isActive, true);
-  const rows = await db.select().from(venuesTable).where(conditions);
+export interface VenueFiltersInput {
+  q?: string;
+  types?: string[];        // typeSlug values
+  localities?: string[];   // e.g. ["Wardha Road"]
+  minCap?: number;         // capacityMax >= minCap
+  maxVegPlate?: number;    // vegPlate <= maxVegPlate
+  minRating?: number;      // 4.5 | 4.8
+  hasRooms?: boolean;      // rooms > 0
+  hasParking?: boolean;    // parking >= 100
+  hasBar?: boolean;
+  hasDJ?: boolean;
+  hasGenerator?: boolean;
+  hasCatering?: boolean;
+  sort?: string;           // "price-asc" | "price-desc" | "rating" | "bookings"
+}
+
+export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
+  const conds: SQL[] = [eq(venuesTable.isActive, true)];
+
+  // Text search
+  if (params?.q?.trim()) {
+    const q = params.q.trim();
+    conds.push(
+      or(
+        ilike(venuesTable.name,     `%${q}%`),
+        ilike(venuesTable.locality, `%${q}%`),
+        ilike(venuesTable.typeSlug, `%${q}%`),
+        ilike(venuesTable.type,     `%${q}%`),
+      ) as SQL
+    );
+  }
+
+  // Type filter (multi-select OR)
+  if (params?.types?.length) {
+    conds.push(or(...params.types.map(t => eq(venuesTable.typeSlug, t))) as SQL);
+  }
+
+  // Locality filter (multi-select OR, ilike because stored as "Wardha Road, Nagpur")
+  if (params?.localities?.length) {
+    conds.push(or(...params.localities.map(l => ilike(venuesTable.locality, `%${l}%`))) as SQL);
+  }
+
+  // Capacity: at least minCap guests can be seated
+  if (params?.minCap) {
+    conds.push(gte(venuesTable.capacityMax, params.minCap));
+  }
+
+  // Veg plate budget cap
+  if (params?.maxVegPlate) {
+    conds.push(lte(venuesTable.vegPlate, params.maxVegPlate));
+  }
+
+  // Rating floor (rating stored as text e.g. "4.9")
+  if (params?.minRating) {
+    conds.push(sql`CAST(${venuesTable.rating} AS numeric) >= ${params.minRating}`);
+  }
+
+  // Must-haves
+  if (params?.hasRooms)    conds.push(sql`${venuesTable.rooms} > 0`);
+  if (params?.hasParking)  conds.push(gte(venuesTable.parking, 100));
+  if (params?.hasBar)      conds.push(sql`${venuesTable.amenities}::text ilike '%bar%'`);
+  if (params?.hasDJ)       conds.push(sql`${venuesTable.amenities}::text ilike '%dj%'`);
+  if (params?.hasGenerator) conds.push(sql`${venuesTable.amenities}::text ilike '%generator%'`);
+  if (params?.hasCatering) conds.push(sql`${venuesTable.amenities}::text ilike '%kitchen%'`);
+
+  // Sort
+  const orderClause =
+    params?.sort === "price-asc"  ? asc(venuesTable.vegPlate)
+    : params?.sort === "price-desc" ? desc(venuesTable.vegPlate)
+    : params?.sort === "rating"     ? desc(sql`CAST(${venuesTable.rating} AS numeric)`)
+    : params?.sort === "bookings"   ? desc(venuesTable.bookingsMonth)
+    : desc(venuesTable.isSignature); // default: signature first
+
+  const rows = await db
+    .select()
+    .from(venuesTable)
+    .where(and(...conds))
+    .orderBy(orderClause);
+
   if (!rows.length) return [];
   const allHalls = await db.select().from(venueHallsTable);
   const byVenue = new Map<number, typeof allHalls>();
@@ -97,10 +163,41 @@ function toVendor(r: typeof vendorsTable.$inferSelect): Vendor {
   };
 }
 
-export async function getVendors(categorySlug?: string): Promise<Vendor[]> {
-  const conditions = [eq(vendorsTable.isActive, true)];
-  if (categorySlug) conditions.push(eq(vendorsTable.categorySlug, categorySlug));
-  const rows = await db.select().from(vendorsTable).where(and(...conditions));
+export interface VendorFiltersInput {
+  categorySlug?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minYears?: number;   // 2 | 5 | 10
+  locality?: string;
+  minRating?: number;
+  sort?: string;       // "price-asc" | "price-desc" | "rating" | "bookings"
+}
+
+export async function getVendors(params?: VendorFiltersInput | string): Promise<Vendor[]> {
+  // Backwards-compatible: if a plain string is passed treat it as categorySlug
+  const p: VendorFiltersInput = typeof params === "string" ? { categorySlug: params } : (params ?? {});
+
+  const conds: SQL[] = [eq(vendorsTable.isActive, true)];
+  if (p.categorySlug) conds.push(eq(vendorsTable.categorySlug, p.categorySlug));
+  if (p.minPrice)     conds.push(gte(vendorsTable.priceFrom, p.minPrice));
+  if (p.maxPrice)     conds.push(lte(vendorsTable.priceFrom, p.maxPrice));
+  if (p.minYears)     conds.push(gte(vendorsTable.yearsExp, p.minYears));
+  if (p.locality)     conds.push(ilike(vendorsTable.locality, `%${p.locality}%`));
+  if (p.minRating)    conds.push(sql`CAST(${vendorsTable.rating} AS numeric) >= ${p.minRating}`);
+
+  const orderClause =
+    p.sort === "price-asc"  ? asc(vendorsTable.priceFrom)
+    : p.sort === "price-desc" ? desc(vendorsTable.priceFrom)
+    : p.sort === "rating"     ? desc(sql`CAST(${vendorsTable.rating} AS numeric)`)
+    : p.sort === "bookings"   ? desc(vendorsTable.completed)
+    : desc(vendorsTable.completed); // default: most completed
+
+  const rows = await db
+    .select()
+    .from(vendorsTable)
+    .where(and(...conds))
+    .orderBy(orderClause);
+
   return rows.map(toVendor);
 }
 
@@ -130,8 +227,22 @@ function toGetaway(r: typeof getawaysTable.$inferSelect): Getaway {
   };
 }
 
-export async function getGetaways(): Promise<Getaway[]> {
-  const rows = await db.select().from(getawaysTable).where(eq(getawaysTable.isActive, true));
+export async function getGetaways(params?: { maxBudget?: number; minBeds?: number; sort?: string }): Promise<Getaway[]> {
+  const conds: SQL[] = [eq(getawaysTable.isActive, true)];
+  if (params?.maxBudget) conds.push(lte(getawaysTable.weekday, params.maxBudget));
+  if (params?.minBeds)   conds.push(gte(getawaysTable.beds, params.minBeds));
+
+  const orderClause =
+    params?.sort === "price-asc"  ? asc(getawaysTable.weekday)
+    : params?.sort === "price-desc" ? desc(getawaysTable.weekday)
+    : params?.sort === "rating"     ? desc(sql`CAST(${getawaysTable.rating} AS numeric)`)
+    : asc(getawaysTable.weekday); // default: cheapest first
+
+  const rows = await db
+    .select()
+    .from(getawaysTable)
+    .where(and(...conds))
+    .orderBy(orderClause);
   return rows.map(toGetaway);
 }
 
