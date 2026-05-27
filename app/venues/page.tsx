@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { Suspense } from "react";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
@@ -6,6 +7,7 @@ import { I, Stars } from "@/components/icons";
 import { SaveButton } from "@/components/save-button";
 import { Photo } from "@/components/photo";
 import { VenueFilters } from "@/components/venue-filters";
+import { SortSelect } from "@/components/sort-select";
 import { venueHero } from "@/lib/images";
 import { getVenues } from "@/lib/db/queries";
 
@@ -105,8 +107,10 @@ export default async function VenuesListPage({
       </div>
 
       <div className="vl-body">
-        {/* Filter sidebar — client component */}
-        <VenueFilters />
+        {/* Filter sidebar — useSearchParams requires Suspense in Next.js 15 */}
+        <Suspense fallback={<aside className="vl-filters" style={{ opacity: 0.4 }} />}>
+          <VenueFilters />
+        </Suspense>
 
         <main>
           <div className="vl-results-head">
@@ -120,18 +124,18 @@ export default async function VenuesListPage({
             </div>
             <div className="vl-sort">
               Sort by
-              <select
-                defaultValue={sp.sort ?? "rec"}
-                onChange={(e) => {
-                  // Client-side sort change handled via URL — this fires on client
-                }}
-              >
-                <option value="rec">Recommended</option>
-                <option value="price-asc">Price · low to high</option>
-                <option value="price-desc">Price · high to low</option>
-                <option value="rating">Rating</option>
-                <option value="bookings">Most booked</option>
-              </select>
+              <Suspense fallback={<select><option>Recommended</option></select>}>
+                <SortSelect
+                  basePath="/venues"
+                  options={[
+                    { value: "rec",        label: "Recommended" },
+                    { value: "price-asc",  label: "Price · low to high" },
+                    { value: "price-desc", label: "Price · high to low" },
+                    { value: "rating",     label: "Rating" },
+                    { value: "bookings",   label: "Most booked" },
+                  ]}
+                />
+              </Suspense>
             </div>
           </div>
 
