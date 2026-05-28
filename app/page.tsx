@@ -12,10 +12,11 @@ import { getVenues, getGetaways, getDestinations, getRealWeddings } from "@/lib/
 import { getSiteConfig } from "@/lib/site-config";
 
 export default async function HomePage() {
-  const [venues, getaways, destinations, realWeddings, cfg] = await Promise.all([
-    getVenues(), getGetaways(), getDestinations(), getRealWeddings(), getSiteConfig(),
+  const [[venues, getaways, destinations, realWeddings], cfg] = await Promise.all([
+    Promise.all([getVenues(), getGetaways(), getDestinations(), getRealWeddings()]).catch(() => [[], [], [], []] as const),
+    getSiteConfig(),
   ]);
-  const signature = venues.find((v) => v.isSignature)!;
+  const signature = venues.find((v) => v.isSignature) ?? null;
   const featured = venues.filter((v) => !v.isSignature).slice(0, 4);
 
   return (
@@ -67,7 +68,7 @@ export default async function HomePage() {
       </section>
 
       {/* SIGNATURE STRIP */}
-      {cfg.section_venues && <section className="sig-strip">
+      {cfg.section_venues && signature && <section className="sig-strip">
         <div className="sig-inner">
           <Link
             href={`/venues/nagpur/wardha-road/${signature.slug}`}
