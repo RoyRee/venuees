@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import { getVenueBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { EnquiryForm } from "@/components/enquiry-form";
+import { VenueTabs } from "@/components/venue-tabs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -222,20 +223,20 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         </aside>
       </header>
 
-      <div className="vd-tabs">
-        <button className="active">Overview</button>
-        {halls.length > 0 && <button>Halls & capacity</button>}
-        {packages.length > 0 && <button>Packages</button>}
-        {v.amenities.length > 0 && <button>Amenities</button>}
-        <button>Availability</button>
-        <button>Reviews ({reviewItems.length > 0 ? reviewItems.length : v.reviews})</button>
-        <button>Location</button>
-      </div>
+      <VenueTabs sections={[
+        { id: "overview",     label: "Overview" },
+        ...(halls.length > 0        ? [{ id: "halls",        label: "Halls & capacity" }] : []),
+        ...(packages.length > 0     ? [{ id: "packages",     label: "Packages" }]         : []),
+        ...(v.amenities.length > 0  ? [{ id: "amenities",    label: "Amenities" }]        : []),
+        { id: "availability", label: "Availability" },
+        { id: "reviews",      label: `Reviews (${reviewItems.length > 0 ? reviewItems.length : v.reviews})` },
+        { id: "location",     label: "Location" },
+      ]} />
 
       <div className="vd-body">
         <main>
           {/* Overview */}
-          <section className="vd-section">
+          <section id="overview" className="vd-section">
             <Ornament>OVERVIEW</Ornament>
             <h2>About {v.name}</h2>
             <p>{v.description}</p>
@@ -265,7 +266,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
           {/* Halls */}
           {halls.length > 0 && (
-            <section className="vd-section">
+            <section id="halls" className="vd-section">
               <Ornament>HALLS & CAPACITY</Ornament>
               <h2>{halls.length} venue{halls.length !== 1 ? "s" : ""} inside one address</h2>
               <p style={{ marginBottom: 24 }}>
@@ -294,7 +295,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
           {/* Packages */}
           {packages.length > 0 ? (
-            <section className="vd-section">
+            <section id="packages" className="vd-section">
               <Ornament>PACKAGES</Ornament>
               <h2>Pricing packages</h2>
               <p style={{ marginBottom: 28 }}>All-inclusive pricing per plate. Upgrade any layer separately.</p>
@@ -322,7 +323,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             </section>
           ) : (
             // Fallback static packages when none defined
-            <section className="vd-section">
+            <section id="packages" className="vd-section">
               <Ornament>PACKAGES</Ornament>
               <h2>Three ways to wed here</h2>
               <p style={{ marginBottom: 28 }}>All-inclusive pricing per plate — covers venue, catering, basic décor, and day-of coordination.</p>
@@ -376,7 +377,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
           {/* Amenities */}
           {v.amenities.length > 0 && (
-            <section className="vd-section">
+            <section id="amenities" className="vd-section">
               <Ornament>AMENITIES</Ornament>
               <h2>What&rsquo;s included</h2>
               <div className="amen-grid">
@@ -394,7 +395,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
           )}
 
           {/* Availability */}
-          <section className="vd-section">
+          <section id="availability" className="vd-section">
             <Ornament>AVAILABILITY</Ornament>
             <h2>{cal.label}</h2>
             <p style={{ marginBottom: 20 }}>
@@ -420,7 +421,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
           </section>
 
           {/* Reviews */}
-          <section className="vd-section">
+          <section id="reviews" className="vd-section">
             <Ornament>REVIEWS</Ornament>
             <h2>What couples say</h2>
             {reviewItems.length > 0 ? (
@@ -522,7 +523,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
           )}
 
           {/* Location */}
-          <section className="vd-section">
+          <section id="location" className="vd-section">
             <Ornament>LOCATION</Ornament>
             <h2>Getting here</h2>
             <div className="ph ocean" style={{ height: 300, borderRadius: "var(--radius-md)", marginTop: 16 }}>
