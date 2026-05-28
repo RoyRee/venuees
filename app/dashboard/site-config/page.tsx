@@ -4,8 +4,9 @@ export const metadata = { title: "Site Settings — Venuees.in" };
 import { redirect } from "next/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
-import { getSiteConfig, CONFIG_META } from "@/lib/site-config";
+import { getSiteConfig, getSiteContent, CONFIG_META } from "@/lib/site-config";
 import { ConfigForm } from "./config-form";
+import { ContentForm } from "./content-form";
 
 export default async function SiteConfigPage() {
   const supabase = await getServerSupabase();
@@ -15,7 +16,7 @@ export default async function SiteConfigPage() {
   const role = await getUserRole(user.id, user.email!);
   if (role !== "admin") redirect("/dashboard");
 
-  const config = await getSiteConfig();
+  const [config, content] = await Promise.all([getSiteConfig(), getSiteContent()]);
 
   return (
     <div>
@@ -29,6 +30,7 @@ export default async function SiteConfigPage() {
       </div>
 
       <ConfigForm initialConfig={config} meta={CONFIG_META} />
+      <ContentForm initialContent={content} />
     </div>
   );
 }

@@ -20,9 +20,22 @@
 }
 @media (max-width: 900px) { .hero-bg { margin: 0; border-radius: 0; } }
 
+/* Hero carousel */
+.hero-carousel { position: absolute; inset: 0; }
+.hero-carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease; pointer-events: none; }
+.hero-carousel-slide.active { opacity: 1; pointer-events: auto; }
+.hero-carousel-dots { position: absolute; bottom: 14px; right: 20px; display: flex; gap: 6px; z-index: 2; }
+.hero-carousel-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,248,234,0.45); border: none; cursor: pointer; padding: 0;
+  transition: all 0.3s ease;
+}
+.hero-carousel-dot.active { background: #FFF8EA; width: 20px; border-radius: 3px; }
+
 .hero-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(20,12,10,0.3) 0%, rgba(20,12,10,0.08) 35%, rgba(20,12,10,0.85) 100%);
+  pointer-events: none; z-index: 1;
 }
 .hero-content {
   position: relative; z-index: 1;

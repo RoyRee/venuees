@@ -2,21 +2,24 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
-import { I, Ornament, Stars } from "@/components/icons";
+import { I, Ornament } from "@/components/icons";
 import { Photo } from "@/components/photo";
 import { SITE } from "@/lib/data";
-import { venueHero, getawayPhotos, destinationPhotos, realWeddingPhotos, signatureResortsPhotos } from "@/lib/images";
+import { venueHero, getawayPhotos, destinationPhotos, realWeddingPhotos } from "@/lib/images";
 import { HeroSearch } from "@/components/hero-search";
 import { CarouselWrap } from "@/components/carousel-wrap";
+import { HeroCarousel } from "@/components/hero-carousel";
+import { SignatureCarousel } from "@/components/signature-carousel";
 import { getVenues, getGetaways, getDestinations, getRealWeddings } from "@/lib/db/queries";
-import { getSiteConfig } from "@/lib/site-config";
+import { getSiteConfig, getSiteContent } from "@/lib/site-config";
 
 export default async function HomePage() {
-  const [[venues, getaways, destinations, realWeddings], cfg] = await Promise.all([
+  const [[venues, getaways, destinations, realWeddings], cfg, siteContent] = await Promise.all([
     Promise.all([getVenues(), getGetaways(), getDestinations(), getRealWeddings()]).catch(() => [[], [], [], []] as const),
     getSiteConfig(),
+    getSiteContent(),
   ]);
-  const signature = venues.find((v) => v.isSignature) ?? null;
+  const signatures = venues.filter((v) => v.isSignature);
   const featured = venues.filter((v) => !v.isSignature).slice(0, 4);
 
   return (
@@ -27,13 +30,7 @@ export default async function HomePage() {
       {/* HERO */}
       <section className="hero">
         <div className="hero-bg">
-          <Photo
-            src={signatureResortsPhotos.hero}
-            variant="garden"
-            label="signature resorts · wardha road"
-            style={{ height: "100%" }}
-          />
-          <div className="hero-overlay" />
+          <HeroCarousel images={siteContent.hero_images} interval={siteContent.hero_carousel_interval} />
         </div>
         <div className="hero-content">
           <div className="eyebrow" style={{ color: "#F0D7B0", letterSpacing: "0.28em" }}>
@@ -58,51 +55,23 @@ export default async function HomePage() {
 
         <div className="container">
           <div className="hero-trust">
-            <div><span className="num">42</span><span>Handpicked venues</span></div>
-            <div><span className="num">7,800+</span><span>Weddings hosted</span></div>
-            <div><span className="num">4.86</span><span>Avg. couple rating</span></div>
-            <div><span className="num">₹0</span><span>Platform fee</span></div>
-            <div><span className="num">18yr</span><span>Nagpur operators</span></div>
+            {siteContent.hero_stats.map((s, i) => (
+              <div key={i}><span className="num">{s.num}</span><span>{s.label}</span></div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* SIGNATURE STRIP */}
-      {cfg.section_venues && signature && <section className="sig-strip">
-        <div className="sig-inner">
-          <Link
-            href={`/venues/nagpur/wardha-road/${signature.slug}`}
-            className="sig-media ph dusk has-img"
-            style={{ display: "block" }}
-            aria-label="View Signature Resorts details"
-          >
-            <img src={signatureResortsPhotos.gallery[1]} alt="Signature Resorts · pool at night" loading="lazy" decoding="async" />
-            <span className="ph-label">signature resorts · 14 acres · wardha road</span>
-            <span className="sig-media-hover">View property →</span>
-          </Link>
-          <div>
-            <div className="eyebrow" style={{ color: "var(--brand)" }}>Our flagship</div>
-            <h2 style={{ fontSize: "clamp(36px, 4vw, 56px)", lineHeight: 1.05, margin: "12px 0 20px" }}>
-              Signature Resorts <span className="italic-serif" style={{ color: "var(--brand)" }}>— where every wedding is ours.</span>
-            </h2>
-            <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ink-soft)", marginBottom: 22 }}>
-              {signature.description}
-            </p>
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 24, fontSize: 13, color: "var(--ink-soft)" }}>
-              <span><I.Users width={14} height={14} /> 200 – 1,200 guests</span>
-              <span><I.Bed width={14} height={14} /> {signature.rooms} rooms on-site</span>
-              <span><I.Car width={14} height={14} /> {signature.parking} cars · valet</span>
-              {cfg.feature_reviews && <span><Stars value={signature.rating} size={13} /> {signature.rating} · {signature.reviews} reviews</span>}
-            </div>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <Link href={`/venues/nagpur/wardha-road/${signature.slug}`} className="btn btn-primary btn-lg">
-                Tour Signature Resorts <I.Arrow width={14} height={14} />
-              </Link>
-              <Link href="/contact" className="btn btn-ghost btn-lg">Book a site visit</Link>
-            </div>
-          </div>
-        </div>
-      </section>}
+      {cfg.section_venues && signatures.length > 0 && (
+        <section className="sig-strip">
+          <SignatureCarousel
+            venues={signatures}
+            interval={siteContent.flagship_carousel_interval}
+            cfg={cfg}
+          />
+        </section>
+      )}
 
       {/* FEATURED VENUES */}
       {cfg.section_venues && <section className="block">
@@ -227,38 +196,40 @@ export default async function HomePage() {
       </section>}
 
       {/* HOW IT WORKS */}
-      <section className="block">
-        <div className="block-head">
-          <div>
-            <Ornament>HOW WE WORK</Ornament>
-            <h2 className="block-title">
-              Four steps, <span className="italic-serif" style={{ color: "var(--brand)" }}>one wedding.</span>
-            </h2>
+      {cfg.section_how_it_works && (
+        <section className="block">
+          <div className="block-head">
+            <div>
+              <Ornament>HOW WE WORK</Ornament>
+              <h2 className="block-title">
+                Four steps, <span className="italic-serif" style={{ color: "var(--brand)" }}>one wedding.</span>
+              </h2>
+            </div>
           </div>
-        </div>
-        <div className="steps">
-          <div className="step">
-            <div className="step-n">01</div>
-            <h4>Tell us the date</h4>
-            <p>Share your dates, guest count, and budget. We&rsquo;ll pull real availability across 42 Nagpur venues in under an hour.</p>
+          <div className="steps">
+            <div className="step">
+              <div className="step-n">01</div>
+              <h4>Tell us the date</h4>
+              <p>Share your dates, guest count, and budget. We&rsquo;ll pull real availability across 42 Nagpur venues in under an hour.</p>
+            </div>
+            <div className="step">
+              <div className="step-n">02</div>
+              <h4>Walk three venues</h4>
+              <p>We shortlist three — our pick, your pick, and a curveball. One Saturday, one site-visit, one decision made together.</p>
+            </div>
+            <div className="step">
+              <div className="step-n">03</div>
+              <h4>Lock vendors</h4>
+              <p>Photographer, décor, makeup, catering, DJ, pandit — we bring the shortlist, you approve, we handle the paperwork.</p>
+            </div>
+            <div className="step">
+              <div className="step-n">04</div>
+              <h4>Show up + celebrate</h4>
+              <p>Day-of coordinator on-site from 6am. You arrive at the mandap. Everything else is our problem.</p>
+            </div>
           </div>
-          <div className="step">
-            <div className="step-n">02</div>
-            <h4>Walk three venues</h4>
-            <p>We shortlist three — our pick, your pick, and a curveball. One Saturday, one site-visit, one decision made together.</p>
-          </div>
-          <div className="step">
-            <div className="step-n">03</div>
-            <h4>Lock vendors</h4>
-            <p>Photographer, décor, makeup, catering, DJ, pandit — we bring the shortlist, you approve, we handle the paperwork.</p>
-          </div>
-          <div className="step">
-            <div className="step-n">04</div>
-            <h4>Show up + celebrate</h4>
-            <p>Day-of coordinator on-site from 6am. You arrive at the mandap. Everything else is our problem.</p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* REAL WEDDINGS */}
       {cfg.section_real_weddings && <section className="block">
@@ -285,19 +256,21 @@ export default async function HomePage() {
       </section>}
 
       {/* TESTIMONIAL */}
-      <section className="testimonial">
-        <Ornament>A COUPLE&apos;S NOTE</Ornament>
-        <blockquote>
-          &ldquo;The hall was exactly as the mockup. Our wedding cost <span className="italic-serif" style={{ color: "var(--brand)" }}>₹11,000 less</span> than the first estimate — I&rsquo;ve never heard of that happening anywhere in India.&rdquo;
-        </blockquote>
-        <div className="testi-by">
-          <div className="testi-avatar ph rose" />
-          <div style={{ fontSize: 13 }}>
-            <div style={{ fontWeight: 600 }}>Priya & Arjun</div>
-            <div style={{ color: "var(--ink-mute)" }}>Centre Point Grand · Dec 2025 · 420 guests</div>
+      {cfg.section_testimonial && (
+        <section className="testimonial">
+          <Ornament>A COUPLE&apos;S NOTE</Ornament>
+          <blockquote>
+            &ldquo;The hall was exactly as the mockup. Our wedding cost <span className="italic-serif" style={{ color: "var(--brand)" }}>₹11,000 less</span> than the first estimate — I&rsquo;ve never heard of that happening anywhere in India.&rdquo;
+          </blockquote>
+          <div className="testi-by">
+            <div className="testi-avatar ph rose" />
+            <div style={{ fontSize: 13 }}>
+              <div style={{ fontWeight: 600 }}>Priya & Arjun</div>
+              <div style={{ color: "var(--ink-mute)" }}>Centre Point Grand · Dec 2025 · 420 guests</div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <Footer />
       <MobileTabbar active="Home" />
