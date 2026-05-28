@@ -9,12 +9,14 @@ import { venueHero, getawayPhotos, destinationPhotos, realWeddingPhotos, signatu
 import { HeroSearch } from "@/components/hero-search";
 import { CarouselWrap } from "@/components/carousel-wrap";
 import { getVenues, getGetaways, getDestinations, getRealWeddings } from "@/lib/db/queries";
+import { getSiteConfig } from "@/lib/site-config";
 
 export default async function HomePage() {
-  const [venues, getaways, destinations, realWeddings] = await Promise.all([
-    getVenues(), getGetaways(), getDestinations(), getRealWeddings(),
+  const [[venues, getaways, destinations, realWeddings], cfg] = await Promise.all([
+    Promise.all([getVenues(), getGetaways(), getDestinations(), getRealWeddings()]).catch(() => [[], [], [], []] as const),
+    getSiteConfig(),
   ]);
-  const signature = venues.find((v) => v.isSignature)!;
+  const signature = venues.find((v) => v.isSignature) ?? null;
   const featured = venues.filter((v) => !v.isSignature).slice(0, 4);
 
   return (
@@ -66,7 +68,7 @@ export default async function HomePage() {
       </section>
 
       {/* SIGNATURE STRIP */}
-      <section className="sig-strip">
+      {cfg.section_venues && signature && <section className="sig-strip">
         <div className="sig-inner">
           <Link
             href={`/venues/nagpur/wardha-road/${signature.slug}`}
@@ -90,7 +92,7 @@ export default async function HomePage() {
               <span><I.Users width={14} height={14} /> 200 – 1,200 guests</span>
               <span><I.Bed width={14} height={14} /> {signature.rooms} rooms on-site</span>
               <span><I.Car width={14} height={14} /> {signature.parking} cars · valet</span>
-              <span><Stars value={signature.rating} size={13} /> {signature.rating} · {signature.reviews} reviews</span>
+              {cfg.feature_reviews && <span><Stars value={signature.rating} size={13} /> {signature.rating} · {signature.reviews} reviews</span>}
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Link href={`/venues/nagpur/wardha-road/${signature.slug}`} className="btn btn-primary btn-lg">
@@ -100,10 +102,10 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* FEATURED VENUES */}
-      <section className="block">
+      {cfg.section_venues && <section className="block">
         <div className="block-head">
           <div>
             <Ornament>NAGPUR VENUES</Ornament>
@@ -127,9 +129,11 @@ export default async function HomePage() {
               <div className="vcard-body">
                 <div className="vcard-row1">
                   <span className="chip outline">{v.type}</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-                    <I.Star width={13} height={13} style={{ color: "var(--accent)" }} /> {v.rating}
-                  </span>
+                  {cfg.feature_reviews && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+                      <I.Star width={13} height={13} style={{ color: "var(--accent)" }} /> {v.rating}
+                    </span>
+                  )}
                 </div>
                 <h3 className="vcard-name">{v.name}</h3>
                 <div className="vcard-loc"><I.Pin width={12} height={12} /> {v.locality}</div>
@@ -150,10 +154,10 @@ export default async function HomePage() {
           ))}
         </div>
         </CarouselWrap>
-      </section>
+      </section>}
 
       {/* WEEKEND GETAWAY */}
-      <section className="block">
+      {cfg.section_getaways && <section className="block">
         <div className="getaway-block">
           <div className="getaway-intro">
             <Ornament>WEEKEND ESCAPES</Ornament>
@@ -191,10 +195,10 @@ export default async function HomePage() {
           </div>
           </CarouselWrap>
         </div>
-      </section>
+      </section>}
 
       {/* DESTINATION BAND */}
-      <section className="destband">
+      {cfg.section_destinations && <section className="destband">
         <div className="destband-inner">
           <div className="destband-head">
             <Ornament>BEYOND NAGPUR</Ornament>
@@ -220,7 +224,7 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* HOW IT WORKS */}
       <section className="block">
@@ -257,7 +261,7 @@ export default async function HomePage() {
       </section>
 
       {/* REAL WEDDINGS */}
-      <section className="block">
+      {cfg.section_real_weddings && <section className="block">
         <div className="block-head">
           <div>
             <Ornament>REAL WEDDINGS</Ornament>
@@ -278,7 +282,7 @@ export default async function HomePage() {
             </Link>
           ))}
         </div>
-      </section>
+      </section>}
 
       {/* TESTIMONIAL */}
       <section className="testimonial">

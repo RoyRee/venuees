@@ -10,6 +10,8 @@ import { VenueFilters } from "@/components/venue-filters";
 import { SortSelect } from "@/components/sort-select";
 import { venueHero } from "@/lib/images";
 import { getVenues } from "@/lib/db/queries";
+import { getSiteConfig } from "@/lib/site-config";
+import { SectionDisabled } from "@/components/section-disabled";
 
 export const metadata = {
   title: "Wedding venues in Nagpur — Venuees.in",
@@ -38,7 +40,8 @@ export default async function VenuesListPage({
 }: {
   searchParams: Promise<SP>;
 }) {
-  const sp = await searchParams;
+  const [sp, siteConfig] = await Promise.all([searchParams, getSiteConfig()]);
+  if (!siteConfig.section_venues) return <SectionDisabled label="Venues" />;
 
   // Normalise: params can be string or string[] (when repeated)
   const toArr = (v?: string | string[]) => v ? (Array.isArray(v) ? v : [v]) : undefined;

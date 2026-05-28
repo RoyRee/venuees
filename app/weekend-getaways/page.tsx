@@ -6,6 +6,9 @@ import { I, Ornament, Stars } from "@/components/icons";
 import { getGetaways } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { getawayPhotos } from "@/lib/images";
+import { CarouselWrap } from "@/components/carousel-wrap";
+import { getSiteConfig } from "@/lib/site-config";
+import { SectionDisabled } from "@/components/section-disabled";
 
 export const metadata = {
   title: "Weekend getaways from Nagpur — Venuees.in",
@@ -13,7 +16,8 @@ export const metadata = {
 };
 
 export default async function GetawayHubPage() {
-  const getaways = await getGetaways();
+  const [getaways, siteConfig] = await Promise.all([getGetaways(), getSiteConfig()]);
+  if (!siteConfig.section_getaways) return <SectionDisabled label="Weekend Getaways" />;
   return (
     <div>
       <MobileNav />
@@ -38,7 +42,8 @@ export default async function GetawayHubPage() {
       </section>
 
       <section className="block" style={{ paddingTop: 0 }}>
-        <div className="gcards" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <CarouselWrap count={getaways.length}>
+        <div className="gcards">
           {getaways.map((g) => (
             <Link key={g.slug} href={`/weekend-getaways/${g.slug}`} className="gcard">
               <Photo src={getawayPhotos[g.slug]?.hero} variant={g.ph} label={g.scene} style={{ height: 240 }} />
@@ -49,7 +54,7 @@ export default async function GetawayHubPage() {
                     <Stars value={g.rating} size={12} /> {g.rating}
                   </span>
                 </div>
-                <h4 style={{ fontSize: 22 }}>{g.name}</h4>
+                <h4>{g.name}</h4>
                 <div className="gcard-loc"><I.Pin width={11} height={11} /> {g.location}</div>
                 <p style={{ fontSize: 13, color: "var(--ink-soft)", fontStyle: "italic", margin: "8px 0 10px" }}>
                   &ldquo;{g.tagline}&rdquo;
@@ -68,6 +73,7 @@ export default async function GetawayHubPage() {
             </Link>
           ))}
         </div>
+        </CarouselWrap>
       </section>
 
       <section className="block">

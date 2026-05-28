@@ -11,6 +11,8 @@ import { VendorFilters } from "@/components/vendor-filters";
 import { SortSelect } from "@/components/sort-select";
 import { Photo } from "@/components/photo";
 import { vendorPhotos } from "@/lib/images";
+import { getSiteConfig } from "@/lib/site-config";
+import { SectionDisabled } from "@/components/section-disabled";
 
 const CATEGORY_META: Record<string, { name: string; blurb: string; ph: string }> = {
   photographers: { name: "Photographers", blurb: "From candid-only storytellers to 3-photographer + film crews. Every portfolio below is from a wedding we personally attended.", ph: "v3" },
@@ -45,11 +47,11 @@ export default async function VendorCategoryPage({
   params: Promise<{ category: string }>;
   searchParams: Promise<SP>;
 }) {
-  const { category } = await params;
+  const [{ category }, sp, siteConfig] = await Promise.all([params, searchParams, getSiteConfig()]);
+  if (!siteConfig.section_vendors) return <SectionDisabled label="Vendors" />;
+
   const meta = CATEGORY_META[category];
   if (!meta) return notFound();
-
-  const sp = await searchParams;
   const basePath = `/vendors/${category}`;
 
   const list = await getVendors({

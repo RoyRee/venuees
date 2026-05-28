@@ -7,6 +7,8 @@ import { I, Ornament } from "@/components/icons";
 import { getDestinations } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { destinationPhotos } from "@/lib/images";
+import { getSiteConfig } from "@/lib/site-config";
+import { SectionDisabled } from "@/components/section-disabled";
 
 export const metadata = {
   title: "Destination weddings — Venuees.in",
@@ -14,7 +16,8 @@ export const metadata = {
 };
 
 export default async function DestinationHubPage() {
-  const destinations = await getDestinations();
+  const [destinations, siteConfig] = await Promise.all([getDestinations(), getSiteConfig()]);
+  if (!siteConfig.section_destinations) return <SectionDisabled label="Destination Weddings" />;
   return (
     <div className="dh">
       <MobileNav />
