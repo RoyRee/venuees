@@ -6,6 +6,8 @@ import { I, Ornament } from "@/components/icons";
 import { getRealWeddings } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { realWeddingPhotos } from "@/lib/images";
+import { getSiteConfig } from "@/lib/site-config";
+import { SectionDisabled } from "@/components/section-disabled";
 
 export const metadata = {
   title: "Real weddings — Venuees.in",
@@ -13,7 +15,8 @@ export const metadata = {
 };
 
 export default async function RealWeddingsHub() {
-  const realWeddings = await getRealWeddings();
+  const [realWeddings, siteConfig] = await Promise.all([getRealWeddings(), getSiteConfig()]);
+  if (!siteConfig.section_real_weddings) return <SectionDisabled label="Real Weddings" />;
   return (
     <div>
       <MobileNav />

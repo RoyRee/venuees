@@ -5,3 +5,4 @@ export * from "./destinations";
 export * from "./real-weddings";
 export * from "./enquiries";
 export * from "./profiles";
+export * from "./site-config";

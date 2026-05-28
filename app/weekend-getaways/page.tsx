@@ -7,6 +7,8 @@ import { getGetaways } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { getawayPhotos } from "@/lib/images";
 import { CarouselWrap } from "@/components/carousel-wrap";
+import { getSiteConfig } from "@/lib/site-config";
+import { SectionDisabled } from "@/components/section-disabled";
 
 export const metadata = {
   title: "Weekend getaways from Nagpur — Venuees.in",
@@ -14,7 +16,8 @@ export const metadata = {
 };
 
 export default async function GetawayHubPage() {
-  const getaways = await getGetaways();
+  const [getaways, siteConfig] = await Promise.all([getGetaways(), getSiteConfig()]);
+  if (!siteConfig.section_getaways) return <SectionDisabled label="Weekend Getaways" />;
   return (
     <div>
       <MobileNav />

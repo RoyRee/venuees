@@ -14,6 +14,7 @@ function navForRole(role: UserRole): NavItem[] {
     { href: "/dashboard/applications", label: "Applications",  icon: (p) => <I.Check {...p} /> },
     { href: "/dashboard/enquiries",    label: "All Enquiries", icon: (p) => <I.Cal {...p} /> },
     { href: "/dashboard/listings",     label: "Listings",      icon: (p) => <I.Pin {...p} /> },
+    { href: "/dashboard/site-config",  label: "Site Settings", icon: (p) => <I.SlidersH {...p} /> },
     { href: "/dashboard/profile",      label: "Profile",       icon: (p) => <I.Users {...p} /> },
   ];
   if (role === "vendor") return [
