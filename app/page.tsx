@@ -11,14 +11,14 @@ import { CarouselWrap } from "@/components/carousel-wrap";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { SignatureCarousel } from "@/components/signature-carousel";
 import { getVenues, getGetaways, getDestinations, getRealWeddings } from "@/lib/db/queries";
-import { getSiteConfig, getSiteContent } from "@/lib/site-config";
+import { getSiteConfig, getSiteContent, CONFIG_DEFAULTS, CONTENT_DEFAULTS } from "@/lib/site-config";
 
 export default async function HomePage() {
   const [[venues, getaways, destinations, realWeddings], cfg, siteContent] = await Promise.all([
     Promise.all([getVenues(), getGetaways(), getDestinations(), getRealWeddings()]).catch(() => [[], [], [], []] as const),
     getSiteConfig(),
     getSiteContent(),
-  ]);
+  ]).catch(() => [[[], [], [], []], CONFIG_DEFAULTS, CONTENT_DEFAULTS] as const);
   const signatures = venues.filter((v) => v.isSignature);
   const featured = venues.filter((v) => !v.isSignature).slice(0, 4);
 
