@@ -943,8 +943,12 @@
   position: relative;
 }
 .cal .day.avail { border-color: var(--mehendi); color: var(--mehendi); font-weight: 600; }
+.cal .day.avail:hover { background: color-mix(in srgb, var(--mehendi) 10%, transparent); }
+.cal .day.muhurat { border-color: #b45309; color: #92400e; font-weight: 700; background: #fffbeb; }
+.cal .day.muhurat:hover { background: #fef3c7; }
 .cal .day.limit { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .cal .day.booked { background: var(--line-soft); color: var(--ink-mute); text-decoration: line-through; }
+.cal .day.past { color: var(--line); border-color: var(--line-soft); }
 .cal .day.sel { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
 .cal-head { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 10px; max-width: 560px; }
 .cal-head div { font-size: 10px; text-align: center; letter-spacing: 0.15em; color: var(--ink-mute); }

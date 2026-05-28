@@ -12,6 +12,7 @@ import { getVenueBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { VenueTabs } from "@/components/venue-tabs";
+import { VenueCalendar } from "@/components/venue-calendar";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -85,21 +86,6 @@ function amenIcon(text: string) {
   return "Check";
 }
 
-function buildCalendar(blockedDates: string[]) {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const label = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
-  const days = Array.from({ length: daysInMonth }, (_, i) => {
-    const day = i + 1;
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const isBlocked = blockedDates.includes(dateStr);
-    return { n: day, state: isBlocked ? "booked" : "avail" };
-  });
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-  return { label, days, firstDayOfWeek };
-}
 
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -112,9 +98,6 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
   const reviewItems = meta.reviewItems ?? [];
   const locationInfo = meta.locationInfo ?? {};
   const blockedDates = meta.blockedDates ?? [];
-
-  const cal = buildCalendar(blockedDates);
-  const availableCount = cal.days.filter((d) => d.state === "avail").length;
 
   // Fetch uploaded photos + contact info from DB in parallel
   const [dbImages, contactRows] = await Promise.all([
@@ -210,7 +193,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             </div>
           </div>
           <div className="calendar-mini">
-            <b>{cal.label}</b> · {availableCount} date{availableCount !== 1 ? "s" : ""} still open
+            Tap a date in Availability to check muhurtas
           </div>
           <EnquiryForm
             kind="venue_enquiry"
@@ -397,27 +380,11 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
           {/* Availability */}
           <section id="availability" className="vd-section">
             <Ornament>AVAILABILITY</Ornament>
-            <h2>{cal.label}</h2>
+            <h2>Check dates & muhurats</h2>
             <p style={{ marginBottom: 20 }}>
-              {blockedDates.length > 0
-                ? `${availableCount} dates available · ${blockedDates.length} already booked.`
-                : "Live availability from our bookings system. Sunday muhurtas are in high demand between Nov–Feb."}
+              Tap any available date to pre-fill your enquiry. <strong style={{ color: "#92400e" }}>✦ Golden dates</strong> are auspicious muhurat days — they fill up first.
             </p>
-            <div className="cal-head">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (<div key={d}>{d}</div>))}
-            </div>
-            <div className="cal">
-              {Array.from({ length: cal.firstDayOfWeek }, (_, i) => (
-                <div key={`pad-${i}`} className="day" style={{ visibility: "hidden" }} />
-              ))}
-              {cal.days.map((d) => (
-                <div key={d.n} className={`day ${d.state}`}>{d.n}</div>
-              ))}
-            </div>
-            <div className="cal-legend">
-              <span><span className="dot" style={{ background: "var(--mehendi)" }} /> Available</span>
-              <span><span className="dot" style={{ background: "var(--line)" }} /> Booked</span>
-            </div>
+            <VenueCalendar blockedDates={blockedDates} />
           </section>
 
           {/* Reviews */}
