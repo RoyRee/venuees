@@ -11,6 +11,8 @@ import { eq } from "drizzle-orm";
 import { getVenueBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { EnquiryForm } from "@/components/enquiry-form";
+import { VenueTabs } from "@/components/venue-tabs";
+import { VenueCalendar } from "@/components/venue-calendar";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -84,21 +86,6 @@ function amenIcon(text: string) {
   return "Check";
 }
 
-function buildCalendar(blockedDates: string[]) {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const label = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
-  const days = Array.from({ length: daysInMonth }, (_, i) => {
-    const day = i + 1;
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const isBlocked = blockedDates.includes(dateStr);
-    return { n: day, state: isBlocked ? "booked" : "avail" };
-  });
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-  return { label, days, firstDayOfWeek };
-}
 
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -111,9 +98,6 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
   const reviewItems = meta.reviewItems ?? [];
   const locationInfo = meta.locationInfo ?? {};
   const blockedDates = meta.blockedDates ?? [];
-
-  const cal = buildCalendar(blockedDates);
-  const availableCount = cal.days.filter((d) => d.state === "avail").length;
 
   // Fetch uploaded photos + contact info from DB in parallel
   const [dbImages, contactRows] = await Promise.all([
@@ -209,7 +193,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             </div>
           </div>
           <div className="calendar-mini">
-            <b>{cal.label}</b> · {availableCount} date{availableCount !== 1 ? "s" : ""} still open
+            Tap a date in Availability to check muhurtas
           </div>
           <EnquiryForm
             kind="venue_enquiry"
@@ -222,20 +206,20 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         </aside>
       </header>
 
-      <div className="vd-tabs">
-        <button className="active">Overview</button>
-        {halls.length > 0 && <button>Halls & capacity</button>}
-        {packages.length > 0 && <button>Packages</button>}
-        {v.amenities.length > 0 && <button>Amenities</button>}
-        <button>Availability</button>
-        <button>Reviews ({reviewItems.length > 0 ? reviewItems.length : v.reviews})</button>
-        <button>Location</button>
-      </div>
+      <VenueTabs sections={[
+        { id: "overview",     label: "Overview" },
+        ...(halls.length > 0        ? [{ id: "halls",        label: "Halls & capacity" }] : []),
+        ...(packages.length > 0     ? [{ id: "packages",     label: "Packages" }]         : []),
+        ...(v.amenities.length > 0  ? [{ id: "amenities",    label: "Amenities" }]        : []),
+        { id: "availability", label: "Availability" },
+        { id: "reviews",      label: `Reviews (${reviewItems.length > 0 ? reviewItems.length : v.reviews})` },
+        { id: "location",     label: "Location" },
+      ]} />
 
       <div className="vd-body">
         <main>
           {/* Overview */}
-          <section className="vd-section">
+          <section id="overview" className="vd-section">
             <Ornament>OVERVIEW</Ornament>
             <h2>About {v.name}</h2>
             <p>{v.description}</p>
@@ -265,7 +249,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
           {/* Halls */}
           {halls.length > 0 && (
-            <section className="vd-section">
+            <section id="halls" className="vd-section">
               <Ornament>HALLS & CAPACITY</Ornament>
               <h2>{halls.length} venue{halls.length !== 1 ? "s" : ""} inside one address</h2>
               <p style={{ marginBottom: 24 }}>
@@ -294,7 +278,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
           {/* Packages */}
           {packages.length > 0 ? (
-            <section className="vd-section">
+            <section id="packages" className="vd-section">
               <Ornament>PACKAGES</Ornament>
               <h2>Pricing packages</h2>
               <p style={{ marginBottom: 28 }}>All-inclusive pricing per plate. Upgrade any layer separately.</p>
@@ -322,7 +306,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             </section>
           ) : (
             // Fallback static packages when none defined
-            <section className="vd-section">
+            <section id="packages" className="vd-section">
               <Ornament>PACKAGES</Ornament>
               <h2>Three ways to wed here</h2>
               <p style={{ marginBottom: 28 }}>All-inclusive pricing per plate — covers venue, catering, basic décor, and day-of coordination.</p>
@@ -376,7 +360,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
           {/* Amenities */}
           {v.amenities.length > 0 && (
-            <section className="vd-section">
+            <section id="amenities" className="vd-section">
               <Ornament>AMENITIES</Ornament>
               <h2>What&rsquo;s included</h2>
               <div className="amen-grid">
@@ -394,33 +378,17 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
           )}
 
           {/* Availability */}
-          <section className="vd-section">
+          <section id="availability" className="vd-section">
             <Ornament>AVAILABILITY</Ornament>
-            <h2>{cal.label}</h2>
+            <h2>Check dates & muhurats</h2>
             <p style={{ marginBottom: 20 }}>
-              {blockedDates.length > 0
-                ? `${availableCount} dates available · ${blockedDates.length} already booked.`
-                : "Live availability from our bookings system. Sunday muhurtas are in high demand between Nov–Feb."}
+              Tap any available date to pre-fill your enquiry. <strong style={{ color: "#92400e" }}>✦ Golden dates</strong> are auspicious muhurat days — they fill up first.
             </p>
-            <div className="cal-head">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (<div key={d}>{d}</div>))}
-            </div>
-            <div className="cal">
-              {Array.from({ length: cal.firstDayOfWeek }, (_, i) => (
-                <div key={`pad-${i}`} className="day" style={{ visibility: "hidden" }} />
-              ))}
-              {cal.days.map((d) => (
-                <div key={d.n} className={`day ${d.state}`}>{d.n}</div>
-              ))}
-            </div>
-            <div className="cal-legend">
-              <span><span className="dot" style={{ background: "var(--mehendi)" }} /> Available</span>
-              <span><span className="dot" style={{ background: "var(--line)" }} /> Booked</span>
-            </div>
+            <VenueCalendar blockedDates={blockedDates} />
           </section>
 
           {/* Reviews */}
-          <section className="vd-section">
+          <section id="reviews" className="vd-section">
             <Ornament>REVIEWS</Ornament>
             <h2>What couples say</h2>
             {reviewItems.length > 0 ? (
@@ -522,7 +490,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
           )}
 
           {/* Location */}
-          <section className="vd-section">
+          <section id="location" className="vd-section">
             <Ornament>LOCATION</Ornament>
             <h2>Getting here</h2>
             <div className="ph ocean" style={{ height: 300, borderRadius: "var(--radius-md)", marginTop: 16 }}>

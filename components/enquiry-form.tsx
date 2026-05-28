@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { I } from "@/components/icons";
 
 type EnquiryFormProps = {
@@ -28,6 +28,18 @@ export function EnquiryForm({
   const [phone, setPhone]         = useState("+91 ");
   const [email, setEmail]         = useState("");
   const [eventDate, setEventDate] = useState("");
+
+  // Listen for date selection from the availability calendar
+  useEffect(() => {
+    function onSelectDate(e: Event) {
+      const iso = (e as CustomEvent<string>).detail; // "YYYY-MM-DD"
+      const d = new Date(iso);
+      const formatted = d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+      setEventDate(formatted);
+    }
+    window.addEventListener("selectDate", onSelectDate);
+    return () => window.removeEventListener("selectDate", onSelectDate);
+  }, []);
   const [guests, setGuests]       = useState("150–500");
   const [message, setMessage]     = useState("");
   const [loading, setLoading]     = useState(false);
@@ -90,7 +102,7 @@ export function EnquiryForm({
   const isSidebar = variant === "sidebar";
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <form id="enquiry-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <input
         placeholder="Your name"
         value={name}
