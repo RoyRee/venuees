@@ -258,6 +258,7 @@
 /* Wrap a .vgrid or .gcards in .carousel-wrap to enable swipe on mobile */
 .carousel-wrap {
   position: relative;
+  overflow: hidden;
 }
 @media (max-width: 700px) {
   .carousel-wrap .vgrid,
