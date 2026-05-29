@@ -23,7 +23,14 @@ function getClient(): DrizzleClient {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
+    max: 1,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 5000,
   });
+  // Prevent unhandled 'error' events from crashing the serverless function.
+  // pg.Pool emits 'error' when a background connection dies; without a listener
+  // Node throws an uncaught exception that bypasses all try/catch.
+  pool.on("error", () => {});
   _client = drizzle(pool, { schema });
   return _client;
 }
