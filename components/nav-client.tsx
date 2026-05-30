@@ -8,13 +8,13 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { SiteConfig } from "@/lib/site-config";
 
 const ALL_LINKS = [
-  { n: "Venues",       href: "/venues",              section: "section_venues"           },
-  { n: "Vendors",      href: "/vendors",             section: "section_vendors"          },
-  { n: "Getaways",     href: "/weekend-getaways",    section: "section_getaways"         },
-  { n: "Destination",  href: "/destination-weddings",section: "section_destinations"     },
-  { n: "Events",       href: "/event-management",    section: "section_event_management" },
-  { n: "Real Weddings",href: "/real-weddings",       section: "section_real_weddings"    },
-  { n: "Journal",      href: "/blog",                section: "section_blog"             },
+  { n: "Venues",       href: "/venues",               section: "section_venues"           },
+  { n: "Events",       href: "/event-management",     section: "section_event_management" },
+  { n: "Vendors",      href: "/vendors",              section: "section_vendors"          },
+  { n: "Getaways",     href: "/weekend-getaways",     section: "section_getaways"         },
+  { n: "Destination",  href: "/destination-weddings", section: "section_destinations"     },
+  { n: "Real Weddings",href: "/real-weddings",        section: "section_real_weddings"    },
+  { n: "Journal",      href: "/blog",                 section: "section_blog"             },
 ];
 
 async function goToSaved(router: ReturnType<typeof useRouter>) {

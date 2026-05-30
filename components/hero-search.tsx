@@ -60,10 +60,10 @@ type Tab = "venues" | "getaways" | "destinations" | "vendors" | "events";
 
 const ALL_TABS: { id: Tab; label: string; section: string }[] = [
   { id: "venues",       label: "Venues",       section: "section_venues"            },
-  { id: "getaways",     label: "Getaways",     section: "section_getaways"          },
-  { id: "vendors",      label: "Vendors",      section: "section_vendors"           },
-  { id: "destinations", label: "Destinations", section: "section_destinations"      },
   { id: "events",       label: "Events",       section: "section_event_management"  },
+  { id: "vendors",      label: "Vendors",      section: "section_vendors"           },
+  { id: "getaways",     label: "Getaways",     section: "section_getaways"          },
+  { id: "destinations", label: "Destinations", section: "section_destinations"      },
 ];
 
 // ── Field sub-components ──────────────────────────────────────────────────────
