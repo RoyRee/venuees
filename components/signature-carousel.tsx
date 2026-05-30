@@ -47,8 +47,7 @@ export function SignatureCarousel({ venues, interval, cfg }: Props) {
           <span className="sig-media-hover">View property →</span>
         </Link>
         <div>
-          <div className="eyebrow" style={{ color: "var(--brand)" }}>Our flagship</div>
-          <h2 style={{ fontSize: "clamp(36px, 4vw, 56px)", lineHeight: 1.05, margin: "12px 0 20px" }}>
+          <h2 style={{ fontSize: "clamp(36px, 4vw, 56px)", lineHeight: 1.05, margin: "0 0 20px" }}>
             {v.name} <span className="italic-serif" style={{ color: "var(--brand)" }}>— where every wedding is ours.</span>
           </h2>
           <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ink-soft)", marginBottom: 22 }}>

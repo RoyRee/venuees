@@ -67,6 +67,9 @@ export default async function HomePage() {
       {/* SIGNATURE STRIP */}
       {cfg.section_venues && signatures.length > 0 && (
         <section className="sig-strip">
+          <div className="sig-ornament-wrap">
+            <Ornament>OUR FLAGSHIP</Ornament>
+          </div>
           <SignatureCarousel
             venues={signatures}
             interval={siteContent.flagship_carousel_interval}
@@ -77,14 +80,12 @@ export default async function HomePage() {
 
       {/* FEATURED VENUES */}
       {cfg.section_venues && <section className="block">
+        <Ornament>NAGPUR VENUES</Ornament>
         <div className="block-head">
-          <div>
-            <Ornament>NAGPUR VENUES</Ornament>
-            <h2 className="block-title">
-              Handpicked halls. <span className="italic-serif" style={{ color: "var(--brand)" }}>Honest numbers.</span>
-            </h2>
-          </div>
-          <Link href="/venues" className="block-link">All 42 venues <I.Arrow width={12} height={12} /></Link>
+          <h2 className="block-title">
+            Handpicked halls. <span className="italic-serif" style={{ color: "var(--brand)" }}>Honest numbers.</span>
+          </h2>
+          <Link href="/venues" className="block-link">All venues <I.Arrow width={12} height={12} /></Link>
         </div>
         <CarouselWrap count={featured.length}>
         <div className="vgrid">
@@ -129,13 +130,11 @@ export default async function HomePage() {
 
       {/* WEEKEND GETAWAY */}
       {cfg.section_getaways && <section className="block">
+        <Ornament>WEEKEND ESCAPES</Ornament>
         <div className="block-head">
-          <div>
-            <Ornament>WEEKEND ESCAPES</Ornament>
-            <h2 className="block-title">
-              Within four hours <span className="italic-serif" style={{ color: "var(--brand)" }}>of the orange city.</span>
-            </h2>
-          </div>
+          <h2 className="block-title">
+            Within four hours <span className="italic-serif" style={{ color: "var(--brand)" }}>of the orange city.</span>
+          </h2>
           <Link href="/weekend-getaways" className="block-link">All getaways <I.Arrow width={12} height={12} /></Link>
         </div>
         <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-soft)", marginBottom: 32, maxWidth: 560 }}>
@@ -198,13 +197,11 @@ export default async function HomePage() {
       {/* HOW IT WORKS */}
       {cfg.section_how_it_works && (
         <section className="block">
+          <Ornament>HOW WE WORK</Ornament>
           <div className="block-head">
-            <div>
-              <Ornament>HOW WE WORK</Ornament>
-              <h2 className="block-title">
-                Four steps, <span className="italic-serif" style={{ color: "var(--brand)" }}>one wedding.</span>
-              </h2>
-            </div>
+            <h2 className="block-title">
+              Four steps, <span className="italic-serif" style={{ color: "var(--brand)" }}>one wedding.</span>
+            </h2>
           </div>
           <div className="steps">
             <div className="step">
@@ -233,13 +230,11 @@ export default async function HomePage() {
 
       {/* REAL WEDDINGS */}
       {cfg.section_real_weddings && <section className="block">
+        <Ornament>REAL WEDDINGS</Ornament>
         <div className="block-head">
-          <div>
-            <Ornament>REAL WEDDINGS</Ornament>
-            <h2 className="block-title">
-              The couples, <span className="italic-serif" style={{ color: "var(--brand)" }}>the stories.</span>
-            </h2>
-          </div>
+          <h2 className="block-title">
+            The couples, <span className="italic-serif" style={{ color: "var(--brand)" }}>the stories.</span>
+          </h2>
           <Link href="/real-weddings" className="block-link">Full archive <I.Arrow width={12} height={12} /></Link>
         </div>
         <div className="realgrid">

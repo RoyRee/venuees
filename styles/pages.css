@@ -241,6 +241,7 @@
   margin: 0 auto;
 }
 @media (max-width: 900px) { .block { padding: 48px 24px; } }
+.block > .ornament { margin-bottom: 20px; }
 .block-head {
   display: flex; align-items: flex-end; justify-content: space-between;
   margin-bottom: 40px; gap: 24px;
@@ -249,7 +250,7 @@
 .block-title {
   font-size: clamp(32px, 4vw, 54px);
   line-height: 1.05;
-  margin-top: 10px;
+  margin-top: 0;
 }
 .block-link {
   display: inline-flex; align-items: center; gap: 6px;
@@ -523,6 +524,7 @@
   border-bottom: 1px solid var(--line-soft);
 }
 @media (max-width: 900px) { .sig-strip { padding: 50px 24px; } }
+.sig-ornament-wrap { max-width: var(--max-w); margin: 0 auto 44px; }
 .sig-inner { max-width: var(--max-w); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
 @media (max-width: 900px) { .sig-inner { grid-template-columns: 1fr; gap: 30px; } }
 .sig-media {
