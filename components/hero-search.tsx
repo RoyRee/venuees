@@ -48,13 +48,22 @@ const DESTINATIONS = [
   { label: "Rishikesh", value: "rishikesh" },
 ];
 
-type Tab = "venues" | "getaways" | "destinations" | "vendors";
+const EVENT_TYPES = [
+  { label: "Any service", value: "" },
+  { label: "Full planning", value: "full-planning" },
+  { label: "Partial planning", value: "partial-planning" },
+  { label: "Day-of coordination", value: "day-of" },
+  { label: "Décor & styling", value: "decor" },
+];
+
+type Tab = "venues" | "getaways" | "destinations" | "vendors" | "events";
 
 const ALL_TABS: { id: Tab; label: string; section: string }[] = [
-  { id: "venues",       label: "Venues",       section: "section_venues"       },
-  { id: "getaways",     label: "Getaways",     section: "section_getaways"     },
-  { id: "vendors",      label: "Vendors",      section: "section_vendors"      },
-  { id: "destinations", label: "Destinations", section: "section_destinations" },
+  { id: "venues",       label: "Venues",       section: "section_venues"            },
+  { id: "getaways",     label: "Getaways",     section: "section_getaways"          },
+  { id: "vendors",      label: "Vendors",      section: "section_vendors"           },
+  { id: "destinations", label: "Destinations", section: "section_destinations"      },
+  { id: "events",       label: "Events",       section: "section_event_management"  },
 ];
 
 // ── Field sub-components ──────────────────────────────────────────────────────
@@ -116,7 +125,7 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
   const [tab, setTab] = useState<Tab>(TABS[0]?.id ?? "venues");
 
   // Venues
-  const [venueDate, setVenueDate] = useState(MONTHS[7]);   // ~7 months out
+  const [venueDate, setVenueDate] = useState(MONTHS[7]);
   const [venueGuests, setVenueGuests] = useState("200-400");
 
   // Getaways
@@ -129,6 +138,9 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
   // Vendors
   const [vendorCategory, setVendorCategory] = useState("");
 
+  // Events
+  const [eventType, setEventType] = useState("");
+
   function handleSearch() {
     if (tab === "venues") {
       const p = new URLSearchParams({ date: venueDate, guests: venueGuests });
@@ -140,8 +152,11 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
       const p = new URLSearchParams({ guests: destGuests });
       if (destination) p.set("destination", destination);
       router.push(`/destination-weddings?${p}`);
-    } else {
+    } else if (tab === "vendors") {
       const base = vendorCategory ? `/vendors/${vendorCategory}` : "/vendors";
+      router.push(base);
+    } else {
+      const base = eventType ? `/event-management?type=${eventType}` : "/event-management";
       router.push(base);
     }
   }
@@ -240,6 +255,22 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
                 value={vendorCategory}
                 onChange={setVendorCategory}
                 options={VENDOR_CATEGORIES}
+              />
+            </Field>
+
+            <Field icon={<I.Pin width={17} height={17} />} label="WHERE">
+              <span className="hs-fixed">Nagpur</span>
+            </Field>
+          </>
+        )}
+
+        {tab === "events" && (
+          <>
+            <Field icon={<I.Cal width={17} height={17} />} label="SERVICE TYPE">
+              <SelectField
+                value={eventType}
+                onChange={setEventType}
+                options={EVENT_TYPES}
               />
             </Field>
 

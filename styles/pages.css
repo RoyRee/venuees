@@ -7,9 +7,9 @@
 .hero {
   position: relative;
   padding: 0 40px 40px;
-  min-height: 720px;
+  min-height: 680px;
 }
-@media (max-width: 900px) { .hero { padding: 0 0 20px; min-height: 620px; } }
+@media (max-width: 900px) { .hero { padding: 0 0 20px; min-height: 580px; } }
 
 .hero-bg {
   position: absolute; inset: 0;
@@ -39,8 +39,8 @@
 }
 .hero-content {
   position: relative; z-index: 1;
-  padding: 80px 60px 40px;
-  max-width: 900px;
+  padding: 64px 60px 36px;
+  max-width: 960px;
   color: #FFF8EA;
 }
 @media (max-width: 900px) { .hero-content { padding: 40px 24px 30px; } }
@@ -386,7 +386,6 @@
 }
 @media (max-width: 1000px) { .getaway-block { grid-template-columns: 1fr; gap: 28px; } }
 .getaway-intro { padding-top: 30px; }
-.getaway-intro .btn { margin-top: 24px; }
 .gcards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

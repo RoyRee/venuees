@@ -4,7 +4,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, listingApplicationsTable, venuesTable, vendorsTable } from "@/lib/db";
 import { eq, desc } from "drizzle-orm";
-import { ToggleActiveButton } from "./toggle-button";
+import { ToggleActiveButton, ToggleFlagshipButton } from "./toggle-button";
 
 function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -28,7 +28,7 @@ export default async function ListingsPage() {
 
   if (role === "admin") {
     const [venues, vendors] = await Promise.all([
-      db.select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug, locality: venuesTable.locality, isActive: venuesTable.isActive, ownerUserId: venuesTable.ownerUserId }).from(venuesTable).orderBy(desc(venuesTable.createdAt)),
+      db.select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug, locality: venuesTable.locality, isActive: venuesTable.isActive, isSignature: venuesTable.isSignature, ownerUserId: venuesTable.ownerUserId }).from(venuesTable).orderBy(desc(venuesTable.createdAt)),
       db.select({ id: vendorsTable.id, name: vendorsTable.name, slug: vendorsTable.slug, category: vendorsTable.category, isActive: vendorsTable.isActive, ownerUserId: vendorsTable.ownerUserId }).from(vendorsTable).orderBy(desc(vendorsTable.createdAt)),
     ]);
     return <AdminListings venues={venues} vendors={vendors} />;
@@ -68,7 +68,7 @@ export default async function ListingsPage() {
 }
 
 function AdminListings({ venues, vendors }: {
-  venues: { id: number; name: string; slug: string; locality: string; isActive: boolean; ownerUserId: string | null }[];
+  venues: { id: number; name: string; slug: string; locality: string; isActive: boolean; isSignature: boolean; ownerUserId: string | null }[];
   vendors: { id: number; name: string; slug: string; category: string; isActive: boolean; ownerUserId: string | null }[];
 }) {
   return (
@@ -96,6 +96,9 @@ function AdminListings({ venues, vendors }: {
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     {item.ownerUserId && <span style={{ fontSize: 11, color: "var(--ink-mute)" }}>Claimed</span>}
+                    {"isSignature" in item && (
+                      <ToggleFlagshipButton id={item.id} isSignature={item.isSignature} />
+                    )}
                     <ToggleActiveButton id={item.id} type={item.listingType} isActive={item.isActive} />
                   </div>
                 </div>

@@ -129,43 +129,41 @@ export default async function HomePage() {
 
       {/* WEEKEND GETAWAY */}
       {cfg.section_getaways && <section className="block">
-        <div className="getaway-block">
-          <div className="getaway-intro">
+        <div className="block-head">
+          <div>
             <Ornament>WEEKEND ESCAPES</Ornament>
-            <h2 className="block-title" style={{ marginTop: 12 }}>
+            <h2 className="block-title">
               Within four hours <span className="italic-serif" style={{ color: "var(--brand)" }}>of the orange city.</span>
             </h2>
-            <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-soft)", marginTop: 16 }}>
-              Pench, Tadoba, Khindsi, Chikhaldara — forest villas and lake cottages that turn a Friday evening into a proper reset. Perfect for bachelor trips, family pre-weddings, or just a break.
-            </p>
-            <Link href="/weekend-getaways" className="btn btn-ghost btn-lg">
-              All getaways <I.Arrow width={14} height={14} />
-            </Link>
           </div>
-          <CarouselWrap count={Math.min(getaways.length, 3)}>
-          <div className="gcards">
-            {getaways.slice(0, 3).map((g) => (
-              <Link key={g.slug} href={`/weekend-getaways/${g.slug}`} className="gcard">
-                <Photo src={getawayPhotos[g.slug]?.hero} variant={g.ph} label={g.scene} style={{ height: 180 }} />
-                <div className="gcard-body">
-                  <h4>{g.name}</h4>
-                  <div className="gcard-loc"><I.Pin width={11} height={11} /> {g.hoursFromNagpur}</div>
-                  <div className="gcard-specs">
-                    <span><I.Bed width={11} height={11} /> {g.beds} bed</span>
-                    <span><I.Users width={11} height={11} /> {g.guests} guests</span>
-                  </div>
-                  <div className="gcard-price">
-                    <div>
-                      <b>₹{g.weekday.toLocaleString("en-IN")}</b><small>/night · wknight</small>
-                    </div>
-                    <span className="wknd">wknd ₹{(g.weekend / 1000).toFixed(1)}k</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-          </CarouselWrap>
+          <Link href="/weekend-getaways" className="block-link">All getaways <I.Arrow width={12} height={12} /></Link>
         </div>
+        <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-soft)", marginBottom: 32, maxWidth: 560 }}>
+          Pench, Tadoba, Khindsi, Chikhaldara — forest villas and lake cottages that turn a Friday evening into a proper reset. Perfect for bachelor trips, family pre-weddings, or just a break.
+        </p>
+        <CarouselWrap count={Math.min(getaways.length, 3)}>
+        <div className="gcards">
+          {getaways.slice(0, 3).map((g) => (
+            <Link key={g.slug} href={`/weekend-getaways/${g.slug}`} className="gcard">
+              <Photo src={getawayPhotos[g.slug]?.hero} variant={g.ph} label={g.scene} style={{ height: 180 }} />
+              <div className="gcard-body">
+                <h4>{g.name}</h4>
+                <div className="gcard-loc"><I.Pin width={11} height={11} /> {g.hoursFromNagpur}</div>
+                <div className="gcard-specs">
+                  <span><I.Bed width={11} height={11} /> {g.beds} bed</span>
+                  <span><I.Users width={11} height={11} /> {g.guests} guests</span>
+                </div>
+                <div className="gcard-price">
+                  <div>
+                    <b>₹{g.weekday.toLocaleString("en-IN")}</b><small>/night · wknight</small>
+                  </div>
+                  <span className="wknd">wknd ₹{(g.weekend / 1000).toFixed(1)}k</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+        </CarouselWrap>
       </section>}
 
       {/* DESTINATION BAND */}
