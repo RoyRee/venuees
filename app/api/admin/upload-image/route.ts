@@ -17,12 +17,15 @@ export async function POST(req: NextRequest) {
   const admin = getAdminSupabase();
   if (!admin) return NextResponse.json({ error: "Storage not configured" }, { status: 500 });
 
-  // Ensure bucket exists (idempotent — ignore "already exists" error)
+  // Ensure bucket exists with public access.
+  // createBucket fails silently if already exists; updateBucket forces public=true
+  // on any pre-existing private bucket.
   await admin.storage.createBucket(BUCKET, {
     public: true,
-    fileSizeLimit: 10 * 1024 * 1024, // 10 MB
+    fileSizeLimit: 10 * 1024 * 1024,
     allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],
   }).catch(() => {});
+  await admin.storage.updateBucket(BUCKET, { public: true }).catch(() => {});
 
   const form = await req.formData();
   const file = form.get("file") as File | null;
