@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from "react";
 
 type Props = { images: string[]; interval: number };
 
-export function HeroCarousel({ images, interval }: Props) {
+export function HeroCarousel({ images: rawImages, interval }: Props) {
+  const images = Array.isArray(rawImages) && rawImages.length > 0 ? rawImages : [];
   const [active, setActive] = useState(0);
   const paused = useRef(false);
 

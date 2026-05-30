@@ -110,11 +110,16 @@ export const getSiteContent = cache(async (): Promise<SiteContent> => {
     const rows = await db.select().from(siteConfigTable);
     const content: SiteContent = JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
     for (const row of rows) {
-      if (CONTENT_KEYS.has(row.key)) {
-        try {
-          (content as Record<string, unknown>)[row.key] = JSON.parse(row.value);
-        } catch { /* ignore malformed JSON */ }
-      }
+      if (!CONTENT_KEYS.has(row.key)) continue;
+      try {
+        const parsed = JSON.parse(row.value);
+        // Validate type matches what each key expects — discard corrupted rows.
+        if (row.key === "hero_images" && !Array.isArray(parsed)) continue;
+        if (row.key === "hero_stats" && !Array.isArray(parsed)) continue;
+        if (row.key === "hero_carousel_interval" && typeof parsed !== "number") continue;
+        if (row.key === "flagship_carousel_interval" && typeof parsed !== "number") continue;
+        (content as Record<string, unknown>)[row.key] = parsed;
+      } catch { /* ignore malformed JSON */ }
     }
     return content;
   } catch {

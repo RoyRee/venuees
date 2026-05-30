@@ -55,7 +55,7 @@ export default async function HomePage() {
 
         <div className="container">
           <div className="hero-trust">
-            {siteContent.hero_stats.map((s, i) => (
+            {(Array.isArray(siteContent.hero_stats) ? siteContent.hero_stats : []).map((s, i) => (
               <div key={i}><span className="num">{s.num}</span><span>{s.label}</span></div>
             ))}
           </div>
