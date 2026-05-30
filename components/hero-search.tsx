@@ -50,11 +50,11 @@ const DESTINATIONS = [
 
 type Tab = "venues" | "getaways" | "destinations" | "vendors";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "venues",       label: "Venues" },
-  { id: "getaways",     label: "Getaways" },
-  { id: "vendors",      label: "Vendors" },
-  { id: "destinations", label: "Destinations" },
+const ALL_TABS: { id: Tab; label: string; section: string }[] = [
+  { id: "venues",       label: "Venues",       section: "section_venues"       },
+  { id: "getaways",     label: "Getaways",     section: "section_getaways"     },
+  { id: "vendors",      label: "Vendors",      section: "section_vendors"      },
+  { id: "destinations", label: "Destinations", section: "section_destinations" },
 ];
 
 // ── Field sub-components ──────────────────────────────────────────────────────
@@ -108,11 +108,12 @@ function SelectField({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function HeroSearch() {
+export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
   const router = useRouter();
   const tabBarRef = useRef<HTMLDivElement>(null);
 
-  const [tab, setTab] = useState<Tab>("venues");
+  const TABS = ALL_TABS.filter((t) => cfg[t.section] !== false);
+  const [tab, setTab] = useState<Tab>(TABS[0]?.id ?? "venues");
 
   // Venues
   const [venueDate, setVenueDate] = useState(MONTHS[7]);   // ~7 months out

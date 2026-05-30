@@ -1,8 +1,10 @@
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Ornament } from "@/components/icons";
+import { requireSection } from "@/lib/section-guard";
 
 // Static post data — will be replaced with DB reads when blog CMS is built (Phase 2)
 const POSTS: Record<string, {
@@ -162,6 +164,7 @@ function renderBody(md: string): string {
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  await requireSection("section_blog");
   const { slug } = await params;
   const post = POSTS[slug];
   if (!post) return notFound();

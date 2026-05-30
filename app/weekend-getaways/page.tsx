@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { requireSection } from "@/lib/section-guard";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
@@ -16,6 +17,7 @@ export const metadata = {
 };
 
 export default async function GetawayHubPage() {
+  await requireSection("section_getaways");
   const [getaways, siteConfig] = await Promise.all([getGetaways(), getSiteConfig()]);
   if (!siteConfig.section_getaways) return <SectionDisabled label="Weekend Getaways" />;
   return (

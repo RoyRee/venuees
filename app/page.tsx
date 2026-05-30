@@ -43,14 +43,16 @@ export default async function HomePage() {
             Owner-operated venues and vetted vendors across Nagpur. No middlemen, no &ldquo;starting from&rdquo; pricing — the quote is the quote.
           </p>
 
-          <HeroSearch />
+          <HeroSearch cfg={cfg as Record<string, boolean>} />
 
+          {cfg.section_venues && (
           <div className="hero-chips">
             <Link href="/venues?type=lawn" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Lawns & farmhouses</Link>
             <Link href="/venues?type=hotel" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Hotels & ballrooms</Link>
             <Link href="/venues?type=heritage" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Heritage havelis</Link>
             <Link href="/venues?type=resort" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Resorts</Link>
           </div>
+          )}
         </div>
 
         <div className="container">

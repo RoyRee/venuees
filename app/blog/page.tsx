@@ -1,7 +1,9 @@
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
+import { requireSection } from "@/lib/section-guard";
 
 export const metadata = {
   title: "Journal — Venuees.in",
@@ -17,7 +19,8 @@ const POSTS = [
   { slug: "farmhouse-wedding-guide", title: "Farmhouse weddings · what nobody tells you about the bathrooms", category: "Planning", read: "4 min", ph: "v5", date: "Dec 22, 2025" },
 ];
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  await requireSection("section_blog");
   return (
     <div>
       <MobileNav />

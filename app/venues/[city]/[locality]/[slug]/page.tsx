@@ -13,6 +13,7 @@ import { Photo } from "@/components/photo";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { VenueTabs } from "@/components/venue-tabs";
 import { VenueCalendar } from "@/components/venue-calendar";
+import { requireSection } from "@/lib/section-guard";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -88,6 +89,7 @@ function amenIcon(text: string) {
 
 
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  await requireSection("section_venues");
   const { slug } = await params;
   const v = await getVenueBySlug(slug);
   if (!v) return notFound();

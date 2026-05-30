@@ -6,6 +6,7 @@ import { I, Ornament, Stars } from "@/components/icons";
 import { Photo } from "@/components/photo";
 import { vendorPhotos } from "@/lib/images";
 import { getVendors } from "@/lib/db/queries";
+import { requireSection } from "@/lib/section-guard";
 
 export const metadata = {
   title: "Wedding vendors in Nagpur — Venuees.in",
@@ -23,6 +24,7 @@ const CATEGORIES = [
 ];
 
 export default async function VendorsHubPage() {
+  await requireSection("section_vendors");
   const vendors = await getVendors();
   return (
     <div>

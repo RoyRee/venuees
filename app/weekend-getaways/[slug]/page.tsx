@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { requireSection } from "@/lib/section-guard";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
@@ -24,6 +25,7 @@ const ADDONS = [
 ];
 
 export default async function GetawayDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  await requireSection("section_getaways");
   const { slug } = await params;
   const g = await getGetawayBySlug(slug);
   if (!g) return notFound();

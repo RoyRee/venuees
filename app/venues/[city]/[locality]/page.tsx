@@ -6,6 +6,7 @@ import { I, Stars } from "@/components/icons";
 import { Photo } from "@/components/photo";
 import { venueHero } from "@/lib/images";
 import { getVenues } from "@/lib/db/queries";
+import { requireSection } from "@/lib/section-guard";
 
 // Maps locality slug → display name
 const LOCALITY_NAMES: Record<string, string> = {
@@ -47,6 +48,7 @@ export function generateStaticParams() {
 export const dynamic = "force-dynamic";
 
 export default async function LocalityVenuesPage({ params }: { params: Promise<{ city: string; locality: string }> }) {
+  await requireSection("section_venues");
   const { city, locality } = await params;
   const cityName     = CITY_NAMES[city];
   const localityName = LOCALITY_NAMES[locality];

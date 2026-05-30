@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { requireSection } from "@/lib/section-guard";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
@@ -16,6 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function DestinationDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  await requireSection("section_destinations");
   const { slug } = await params;
   const d = await getDestinationBySlug(slug);
   if (!d) return notFound();
