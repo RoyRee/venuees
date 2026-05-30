@@ -168,9 +168,9 @@ export default async function HomePage() {
       {/* DESTINATION BAND */}
       {cfg.section_destinations && <section className="destband">
         <div className="destband-inner">
+          <Ornament style={{ color: "rgba(255,248,234,0.5)", marginBottom: 28 }}>BEYOND NAGPUR</Ornament>
           <div className="destband-head">
-            <Ornament>BEYOND NAGPUR</Ornament>
-            <h2 className="block-title" style={{ color: "#FFF8EA", marginTop: 12 }}>
+            <h2 className="block-title" style={{ color: "#FFF8EA", marginTop: 0 }}>
               Destination weddings, <span className="italic-serif" style={{ color: "#F0D7B0" }}>planned end-to-end.</span>
             </h2>
             <p style={{ fontSize: 15, color: "rgba(255,248,234,0.75)", marginTop: 14, lineHeight: 1.6 }}>
