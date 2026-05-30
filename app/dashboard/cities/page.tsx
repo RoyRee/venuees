@@ -7,6 +7,20 @@ import { getUserRole } from "@/lib/auth/role";
 import { db, citiesTable } from "@/lib/db";
 import { CitiesManager } from "./cities-manager";
 
+const SETUP_SQL = `CREATE TABLE IF NOT EXISTS cities (
+  id         SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  slug       TEXT NOT NULL UNIQUE,
+  lat        DOUBLE PRECISION NOT NULL,
+  lng        DOUBLE PRECISION NOT NULL,
+  is_active  BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO cities (name, slug, lat, lng)
+VALUES ('Nagpur', 'nagpur', 21.1458, 79.0882)
+ON CONFLICT (slug) DO NOTHING;`;
+
 export default async function CitiesPage() {
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase!.auth.getUser();
@@ -15,7 +29,14 @@ export default async function CitiesPage() {
   const role = await getUserRole(user.id, user.email!);
   if (role !== "admin") redirect("/dashboard");
 
-  const cities = await db.select().from(citiesTable).orderBy(citiesTable.name);
+  let cities: { id: number; name: string; slug: string; lat: number; lng: number; isActive: boolean; createdAt: Date }[] = [];
+  let tableReady = true;
+
+  try {
+    cities = await db.select().from(citiesTable).orderBy(citiesTable.name);
+  } catch {
+    tableReady = false;
+  }
 
   return (
     <div>
@@ -24,11 +45,30 @@ export default async function CitiesPage() {
           Operational Cities
         </h1>
         <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>
-          Cities where Venuees.in is live. Users near each city will see it as their local market.
-          Run <code style={{ fontSize: 13, background: "var(--surface-tint)", padding: "1px 6px", borderRadius: 4 }}>POST /api/admin/migrate</code> first to create the table if needed.
+          Cities where Venuees.in is live. Users near each city will automatically see it as their local market.
         </p>
       </div>
-      <CitiesManager initialCities={cities} />
+
+      {!tableReady && (
+        <div style={{ background: "#fff8e8", border: "1px solid #f5c842", borderRadius: 10, padding: "20px 24px", marginBottom: 28 }}>
+          <div style={{ fontWeight: 600, color: "#7a5200", marginBottom: 10, fontSize: 15 }}>
+            One-time setup required
+          </div>
+          <p style={{ fontSize: 14, color: "#7a5200", marginBottom: 14, lineHeight: 1.6 }}>
+            The <code>cities</code> table does not exist yet. Run the SQL below in the{" "}
+            <strong>Supabase Dashboard → SQL Editor</strong>, then refresh this page.
+          </p>
+          <pre style={{
+            background: "#1e1e1e", color: "#d4d4d4", padding: "16px 20px",
+            borderRadius: 8, fontSize: 13, overflowX: "auto", lineHeight: 1.6,
+            whiteSpace: "pre-wrap", wordBreak: "break-word",
+          }}>
+            {SETUP_SQL}
+          </pre>
+        </div>
+      )}
+
+      {tableReady && <CitiesManager initialCities={cities} />}
     </div>
   );
 }
