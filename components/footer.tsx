@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
 
-export function Footer() {
+export async function Footer() {
+  const cfg = await getSiteConfig().catch(() => ({ ...CONFIG_DEFAULTS }));
+
   return (
     <footer className="footer">
       <div className="footer-inner">
@@ -19,47 +22,60 @@ export function Footer() {
               hello@venuees.in
             </div>
           </div>
-          <div>
-            <h6>Venues</h6>
-            <ul>
-              <li><Link href="/venues?type=hotel">Hotels & ballrooms</Link></li>
-              <li><Link href="/venues?type=lawn">Lawns & farmhouses</Link></li>
-              <li><Link href="/venues?type=heritage">Heritage havelis</Link></li>
-              <li><Link href="/venues?type=resort">Resorts</Link></li>
-              <li><Link href="/venues?type=rooftop">Rooftops</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h6>Services</h6>
-            <ul>
-              <li><Link href="/weekend-getaways">Weekend getaways</Link></li>
-              <li><Link href="/destination-weddings">Destination weddings</Link></li>
-              <li><Link href="/event-management">Event management</Link></li>
-              <li><Link href="/event-management/hospitality">Hospitality</Link></li>
-              <li><Link href="/event-management/corporate-events">Corporate events</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h6>Vendors</h6>
-            <ul>
-              <li><Link href="/vendors/photographers">Photographers</Link></li>
-              <li><Link href="/vendors/decorators">Decorators</Link></li>
-              <li><Link href="/vendors/makeup">Makeup artists</Link></li>
-              <li><Link href="/vendors/caterers">Caterers</Link></li>
-              <li><Link href="/vendors/pandits">Pandits</Link></li>
-            </ul>
-          </div>
+
+          {cfg.section_venues && (
+            <div>
+              <h6>Venues</h6>
+              <ul>
+                <li><Link href="/venues?type=hotel">Hotels &amp; ballrooms</Link></li>
+                <li><Link href="/venues?type=lawn">Lawns &amp; farmhouses</Link></li>
+                <li><Link href="/venues?type=heritage">Heritage havelis</Link></li>
+                <li><Link href="/venues?type=resort">Resorts</Link></li>
+                <li><Link href="/venues?type=rooftop">Rooftops</Link></li>
+              </ul>
+            </div>
+          )}
+
+          {(cfg.section_getaways || cfg.section_destinations || cfg.section_event_management) && (
+            <div>
+              <h6>Services</h6>
+              <ul>
+                {cfg.section_getaways       && <li><Link href="/weekend-getaways">Weekend getaways</Link></li>}
+                {cfg.section_destinations   && <li><Link href="/destination-weddings">Destination weddings</Link></li>}
+                {cfg.section_event_management && <>
+                  <li><Link href="/event-management">Event management</Link></li>
+                  <li><Link href="/event-management/hospitality">Hospitality</Link></li>
+                  <li><Link href="/event-management/corporate-events">Corporate events</Link></li>
+                </>}
+              </ul>
+            </div>
+          )}
+
+          {cfg.section_vendors && (
+            <div>
+              <h6>Vendors</h6>
+              <ul>
+                <li><Link href="/vendors/photographers">Photographers</Link></li>
+                <li><Link href="/vendors/decorators">Decorators</Link></li>
+                <li><Link href="/vendors/makeup">Makeup artists</Link></li>
+                <li><Link href="/vendors/caterers">Caterers</Link></li>
+                <li><Link href="/vendors/pandits">Pandits</Link></li>
+              </ul>
+            </div>
+          )}
+
           <div>
             <h6>Company</h6>
             <ul>
               <li><Link href="/about">About us</Link></li>
-              <li><Link href="/real-weddings">Real weddings</Link></li>
-              <li><Link href="/blog">Journal</Link></li>
+              {cfg.section_real_weddings && <li><Link href="/real-weddings">Real weddings</Link></li>}
+              {cfg.section_blog         && <li><Link href="/blog">Journal</Link></li>}
               <li><Link href="/list-your-business">List your business</Link></li>
               <li><Link href="/contact">Contact</Link></li>
             </ul>
           </div>
         </div>
+
         <div className="fine">
           <span>© 2026 Venuees.in · A <strong>Bsquare Hospitality</strong> venture · Nagpur, Maharashtra</span>
           <span>Privacy · Terms · Sitemap</span>
