@@ -7,6 +7,7 @@ import { Photo } from "@/components/photo";
 import { SITE } from "@/lib/data";
 import { venueHero, getawayPhotos, destinationPhotos, realWeddingPhotos } from "@/lib/images";
 import { HeroSearch } from "@/components/hero-search";
+import { CityName } from "@/components/city-name";
 import { CarouselWrap } from "@/components/carousel-wrap";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { SignatureCarousel } from "@/components/signature-carousel";
@@ -34,13 +35,13 @@ export default async function HomePage() {
         </div>
         <div className="hero-content">
           <div className="eyebrow" style={{ color: "#F0D7B0", letterSpacing: "0.28em" }}>
-            Nagpur · est. {SITE.established}
+            <CityName /> · est. {SITE.established}
           </div>
           <h1 className="hero-title">
             Crafted for <span className="italic-serif">celebrations.</span>
           </h1>
           <p className="hero-sub">
-            Owner-operated venues and vetted vendors across Nagpur. No middlemen, no &ldquo;starting from&rdquo; pricing — the quote is the quote.
+            Owner-operated venues and vetted vendors across <CityName />. No middlemen, no &ldquo;starting from&rdquo; pricing — the quote is the quote.
           </p>
 
           <HeroSearch cfg={cfg as Record<string, boolean>} />

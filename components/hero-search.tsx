@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { I } from "@/components/icons";
+import { useCity } from "@/components/city-context";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -119,6 +120,7 @@ function SelectField({
 
 export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
   const router = useRouter();
+  const { city } = useCity();
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   const TABS = ALL_TABS.filter((t) => cfg[t.section] !== false);
@@ -191,7 +193,7 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
         {tab === "venues" && (
           <>
             <Field icon={<I.Pin width={17} height={17} />} label="WHERE">
-              <span className="hs-fixed">Nagpur</span>
+              <span className="hs-fixed">{city.name}</span>
             </Field>
 
             <Field icon={<I.Cal width={17} height={17} />} label="WHEN">
@@ -215,7 +217,7 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
         {tab === "getaways" && (
           <>
             <Field icon={<I.Pin width={17} height={17} />} label="FROM">
-              <span className="hs-fixed">Nagpur</span>
+              <span className="hs-fixed">{city.name}</span>
             </Field>
 
             <Field icon={<I.Cal width={17} height={17} />} label="WHEN">
@@ -259,7 +261,7 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
             </Field>
 
             <Field icon={<I.Pin width={17} height={17} />} label="WHERE">
-              <span className="hs-fixed">Nagpur</span>
+              <span className="hs-fixed">{city.name}</span>
             </Field>
           </>
         )}
@@ -275,7 +277,7 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
             </Field>
 
             <Field icon={<I.Pin width={17} height={17} />} label="WHERE">
-              <span className="hs-fixed">Nagpur</span>
+              <span className="hs-fixed">{city.name}</span>
             </Field>
           </>
         )}

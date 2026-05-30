@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { I } from "./icons";
 import { NavUserButton } from "./nav-user-button";
 import { getBrowserSupabase } from "@/lib/supabase/client";
+import { useCity } from "@/components/city-context";
 import type { SiteConfig } from "@/lib/site-config";
 
 const ALL_LINKS = [
@@ -66,6 +67,7 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
 
 export function TopNavClient({ cfg }: { cfg: SiteConfig }) {
   const pathname = usePathname();
+  const { city } = useCity();
   const [searchOpen, setSearchOpen] = React.useState(false);
   const links = ALL_LINKS.filter((l) => (cfg as Record<string, boolean>)[l.section] !== false);
 
@@ -74,7 +76,7 @@ export function TopNavClient({ cfg }: { cfg: SiteConfig }) {
       <nav className="site-nav">
         <Link href="/" className="logo">
           <span className="mark">V</span>
-          <span><span>v<em>enuee</em>s</span><small>weddings · Nagpur</small></span>
+          <span><span>v<em>enuee</em>s</span><small>weddings · {city.name}</small></span>
         </Link>
         <ul>
           {links.map((x) => {
@@ -87,7 +89,7 @@ export function TopNavClient({ cfg }: { cfg: SiteConfig }) {
             style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", display: "flex", alignItems: "center" }}>
             <I.Search width={18} height={18} />
           </button>
-          <span className="city"><I.Pin width={13} height={13} /> Nagpur</span>
+          <span className="city"><I.Pin width={13} height={13} /> {city.name}</span>
           <NavUserButton />
           <Link href="/contact" className="btn btn-primary btn-sm">Enquire</Link>
         </div>
@@ -99,6 +101,7 @@ export function TopNavClient({ cfg }: { cfg: SiteConfig }) {
 
 export function MobileNavClient({ cfg }: { cfg: SiteConfig }) {
   const router = useRouter();
+  const { city } = useCity();
   const [open, setOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const links = ALL_LINKS.filter((l) => (cfg as Record<string, boolean>)[l.section] !== false);
@@ -137,7 +140,7 @@ export function MobileNavClient({ cfg }: { cfg: SiteConfig }) {
           <div style={{ marginTop: "auto", paddingTop: 30 }}>
             <Link href="/contact" className="btn btn-primary btn-lg" style={{ width: "100%" }}>Enquire now</Link>
             <div style={{ fontSize: 12, color: "var(--ink-mute)", marginTop: 14, textAlign: "center" }}>
-              +91 712 555 0180 · Nagpur
+              +91 712 555 0180 · {city.name}
             </div>
           </div>
         </div>
