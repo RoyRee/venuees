@@ -89,7 +89,7 @@
   color: var(--ink-mute);
   white-space: nowrap;
   position: relative;
-  flex: 1 1 0;          /* equal-width tabs — no scrolling, no cut-off */
+  flex: 1 1 0;
   text-align: center;
   transition: color 0.15s;
   border-radius: 0;
@@ -105,8 +105,9 @@
   height: 2px; background: var(--brand);
   border-radius: 2px 2px 0 0;
 }
-@media (max-width: 480px) {
-  .hs-tab { padding: 11px 8px; font-size: 11.5px; }
+/* On mobile: natural-width tabs that scroll, don't squish */
+@media (max-width: 640px) {
+  .hs-tab { flex: 0 0 auto; padding: 11px 18px; font-size: 13px; }
 }
 
 /* Fields row */
@@ -240,7 +241,7 @@
   max-width: var(--max-w);
   margin: 0 auto;
 }
-@media (max-width: 900px) { .block { padding: 48px 24px; } }
+@media (max-width: 900px) { .block { padding: 36px 20px; } }
 .block > .ornament { margin-bottom: 20px; }
 .block-head {
   display: flex; align-items: flex-end; justify-content: space-between;
