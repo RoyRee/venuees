@@ -60,7 +60,7 @@ export default async function VenuesListPage({
     hasGenerator:!!sp.generator,
     hasCatering: !!sp.catering,
     sort:        sp.sort,
-  });
+  }).catch(() => [] as Awaited<ReturnType<typeof getVenues>>);
 
   const hasFilters = !!(sp.q || sp.type || sp.locality || sp.minCap ||
     sp.maxVegPlate || sp.minRating || sp.rooms || sp.parking ||
