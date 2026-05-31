@@ -241,6 +241,20 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skel {
+  background: linear-gradient(90deg, var(--surface) 25%, #e8e2da 50%, var(--surface) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+.skel-page {
+  min-height: 100vh;
+  background: var(--cream);
+}
 .search-overlay-inner {
   display: flex; align-items: center; gap: 10px;
   max-width: 680px; margin: 0 auto;
