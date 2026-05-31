@@ -45,6 +45,7 @@ function toVenue(r: typeof venuesTable.$inferSelect, halls: HallRow[]): Venue {
     parking: r.parking,
     rooms: r.rooms ?? undefined,
     halls: halls.map(toHall),
+    meta: r.meta ? (r.meta as import("@/lib/data").VenueMeta) : undefined,
   };
 }
 
