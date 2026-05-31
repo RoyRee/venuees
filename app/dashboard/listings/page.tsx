@@ -60,7 +60,13 @@ export default async function ListingsPage() {
       locality: venuesTable.locality,
       citySlug: venuesTable.citySlug,
       isActive: venuesTable.isActive,
-    }).from(venuesTable).where(eq(venuesTable.ownerUserId, user.id)),
+    }).from(venuesTable).where(eq(venuesTable.ownerUserId, user.id))
+      .then(async (rows) => {
+        const metas = await db.select({ id: venuesTable.id, meta: venuesTable.meta }).from(venuesTable)
+          .where(eq(venuesTable.ownerUserId, user.id)).catch(() => null);
+        const metaMap = new Map(metas?.map(m => [m.id, m.meta]) ?? []);
+        return rows.map(r => ({ ...r, meta: (metaMap.get(r.id) ?? null) as Record<string,unknown> | null }));
+      }),
     db.select({
       id: vendorsTable.id,
       name: vendorsTable.name,
@@ -130,7 +136,7 @@ function AdminListings({ venues, vendors }: {
 
 function VendorListings({ apps, venues, vendors }: {
   apps: { id: number; businessName: string; businessType: string; status: string; createdAt: Date; rejectionNote: string | null; details: Record<string, unknown> | null }[];
-  venues: { id: number; name: string; slug: string; locality: string; citySlug: string; isActive: boolean }[];
+  venues: { id: number; name: string; slug: string; locality: string; citySlug: string; isActive: boolean; meta: Record<string, unknown> | null }[];
   vendors: { id: number; name: string; slug: string; category: string; categorySlug: string; isActive: boolean }[];
 }) {
   const hasLive = venues.length > 0 || vendors.length > 0;
@@ -166,6 +172,7 @@ function VendorListings({ apps, venues, vendors }: {
                 listingType: "venue" as const,
                 href: `/venues/${v.citySlug ?? "nagpur"}/${slugify(v.locality)}/${v.slug}`,
                 editHref: `/dashboard/listings/edit/venue/${v.id}`,
+                meta: v.meta,
               })),
               ...vendors.map((v) => ({
                 id: v.id,
@@ -185,7 +192,17 @@ function VendorListings({ apps, venues, vendors }: {
                     <span style={{ marginLeft: 8, fontSize: 11, padding: "1px 7px", borderRadius: 99, background: "#f0f0f0", color: "var(--ink-mute)", fontWeight: 600 }}>Disabled</span>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  {item.listingType === "venue" && (
+                    <GoogleSetupButton
+                      venueId={item.id}
+                      venueName={item.name}
+                      initialPlaceId={(item as { meta?: Record<string,unknown> | null }).meta?.googlePlaceId as string | undefined}
+                      initialMapsUrl={(item as { meta?: Record<string,unknown> | null }).meta?.googleMapsUrl as string | undefined}
+                      initialRating={(item as { meta?: Record<string,unknown> | null }).meta?.googleRating as number | undefined}
+                      initialReviewCount={(item as { meta?: Record<string,unknown> | null }).meta?.googleReviewCount as number | undefined}
+                    />
+                  )}
                   <ToggleActiveButton id={item.id} type={item.listingType} isActive={item.isActive} />
                   <Link href={item.editHref} style={{ fontSize: 13, color: "var(--ink-soft)", textDecoration: "none", padding: "4px 12px", border: "1px solid var(--line)", borderRadius: 6 }}>
                     Edit

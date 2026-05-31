@@ -15,12 +15,23 @@ export async function PATCH(
   const { data: { user } } = await supabase!.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const role = await getUserRole(user.id, user.email!);
-  if (role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
   const { id } = await params;
   const venueId = Number(id);
   if (!venueId) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+
+  const role = await getUserRole(user.id, user.email!);
+
+  // Allow admins, or the owner of this specific venue
+  if (role !== "admin") {
+    const rows = await db
+      .select({ ownerUserId: venuesTable.ownerUserId })
+      .from(venuesTable)
+      .where(eq(venuesTable.id, venueId))
+      .limit(1);
+    if (!rows.length || rows[0].ownerUserId !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
 
   const { googlePlaceId, googleMapsUrl, googleRating, googleReviewCount } = await request.json();
 
