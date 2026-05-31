@@ -19,7 +19,42 @@ function toHall(h: HallRow) {
   };
 }
 
-function toVenue(r: typeof venuesTable.$inferSelect, halls: HallRow[]): Venue {
+// Columns shared by both getVenues and getVenueBySlug.
+// meta is fetched via a COALESCE expression so the query doesn't fail if the
+// column hasn't been added to the DB yet (migration not yet run).
+const VENUE_COLS = {
+  id:            venuesTable.id,
+  slug:          venuesTable.slug,
+  name:          venuesTable.name,
+  citySlug:      venuesTable.citySlug,
+  locality:      venuesTable.locality,
+  address:       venuesTable.address,
+  type:          venuesTable.type,
+  typeSlug:      venuesTable.typeSlug,
+  capacityMin:   venuesTable.capacityMin,
+  capacityMax:   venuesTable.capacityMax,
+  vegPlate:      venuesTable.vegPlate,
+  nvPlate:       venuesTable.nvPlate,
+  hallRent:      venuesTable.hallRent,
+  minGuarantee:  venuesTable.minGuarantee,
+  rating:        venuesTable.rating,
+  reviews:       venuesTable.reviews,
+  bookingsMonth: venuesTable.bookingsMonth,
+  tag:           venuesTable.tag,
+  description:   venuesTable.description,
+  ph:            venuesTable.ph,
+  scene:         venuesTable.scene,
+  amenities:     venuesTable.amenities,
+  isSignature:   venuesTable.isSignature,
+  parking:       venuesTable.parking,
+  rooms:         venuesTable.rooms,
+  isActive:      venuesTable.isActive,
+  meta:          sql<Record<string, unknown> | null>`COALESCE("venues"."meta", NULL)`,
+};
+
+type VenueRow = Omit<typeof venuesTable.$inferSelect, "meta" | "ownerUserId" | "contactName" | "contactPhone" | "contactEmail" | "whatsapp" | "createdAt" | "updatedAt"> & { meta: Record<string, unknown> | null };
+
+function toVenue(r: VenueRow, halls: HallRow[]): Venue {
   return {
     slug: r.slug,
     name: r.name,
@@ -123,7 +158,7 @@ export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
     : desc(venuesTable.isSignature); // default: signature first
 
   const rows = await db
-    .select()
+    .select(VENUE_COLS)
     .from(venuesTable)
     .where(and(...conds))
     .orderBy(orderClause);
@@ -146,7 +181,7 @@ export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
 // Wrapped in React cache() so generateMetadata + page render share one result per request.
 export const getVenueBySlug = cache(async (slug: string): Promise<Venue | null> => {
   const [venueRows, hallRows] = await Promise.all([
-    db.select().from(venuesTable).where(eq(venuesTable.slug, slug)).limit(1),
+    db.select(VENUE_COLS).from(venuesTable).where(eq(venuesTable.slug, slug)).limit(1),
     db
       .select({ name: venueHallsTable.name, ph: venueHallsTable.ph, type: venueHallsTable.type, area: venueHallsTable.area, theatre: venueHallsTable.theatre, floating: venueHallsTable.floating, dining: venueHallsTable.dining })
       .from(venueHallsTable)
