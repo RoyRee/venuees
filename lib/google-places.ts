@@ -25,11 +25,11 @@ async function fetchFromPlacesAPI(placeId: string): Promise<GooglePlaceInfo | nu
   }
 }
 
-// Cached for 24 hours — re-fetches in the background on next request after expiry.
+// Cache keyed + tagged per placeId; revalidated every 24h or on manual flush.
 export function getGooglePlaceInfo(placeId: string): Promise<GooglePlaceInfo | null> {
   return unstable_cache(
     () => fetchFromPlacesAPI(placeId),
     [`google-place-${placeId}`],
-    { revalidate: 86400 }
+    { revalidate: 86400, tags: [`google-place-${placeId}`] }
   )();
 }

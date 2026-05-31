@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { db, venuesTable, venueHallsTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable } from "@/lib/db";
 import { eq, and, or, ilike, gte, lte, sql, asc, desc, inArray, SQL } from "drizzle-orm";
-import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme } from "@/lib/data";
+import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme, VenueMeta } from "@/lib/data";
 
 // ─── Venues ──────────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ function toVenue(r: typeof venuesTable.$inferSelect, halls: HallRow[]): Venue {
     parking: r.parking,
     rooms: r.rooms ?? undefined,
     halls: halls.map(toHall),
-    meta: r.meta ? (r.meta as import("@/lib/data").VenueMeta) : undefined,
+    meta: r.meta ? (r.meta as VenueMeta) : undefined,
   };
 }
 
