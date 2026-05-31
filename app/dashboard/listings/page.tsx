@@ -29,7 +29,13 @@ export default async function ListingsPage() {
 
   if (role === "admin") {
     const [venues, vendors] = await Promise.all([
-      db.select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug, locality: venuesTable.locality, isActive: venuesTable.isActive, isSignature: venuesTable.isSignature, ownerUserId: venuesTable.ownerUserId, meta: sql<Record<string,unknown>|null>`COALESCE("venues"."meta", NULL)` }).from(venuesTable).orderBy(desc(venuesTable.createdAt)),
+      db.select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug, locality: venuesTable.locality, isActive: venuesTable.isActive, isSignature: venuesTable.isSignature, ownerUserId: venuesTable.ownerUserId }).from(venuesTable).orderBy(desc(venuesTable.createdAt))
+        .then(async (rows) => {
+          // Fetch meta separately so admin page works even if meta column doesn't exist yet
+          const metas = await db.select({ id: venuesTable.id, meta: venuesTable.meta }).from(venuesTable).catch(() => null);
+          const metaMap = new Map(metas?.map(m => [m.id, m.meta]) ?? []);
+          return rows.map(r => ({ ...r, meta: (metaMap.get(r.id) ?? null) as Record<string,unknown> | null }));
+        }),
       db.select({ id: vendorsTable.id, name: vendorsTable.name, slug: vendorsTable.slug, category: vendorsTable.category, isActive: vendorsTable.isActive, ownerUserId: vendorsTable.ownerUserId }).from(vendorsTable).orderBy(desc(vendorsTable.createdAt)),
     ]);
     return <AdminListings venues={venues} vendors={vendors} />;
