@@ -91,18 +91,12 @@ function amenIcon(text: string) {
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireSection("section_venues");
   const { slug } = await params;
-  const v = await getVenueBySlug(slug);
-  if (!v) return notFound();
 
-  const meta = v.meta ?? {};
-  const halls = v.halls.length > 0 ? v.halls : (meta.halls ?? []);
-  const packages = meta.packages ?? [];
-  const reviewItems = meta.reviewItems ?? [];
-  const locationInfo = meta.locationInfo ?? {};
-  const blockedDates = meta.blockedDates ?? [];
-
-  // Fetch uploaded photos + contact info from DB in parallel
-  const [dbImages, contactRows] = await Promise.all([
+  // All four DB operations run in parallel:
+  // getVenueBySlug is cached so generateMetadata's call is also deduplicated.
+  // Image + contact queries both filter by slug so they don't need the venue ID first.
+  const [v, dbImages, contactRows] = await Promise.all([
+    getVenueBySlug(slug),
     db.select({ url: venueImagesTable.url, alt: venueImagesTable.alt, order: venueImagesTable.order })
       .from(venueImagesTable)
       .innerJoin(venuesTable, eq(venueImagesTable.venueId, venuesTable.id))
@@ -113,7 +107,15 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
       .where(eq(venuesTable.slug, slug))
       .limit(1),
   ]);
+  if (!v) return notFound();
   const contact = contactRows[0] ?? null;
+
+  const meta = v.meta ?? {};
+  const halls = v.halls.length > 0 ? v.halls : (meta.halls ?? []);
+  const packages = meta.packages ?? [];
+  const reviewItems = meta.reviewItems ?? [];
+  const locationInfo = meta.locationInfo ?? {};
+  const blockedDates = meta.blockedDates ?? [];
 
   // If DB images exist, use them; otherwise fall back to static photography library
   const gallery = venueGallery(v.slug);

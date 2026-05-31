@@ -59,22 +59,27 @@ export const CONFIG_DEFAULTS: SiteConfig = {
   feature_search:           true,
 };
 
+// ── Single shared DB read — both getSiteConfig and getSiteContent call this ───
+
+const getAllSiteRows = cache(async (): Promise<{ key: string; value: string }[]> => {
+  try {
+    return await db.select().from(siteConfigTable);
+  } catch {
+    return [];
+  }
+});
+
 // ── Reader (memoised per request via React cache) ─────────────────────────────
 
 export const getSiteConfig = cache(async (): Promise<SiteConfig> => {
-  try {
-    const rows = await db.select().from(siteConfigTable);
-    const config: SiteConfig = { ...CONFIG_DEFAULTS };
-    for (const row of rows) {
-      if (row.key in config) {
-        (config as Record<string, boolean>)[row.key] = row.value === "true";
-      }
+  const rows = await getAllSiteRows();
+  const config: SiteConfig = { ...CONFIG_DEFAULTS };
+  for (const row of rows) {
+    if (row.key in config) {
+      (config as Record<string, boolean>)[row.key] = row.value === "true";
     }
-    return config;
-  } catch {
-    // DB unavailable at build time or before migration — return defaults
-    return { ...CONFIG_DEFAULTS };
   }
+  return config;
 });
 
 // ── Site content (JSON-valued, separate from boolean toggles) ─────────────────
@@ -106,23 +111,18 @@ const CONTENT_KEYS = new Set([
 ]);
 
 export const getSiteContent = cache(async (): Promise<SiteContent> => {
-  try {
-    const rows = await db.select().from(siteConfigTable);
-    const content: SiteContent = JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
-    for (const row of rows) {
-      if (!CONTENT_KEYS.has(row.key)) continue;
-      try {
-        const parsed = JSON.parse(row.value);
-        // Validate type matches what each key expects — discard corrupted rows.
-        if (row.key === "hero_images" && !Array.isArray(parsed)) continue;
-        if (row.key === "hero_stats" && !Array.isArray(parsed)) continue;
-        if (row.key === "hero_carousel_interval" && typeof parsed !== "number") continue;
-        if (row.key === "flagship_carousel_interval" && typeof parsed !== "number") continue;
-        (content as Record<string, unknown>)[row.key] = parsed;
-      } catch { /* ignore malformed JSON */ }
-    }
-    return content;
-  } catch {
-    return JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
+  const rows = await getAllSiteRows();
+  const content: SiteContent = JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
+  for (const row of rows) {
+    if (!CONTENT_KEYS.has(row.key)) continue;
+    try {
+      const parsed = JSON.parse(row.value);
+      if (row.key === "hero_images" && !Array.isArray(parsed)) continue;
+      if (row.key === "hero_stats" && !Array.isArray(parsed)) continue;
+      if (row.key === "hero_carousel_interval" && typeof parsed !== "number") continue;
+      if (row.key === "flagship_carousel_interval" && typeof parsed !== "number") continue;
+      (content as Record<string, unknown>)[row.key] = parsed;
+    } catch { /* ignore malformed JSON */ }
   }
+  return content;
 });
