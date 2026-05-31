@@ -1,10 +1,13 @@
+import { cache } from "react";
 import { db, venuesTable, venueHallsTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable } from "@/lib/db";
-import { eq, and, or, ilike, gte, lte, sql, asc, desc, SQL } from "drizzle-orm";
-import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme } from "@/lib/data";
+import { eq, and, or, ilike, gte, lte, sql, asc, desc, inArray, SQL } from "drizzle-orm";
+import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme, VenueMeta } from "@/lib/data";
 
 // ─── Venues ──────────────────────────────────────────────────────────────────
 
-function toHall(h: typeof venueHallsTable.$inferSelect) {
+type HallRow = Pick<typeof venueHallsTable.$inferSelect, "name" | "ph" | "type" | "area" | "theatre" | "floating" | "dining">;
+
+function toHall(h: HallRow) {
   return {
     name: h.name,
     ph: h.ph as PhTheme,
@@ -16,7 +19,7 @@ function toHall(h: typeof venueHallsTable.$inferSelect) {
   };
 }
 
-function toVenue(r: typeof venuesTable.$inferSelect, halls: typeof venueHallsTable.$inferSelect[]): Venue {
+function toVenue(r: typeof venuesTable.$inferSelect, halls: HallRow[]): Venue {
   return {
     slug: r.slug,
     name: r.name,
@@ -42,6 +45,7 @@ function toVenue(r: typeof venuesTable.$inferSelect, halls: typeof venueHallsTab
     parking: r.parking,
     rooms: r.rooms ?? undefined,
     halls: halls.map(toHall),
+    meta: r.meta ? (r.meta as VenueMeta) : undefined,
   };
 }
 
@@ -125,8 +129,13 @@ export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
     .orderBy(orderClause);
 
   if (!rows.length) return [];
-  const allHalls = await db.select().from(venueHallsTable);
-  const byVenue = new Map<number, typeof allHalls>();
+  const venueIds = rows.map((r) => r.id);
+  const allHalls = await db
+    .select({ venueId: venueHallsTable.venueId, name: venueHallsTable.name, ph: venueHallsTable.ph, type: venueHallsTable.type, area: venueHallsTable.area, theatre: venueHallsTable.theatre, floating: venueHallsTable.floating, dining: venueHallsTable.dining })
+    .from(venueHallsTable)
+    .where(inArray(venueHallsTable.venueId, venueIds))
+    .orderBy(venueHallsTable.order);
+  const byVenue = new Map<number, HallRow[]>();
   for (const h of allHalls) {
     if (!byVenue.has(h.venueId)) byVenue.set(h.venueId, []);
     byVenue.get(h.venueId)!.push(h);
@@ -134,13 +143,20 @@ export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
   return rows.map((r) => toVenue(r, byVenue.get(r.id) ?? []));
 }
 
-export async function getVenueBySlug(slug: string): Promise<Venue | null> {
-  const rows = await db.select().from(venuesTable).where(eq(venuesTable.slug, slug)).limit(1);
-  if (!rows.length) return null;
-  const r = rows[0];
-  const halls = await db.select().from(venueHallsTable).where(eq(venueHallsTable.venueId, r.id));
-  return toVenue(r, halls);
-}
+// Wrapped in React cache() so generateMetadata + page render share one result per request.
+export const getVenueBySlug = cache(async (slug: string): Promise<Venue | null> => {
+  const [venueRows, hallRows] = await Promise.all([
+    db.select().from(venuesTable).where(eq(venuesTable.slug, slug)).limit(1),
+    db
+      .select({ name: venueHallsTable.name, ph: venueHallsTable.ph, type: venueHallsTable.type, area: venueHallsTable.area, theatre: venueHallsTable.theatre, floating: venueHallsTable.floating, dining: venueHallsTable.dining })
+      .from(venueHallsTable)
+      .innerJoin(venuesTable, eq(venueHallsTable.venueId, venuesTable.id))
+      .where(eq(venuesTable.slug, slug))
+      .orderBy(venueHallsTable.order),
+  ]);
+  if (!venueRows.length) return null;
+  return toVenue(venueRows[0], hallRows);
+});
 
 // ─── Vendors ─────────────────────────────────────────────────────────────────
 

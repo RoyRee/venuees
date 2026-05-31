@@ -32,6 +32,7 @@ export const venuesTable = pgTable("venues", {
   contactEmail:   text("contact_email"),
   whatsapp:       text("whatsapp"),
   isActive:       boolean("is_active").notNull().default(true),
+  meta:           jsonb("meta").$type<Record<string, unknown>>(),
   createdAt:      timestamp("created_at").notNull().defaultNow(),
   updatedAt:      timestamp("updated_at").notNull().defaultNow(),
 });

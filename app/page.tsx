@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR: rebuild at most once per minute
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
@@ -7,6 +7,7 @@ import { Photo } from "@/components/photo";
 import { SITE } from "@/lib/data";
 import { venueHero, getawayPhotos, destinationPhotos, realWeddingPhotos } from "@/lib/images";
 import { HeroSearch } from "@/components/hero-search";
+import { CityName } from "@/components/city-name";
 import { CarouselWrap } from "@/components/carousel-wrap";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { SignatureCarousel } from "@/components/signature-carousel";
@@ -34,28 +35,30 @@ export default async function HomePage() {
         </div>
         <div className="hero-content">
           <div className="eyebrow" style={{ color: "#F0D7B0", letterSpacing: "0.28em" }}>
-            Nagpur · est. {SITE.established}
+            <CityName /> · est. {SITE.established}
           </div>
           <h1 className="hero-title">
             Crafted for <span className="italic-serif">celebrations.</span>
           </h1>
           <p className="hero-sub">
-            Owner-operated venues and vetted vendors across Nagpur. No middlemen, no &ldquo;starting from&rdquo; pricing — the quote is the quote.
+            Owner-operated venues and vetted vendors across <CityName />. No middlemen, no &ldquo;starting from&rdquo; pricing — the quote is the quote.
           </p>
 
-          <HeroSearch />
+          <HeroSearch cfg={cfg as Record<string, boolean>} />
 
+          {cfg.section_venues && (
           <div className="hero-chips">
             <Link href="/venues?type=lawn" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Lawns & farmhouses</Link>
             <Link href="/venues?type=hotel" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Hotels & ballrooms</Link>
             <Link href="/venues?type=heritage" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Heritage havelis</Link>
             <Link href="/venues?type=resort" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Resorts</Link>
           </div>
+          )}
         </div>
 
         <div className="container">
           <div className="hero-trust">
-            {siteContent.hero_stats.map((s, i) => (
+            {(Array.isArray(siteContent.hero_stats) ? siteContent.hero_stats : []).map((s, i) => (
               <div key={i}><span className="num">{s.num}</span><span>{s.label}</span></div>
             ))}
           </div>
@@ -65,6 +68,9 @@ export default async function HomePage() {
       {/* SIGNATURE STRIP */}
       {cfg.section_venues && signatures.length > 0 && (
         <section className="sig-strip">
+          <div className="sig-ornament-wrap">
+            <Ornament>OUR FLAGSHIP</Ornament>
+          </div>
           <SignatureCarousel
             venues={signatures}
             interval={siteContent.flagship_carousel_interval}
@@ -75,14 +81,12 @@ export default async function HomePage() {
 
       {/* FEATURED VENUES */}
       {cfg.section_venues && <section className="block">
+        <Ornament>NAGPUR VENUES</Ornament>
         <div className="block-head">
-          <div>
-            <Ornament>NAGPUR VENUES</Ornament>
-            <h2 className="block-title">
-              Handpicked halls. <span className="italic-serif" style={{ color: "var(--brand)" }}>Honest numbers.</span>
-            </h2>
-          </div>
-          <Link href="/venues" className="block-link">All 42 venues <I.Arrow width={12} height={12} /></Link>
+          <h2 className="block-title">
+            Handpicked halls. <span className="italic-serif" style={{ color: "var(--brand)" }}>Honest numbers.</span>
+          </h2>
+          <Link href="/venues" className="block-link">All venues <I.Arrow width={12} height={12} /></Link>
         </div>
         <CarouselWrap count={featured.length}>
         <div className="vgrid">
@@ -127,51 +131,47 @@ export default async function HomePage() {
 
       {/* WEEKEND GETAWAY */}
       {cfg.section_getaways && <section className="block">
-        <div className="getaway-block">
-          <div className="getaway-intro">
-            <Ornament>WEEKEND ESCAPES</Ornament>
-            <h2 className="block-title" style={{ marginTop: 12 }}>
-              Within four hours <span className="italic-serif" style={{ color: "var(--brand)" }}>of the orange city.</span>
-            </h2>
-            <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-soft)", marginTop: 16 }}>
-              Pench, Tadoba, Khindsi, Chikhaldara — forest villas and lake cottages that turn a Friday evening into a proper reset. Perfect for bachelor trips, family pre-weddings, or just a break.
-            </p>
-            <Link href="/weekend-getaways" className="btn btn-ghost btn-lg">
-              All getaways <I.Arrow width={14} height={14} />
-            </Link>
-          </div>
-          <CarouselWrap count={Math.min(getaways.length, 3)}>
-          <div className="gcards">
-            {getaways.slice(0, 3).map((g) => (
-              <Link key={g.slug} href={`/weekend-getaways/${g.slug}`} className="gcard">
-                <Photo src={getawayPhotos[g.slug]?.hero} variant={g.ph} label={g.scene} style={{ height: 180 }} />
-                <div className="gcard-body">
-                  <h4>{g.name}</h4>
-                  <div className="gcard-loc"><I.Pin width={11} height={11} /> {g.hoursFromNagpur}</div>
-                  <div className="gcard-specs">
-                    <span><I.Bed width={11} height={11} /> {g.beds} bed</span>
-                    <span><I.Users width={11} height={11} /> {g.guests} guests</span>
-                  </div>
-                  <div className="gcard-price">
-                    <div>
-                      <b>₹{g.weekday.toLocaleString("en-IN")}</b><small>/night · wknight</small>
-                    </div>
-                    <span className="wknd">wknd ₹{(g.weekend / 1000).toFixed(1)}k</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-          </CarouselWrap>
+        <Ornament>WEEKEND ESCAPES</Ornament>
+        <div className="block-head">
+          <h2 className="block-title">
+            Within four hours <span className="italic-serif" style={{ color: "var(--brand)" }}>of the orange city.</span>
+          </h2>
+          <Link href="/weekend-getaways" className="block-link">All getaways <I.Arrow width={12} height={12} /></Link>
         </div>
+        <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-soft)", marginBottom: 32, maxWidth: 560 }}>
+          Pench, Tadoba, Khindsi, Chikhaldara — forest villas and lake cottages that turn a Friday evening into a proper reset. Perfect for bachelor trips, family pre-weddings, or just a break.
+        </p>
+        <CarouselWrap count={Math.min(getaways.length, 3)}>
+        <div className="gcards">
+          {getaways.slice(0, 3).map((g) => (
+            <Link key={g.slug} href={`/weekend-getaways/${g.slug}`} className="gcard">
+              <Photo src={getawayPhotos[g.slug]?.hero} variant={g.ph} label={g.scene} style={{ height: 180 }} />
+              <div className="gcard-body">
+                <h4>{g.name}</h4>
+                <div className="gcard-loc"><I.Pin width={11} height={11} /> {g.hoursFromNagpur}</div>
+                <div className="gcard-specs">
+                  <span><I.Bed width={11} height={11} /> {g.beds} bed</span>
+                  <span><I.Users width={11} height={11} /> {g.guests} guests</span>
+                </div>
+                <div className="gcard-price">
+                  <div>
+                    <b>₹{g.weekday.toLocaleString("en-IN")}</b><small>/night · wknight</small>
+                  </div>
+                  <span className="wknd">wknd ₹{(g.weekend / 1000).toFixed(1)}k</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+        </CarouselWrap>
       </section>}
 
       {/* DESTINATION BAND */}
       {cfg.section_destinations && <section className="destband">
         <div className="destband-inner">
+          <Ornament style={{ color: "rgba(255,248,234,0.5)", marginBottom: 28 }}>BEYOND NAGPUR</Ornament>
           <div className="destband-head">
-            <Ornament>BEYOND NAGPUR</Ornament>
-            <h2 className="block-title" style={{ color: "#FFF8EA", marginTop: 12 }}>
+            <h2 className="block-title" style={{ color: "#FFF8EA", marginTop: 0 }}>
               Destination weddings, <span className="italic-serif" style={{ color: "#F0D7B0" }}>planned end-to-end.</span>
             </h2>
             <p style={{ fontSize: 15, color: "rgba(255,248,234,0.75)", marginTop: 14, lineHeight: 1.6 }}>
@@ -198,13 +198,11 @@ export default async function HomePage() {
       {/* HOW IT WORKS */}
       {cfg.section_how_it_works && (
         <section className="block">
+          <Ornament>HOW WE WORK</Ornament>
           <div className="block-head">
-            <div>
-              <Ornament>HOW WE WORK</Ornament>
-              <h2 className="block-title">
-                Four steps, <span className="italic-serif" style={{ color: "var(--brand)" }}>one wedding.</span>
-              </h2>
-            </div>
+            <h2 className="block-title">
+              Four steps, <span className="italic-serif" style={{ color: "var(--brand)" }}>one wedding.</span>
+            </h2>
           </div>
           <div className="steps">
             <div className="step">
@@ -233,13 +231,11 @@ export default async function HomePage() {
 
       {/* REAL WEDDINGS */}
       {cfg.section_real_weddings && <section className="block">
+        <Ornament>REAL WEDDINGS</Ornament>
         <div className="block-head">
-          <div>
-            <Ornament>REAL WEDDINGS</Ornament>
-            <h2 className="block-title">
-              The couples, <span className="italic-serif" style={{ color: "var(--brand)" }}>the stories.</span>
-            </h2>
-          </div>
+          <h2 className="block-title">
+            The couples, <span className="italic-serif" style={{ color: "var(--brand)" }}>the stories.</span>
+          </h2>
           <Link href="/real-weddings" className="block-link">Full archive <I.Arrow width={12} height={12} /></Link>
         </div>
         <div className="realgrid">

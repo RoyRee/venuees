@@ -77,35 +77,39 @@ function CalMonth({ year, month, blocked }: { year: number; month: number; block
 export function VenueCalendar({ blockedDates }: { blockedDates: string[] }) {
   const blocked = new Set(blockedDates);
   const now = new Date();
-  const [offset, setOffset] = useState(0); // months from today
-  const VISIBLE = 3;
 
-  const months = Array.from({ length: VISIBLE }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + offset + i, 1);
-    return { year: d.getFullYear(), month: d.getMonth() };
-  });
+  // Find the month offset of the first upcoming muhurat date
+  function firstMuhuratOffset(): number {
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const upcoming = [...MUHURAT_DATES].sort().find((d) => d >= today);
+    if (!upcoming) return 0;
+    const [y, m] = upcoming.split("-").map(Number);
+    return (y - now.getFullYear()) * 12 + (m - 1 - now.getMonth());
+  }
+
+  const [offset, setOffset] = useState(firstMuhuratOffset);
+
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
 
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <button
-          onClick={() => setOffset((o) => Math.max(o - VISIBLE, 0))}
+          onClick={() => setOffset((o) => Math.max(o - 1, 0))}
           disabled={offset === 0}
           style={{ background: "none", border: "1px solid var(--line)", borderRadius: 8, padding: "6px 12px", cursor: offset === 0 ? "default" : "pointer", opacity: offset === 0 ? 0.3 : 1, fontSize: 14, color: "var(--ink)" }}
         >
           ← Earlier
         </button>
         <button
-          onClick={() => setOffset((o) => o + VISIBLE)}
+          onClick={() => setOffset((o) => o + 1)}
           style={{ background: "none", border: "1px solid var(--line)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 14, color: "var(--ink)" }}
         >
           Later →
         </button>
       </div>
 
-      {months.map(({ year, month }) => (
-        <CalMonth key={`${year}-${month}`} year={year} month={month} blocked={blocked} />
-      ))}
+      <CalMonth year={d.getFullYear()} month={d.getMonth()} blocked={blocked} />
 
       <div className="cal-legend" style={{ marginTop: 4 }}>
         <span><span className="dot" style={{ background: "var(--mehendi)" }} /> Available — tap to book</span>

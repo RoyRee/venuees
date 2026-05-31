@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { I } from "@/components/icons";
+import { useCity } from "@/components/city-context";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -48,13 +49,22 @@ const DESTINATIONS = [
   { label: "Rishikesh", value: "rishikesh" },
 ];
 
-type Tab = "venues" | "getaways" | "destinations" | "vendors";
+const EVENT_TYPES = [
+  { label: "Any service", value: "" },
+  { label: "Full planning", value: "full-planning" },
+  { label: "Partial planning", value: "partial-planning" },
+  { label: "Day-of coordination", value: "day-of" },
+  { label: "Décor & styling", value: "decor" },
+];
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "venues",       label: "Venues" },
-  { id: "getaways",     label: "Getaways" },
-  { id: "vendors",      label: "Vendors" },
-  { id: "destinations", label: "Destinations" },
+type Tab = "venues" | "getaways" | "destinations" | "vendors" | "events";
+
+const ALL_TABS: { id: Tab; label: string; section: string }[] = [
+  { id: "venues",       label: "Venues",       section: "section_venues"            },
+  { id: "events",       label: "Events",       section: "section_event_management"  },
+  { id: "vendors",      label: "Vendors",      section: "section_vendors"           },
+  { id: "getaways",     label: "Getaways",     section: "section_getaways"          },
+  { id: "destinations", label: "Destinations", section: "section_destinations"      },
 ];
 
 // ── Field sub-components ──────────────────────────────────────────────────────
@@ -108,14 +118,16 @@ function SelectField({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function HeroSearch() {
+export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
   const router = useRouter();
+  const { city } = useCity();
   const tabBarRef = useRef<HTMLDivElement>(null);
 
-  const [tab, setTab] = useState<Tab>("venues");
+  const TABS = ALL_TABS.filter((t) => cfg[t.section] !== false);
+  const [tab, setTab] = useState<Tab>(TABS[0]?.id ?? "venues");
 
   // Venues
-  const [venueDate, setVenueDate] = useState(MONTHS[7]);   // ~7 months out
+  const [venueDate, setVenueDate] = useState(MONTHS[7]);
   const [venueGuests, setVenueGuests] = useState("200-400");
 
   // Getaways
@@ -128,6 +140,9 @@ export function HeroSearch() {
   // Vendors
   const [vendorCategory, setVendorCategory] = useState("");
 
+  // Events
+  const [eventType, setEventType] = useState("");
+
   function handleSearch() {
     if (tab === "venues") {
       const p = new URLSearchParams({ date: venueDate, guests: venueGuests });
@@ -139,8 +154,11 @@ export function HeroSearch() {
       const p = new URLSearchParams({ guests: destGuests });
       if (destination) p.set("destination", destination);
       router.push(`/destination-weddings?${p}`);
-    } else {
+    } else if (tab === "vendors") {
       const base = vendorCategory ? `/vendors/${vendorCategory}` : "/vendors";
+      router.push(base);
+    } else {
+      const base = eventType ? `/event-management?type=${eventType}` : "/event-management";
       router.push(base);
     }
   }
@@ -175,7 +193,7 @@ export function HeroSearch() {
         {tab === "venues" && (
           <>
             <Field icon={<I.Pin width={17} height={17} />} label="WHERE">
-              <span className="hs-fixed">Nagpur</span>
+              <span className="hs-fixed">{city.name}</span>
             </Field>
 
             <Field icon={<I.Cal width={17} height={17} />} label="WHEN">
@@ -199,7 +217,7 @@ export function HeroSearch() {
         {tab === "getaways" && (
           <>
             <Field icon={<I.Pin width={17} height={17} />} label="FROM">
-              <span className="hs-fixed">Nagpur</span>
+              <span className="hs-fixed">{city.name}</span>
             </Field>
 
             <Field icon={<I.Cal width={17} height={17} />} label="WHEN">
@@ -243,7 +261,23 @@ export function HeroSearch() {
             </Field>
 
             <Field icon={<I.Pin width={17} height={17} />} label="WHERE">
-              <span className="hs-fixed">Nagpur</span>
+              <span className="hs-fixed">{city.name}</span>
+            </Field>
+          </>
+        )}
+
+        {tab === "events" && (
+          <>
+            <Field icon={<I.Cal width={17} height={17} />} label="SERVICE TYPE">
+              <SelectField
+                value={eventType}
+                onChange={setEventType}
+                options={EVENT_TYPES}
+              />
+            </Field>
+
+            <Field icon={<I.Pin width={17} height={17} />} label="WHERE">
+              <span className="hs-fixed">{city.name}</span>
             </Field>
           </>
         )}

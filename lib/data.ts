@@ -50,6 +50,10 @@ export type VenueMeta = {
   reviewItems?: VenueReviewItem[];
   locationInfo?: VenueLocationInfo;
   blockedDates?: string[];
+  googlePlaceId?: string;
+  googleMapsUrl?: string;
+  googleRating?: number;
+  googleReviewCount?: number;
 };
 
 export type Venue = {
