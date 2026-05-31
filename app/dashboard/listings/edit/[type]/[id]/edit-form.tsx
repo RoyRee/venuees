@@ -85,6 +85,8 @@ export function EditListingForm({
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
 
+  const [customAmenityInput, setCustomAmenityInput] = useState("");
+
   const set = (k: keyof EditListingData, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
   const toggleAmenity = (a: string) =>
@@ -94,6 +96,12 @@ export function EditListingForm({
         ? f.amenities.filter((x) => x !== a)
         : [...f.amenities, a],
     }));
+  const addCustomAmenity = () => {
+    const val = customAmenityInput.trim();
+    if (!val || form.amenities.includes(val)) { setCustomAmenityInput(""); return; }
+    setForm((f) => ({ ...f, amenities: [...f.amenities, val] }));
+    setCustomAmenityInput("");
+  };
 
   async function addFiles(files: FileList | null, type: "image" | "video") {
     if (!files) return;
@@ -387,6 +395,25 @@ export function EditListingForm({
                     {a}
                   </button>
                 ))}
+                {form.amenities.filter((a) => !VENUE_AMENITIES.includes(a)).map((a) => (
+                  <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 12px 7px 14px", borderRadius: 20, fontSize: 13, border: "1px solid var(--brand)", background: "color-mix(in srgb,var(--brand) 10%,#fff)", color: "var(--brand)", fontWeight: 600 }}>
+                    {a}
+                    <button type="button" onClick={() => toggleAmenity(a)} aria-label={`Remove ${a}`} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, color: "var(--brand)", fontSize: 15, display: "flex", alignItems: "center" }}>×</button>
+                  </span>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <input
+                  type="text"
+                  value={customAmenityInput}
+                  onChange={(e) => setCustomAmenityInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomAmenity(); } }}
+                  placeholder="Add custom amenity…"
+                  style={{ flex: 1, padding: "7px 14px", borderRadius: 20, fontSize: 13, border: "1px solid var(--line)", outline: "none", color: "var(--ink)" }}
+                />
+                <button type="button" onClick={addCustomAmenity} style={{ padding: "7px 18px", borderRadius: 20, fontSize: 13, border: "1px solid var(--brand)", background: "var(--brand)", color: "#fff", cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+                  + Add
+                </button>
               </div>
             </div>
           )}
