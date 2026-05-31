@@ -19,9 +19,8 @@ function toHall(h: HallRow) {
   };
 }
 
-// Columns shared by both getVenues and getVenueBySlug.
-// meta is fetched via a COALESCE expression so the query doesn't fail if the
-// column hasn't been added to the DB yet (migration not yet run).
+// Explicit column list — does NOT include meta, ownerUserId, or contact fields.
+// This means the query works whether or not the meta column exists in the DB.
 const VENUE_COLS = {
   id:            venuesTable.id,
   slug:          venuesTable.slug,
@@ -49,12 +48,13 @@ const VENUE_COLS = {
   parking:       venuesTable.parking,
   rooms:         venuesTable.rooms,
   isActive:      venuesTable.isActive,
-  meta:          sql<Record<string, unknown> | null>`COALESCE("venues"."meta", NULL)`,
 };
 
-type VenueRow = Omit<typeof venuesTable.$inferSelect, "meta" | "ownerUserId" | "contactName" | "contactPhone" | "contactEmail" | "whatsapp" | "createdAt" | "updatedAt"> & { meta: Record<string, unknown> | null };
+type VenueRow = typeof VENUE_COLS extends Record<string, unknown>
+  ? { [K in keyof typeof VENUE_COLS]: K extends "rating" ? string : K extends "amenities" ? unknown : K extends "rooms" ? number | null : K extends "isSignature" | "isActive" ? boolean : K extends "id" | "capacityMin" | "capacityMax" | "vegPlate" | "nvPlate" | "hallRent" | "minGuarantee" | "reviews" | "bookingsMonth" | "parking" ? number : string }
+  : never;
 
-function toVenue(r: VenueRow, halls: HallRow[]): Venue {
+function toVenue(r: { id: number; slug: string; name: string; citySlug: string; locality: string; address: string; type: string; typeSlug: string; capacityMin: number; capacityMax: number; vegPlate: number; nvPlate: number; hallRent: number; minGuarantee: number; rating: string; reviews: number; bookingsMonth: number; tag: string; description: string; ph: string; scene: string; amenities: unknown; isSignature: boolean; parking: number; rooms: number | null; isActive: boolean }, halls: HallRow[], meta?: VenueMeta | null): Venue {
   return {
     slug: r.slug,
     name: r.name,
@@ -80,7 +80,7 @@ function toVenue(r: VenueRow, halls: HallRow[]): Venue {
     parking: r.parking,
     rooms: r.rooms ?? undefined,
     halls: halls.map(toHall),
-    meta: r.meta ? (r.meta as VenueMeta) : undefined,
+    meta: meta ?? undefined,
   };
 }
 
@@ -180,7 +180,7 @@ export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
 
 // Wrapped in React cache() so generateMetadata + page render share one result per request.
 export const getVenueBySlug = cache(async (slug: string): Promise<Venue | null> => {
-  const [venueRows, hallRows] = await Promise.all([
+  const [venueRows, hallRows, metaRows] = await Promise.all([
     db.select(VENUE_COLS).from(venuesTable).where(eq(venuesTable.slug, slug)).limit(1),
     db
       .select({ name: venueHallsTable.name, ph: venueHallsTable.ph, type: venueHallsTable.type, area: venueHallsTable.area, theatre: venueHallsTable.theatre, floating: venueHallsTable.floating, dining: venueHallsTable.dining })
@@ -188,9 +188,13 @@ export const getVenueBySlug = cache(async (slug: string): Promise<Venue | null> 
       .innerJoin(venuesTable, eq(venueHallsTable.venueId, venuesTable.id))
       .where(eq(venuesTable.slug, slug))
       .orderBy(venueHallsTable.order),
+    // Separate query for meta so it fails independently if column doesn't exist yet.
+    db.select({ meta: venuesTable.meta }).from(venuesTable).where(eq(venuesTable.slug, slug)).limit(1)
+      .catch(() => null),
   ]);
   if (!venueRows.length) return null;
-  return toVenue(venueRows[0], hallRows);
+  const meta = metaRows?.[0]?.meta as VenueMeta | null | undefined;
+  return toVenue(venueRows[0], hallRows, meta);
 });
 
 // ─── Vendors ─────────────────────────────────────────────────────────────────
