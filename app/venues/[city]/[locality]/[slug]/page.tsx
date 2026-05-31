@@ -97,16 +97,18 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
   // getVenueBySlug is cached so generateMetadata's call is also deduplicated.
   // Image + contact queries both filter by slug so they don't need the venue ID first.
   const [v, dbImages, contactRows] = await Promise.all([
-    getVenueBySlug(slug),
+    getVenueBySlug(slug).catch(() => null),
     db.select({ url: venueImagesTable.url, alt: venueImagesTable.alt, order: venueImagesTable.order })
       .from(venueImagesTable)
       .innerJoin(venuesTable, eq(venueImagesTable.venueId, venuesTable.id))
       .where(eq(venuesTable.slug, slug))
-      .orderBy(venueImagesTable.order),
+      .orderBy(venueImagesTable.order)
+      .catch(() => [] as { url: string; alt: string; order: number }[]),
     db.select({ contactName: venuesTable.contactName, contactPhone: venuesTable.contactPhone, contactEmail: venuesTable.contactEmail, whatsapp: venuesTable.whatsapp })
       .from(venuesTable)
       .where(eq(venuesTable.slug, slug))
-      .limit(1),
+      .limit(1)
+      .catch(() => [] as { contactName: string | null; contactPhone: string | null; contactEmail: string | null; whatsapp: string | null }[]),
   ]);
   if (!v) return notFound();
   const contact = contactRows[0] ?? null;
