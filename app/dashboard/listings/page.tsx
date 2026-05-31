@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, listingApplicationsTable, venuesTable, vendorsTable } from "@/lib/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { ToggleActiveButton, ToggleFlagshipButton } from "./toggle-button";
 import { GoogleSetupButton } from "@/components/google-setup-button";
 
@@ -29,7 +29,7 @@ export default async function ListingsPage() {
 
   if (role === "admin") {
     const [venues, vendors] = await Promise.all([
-      db.select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug, locality: venuesTable.locality, isActive: venuesTable.isActive, isSignature: venuesTable.isSignature, ownerUserId: venuesTable.ownerUserId, meta: venuesTable.meta }).from(venuesTable).orderBy(desc(venuesTable.createdAt)),
+      db.select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug, locality: venuesTable.locality, isActive: venuesTable.isActive, isSignature: venuesTable.isSignature, ownerUserId: venuesTable.ownerUserId, meta: sql<Record<string,unknown>|null>`COALESCE("venues"."meta", NULL)` }).from(venuesTable).orderBy(desc(venuesTable.createdAt)),
       db.select({ id: vendorsTable.id, name: vendorsTable.name, slug: vendorsTable.slug, category: vendorsTable.category, isActive: vendorsTable.isActive, ownerUserId: vendorsTable.ownerUserId }).from(vendorsTable).orderBy(desc(vendorsTable.createdAt)),
     ]);
     return <AdminListings venues={venues} vendors={vendors} />;
