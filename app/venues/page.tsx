@@ -156,7 +156,7 @@ export default async function VenuesListPage({
               {ordered.map((v) => (
                 <Link key={v.slug} href={`/venues/nagpur/${v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-")}/${v.slug}`} className="vcard">
                   <Photo
-                    src={venueHero(v.slug)}
+                    src={v.heroImage ?? venueHero(v.slug)}
                     alt={`${v.name} — ${v.scene}`}
                     variant={v.ph}
                     label={v.scene}
