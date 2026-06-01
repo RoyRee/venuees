@@ -93,9 +93,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
   await requireSection("section_venues");
   const { slug } = await params;
 
-  // All four DB operations run in parallel:
-  // getVenueBySlug is cached so generateMetadata's call is also deduplicated.
-  // Image + contact queries both filter by slug so they don't need the venue ID first.
+  // All DB operations run in parallel; any failure falls back gracefully.
   const [v, dbImages, contactRows] = await Promise.all([
     getVenueBySlug(slug).catch(() => null),
     db.select({ url: venueImagesTable.url, alt: venueImagesTable.alt, order: venueImagesTable.order })
@@ -117,7 +115,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
   // Google Reviews — use live Places API data if Place ID + API key configured,
   // otherwise fall back to manually entered rating/count in meta.
-  const googleLive = meta.googlePlaceId ? await getGooglePlaceInfo(meta.googlePlaceId) : null;
+  const googleLive = meta.googlePlaceId ? await getGooglePlaceInfo(meta.googlePlaceId).catch(() => null) : null;
   const googleMapsUrl     = googleLive?.mapsUrl       ?? meta.googleMapsUrl;
   const googleRating      = googleLive?.rating        ?? meta.googleRating;
   const googleReviewCount = googleLive?.reviewCount   ?? meta.googleReviewCount;
@@ -226,8 +224,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         ...(packages.length > 0     ? [{ id: "packages",     label: "Packages" }]         : []),
         ...(v.amenities.length > 0  ? [{ id: "amenities",    label: "Amenities" }]        : []),
         { id: "availability", label: "Availability" },
-        ...(hasReviews ? [{ id: "reviews", label: `Reviews (${reviewItems.length > 0 ? reviewItems.length : v.reviews})` }] : []),
-        { id: "location",     label: "Location" },
+        ...(hasReviews ? [{ id: "reviews", label: "Reviews & location" }] : [{ id: "location", label: "Location" }]),
       ]} />
 
       <div className="vd-body">
@@ -401,61 +398,94 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <VenueCalendar blockedDates={blockedDates} />
           </section>
 
-          {/* Reviews — only shown when Google or real review items are configured */}
-          {hasReviews && (
-            <section id="reviews" className="vd-section">
-              <Ornament>REVIEWS</Ornament>
-              <h2>What couples say</h2>
+          {/* Location + Reviews — merged section */}
+          <section id={hasReviews ? "reviews" : "location"} className="vd-section">
+            <Ornament>{hasReviews ? "LOCATION & REVIEWS" : "LOCATION"}</Ornament>
+            <h2>Getting here</h2>
 
-              {/* Google badge */}
-              {(googleMapsUrl || googleRating) && (
-                <a
-                  href={googleMapsUrl ?? "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "10px 16px", marginBottom: 24, borderRadius: 10, border: "1px solid #e0e0e0", background: "#fff", textDecoration: "none", fontSize: 14, color: "var(--ink)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                  </svg>
-                  {googleRating && (
-                    <span>
-                      <strong style={{ fontSize: 16 }}>{googleRating}</strong>
-                      <span style={{ color: "#fbbc05", marginLeft: 4 }}>{"★".repeat(Math.round(Number(googleRating)))}</span>
-                      {googleReviewCount && <span style={{ color: "var(--ink-mute)", marginLeft: 6, fontSize: 13 }}>{Number(googleReviewCount).toLocaleString("en-IN")} reviews on Google</span>}
-                    </span>
-                  )}
-                  <span style={{ marginLeft: "auto", fontSize: 12, color: "#1a73e8", whiteSpace: "nowrap" }}>Read on Google →</span>
-                </a>
-              )}
-
-              {/* Real review items from DB */}
-              {reviewItems.length > 0 && (
-                <>
-                  <div className="rev-summary">
-                    <div>
-                      <div className="rev-big">{googleRating ?? v.rating}</div>
-                      <Stars value={Number(googleRating ?? v.rating)} size={18} />
-                      <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6 }}>{reviewItems.length} verified review{reviewItems.length !== 1 ? "s" : ""}</div>
-                    </div>
+            {googleMapsUrl ? (
+              <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none" }}>
+                <div className="ph ocean" style={{ height: 260, borderRadius: "var(--radius-md)", marginTop: 16, position: "relative" }}>
+                  <span className="ph-label">map · {v.locality.toLowerCase()}</span>
+                  <div style={{ position: "absolute", bottom: 14, right: 14, background: "#fff", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, color: "#1a73e8", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Open in Google Maps
                   </div>
-                  {reviewItems.map((r, i) => (
-                    <div key={i} className="rev-item">
-                      <div className="ava ph rose" />
+                </div>
+              </a>
+            ) : (
+              <div className="ph ocean" style={{ height: 260, borderRadius: "var(--radius-md)", marginTop: 16 }}>
+                <span className="ph-label">map · {v.locality.toLowerCase()}</span>
+              </div>
+            )}
+
+            {(locationInfo.airport || locationInfo.railway || locationInfo.hotelCluster) && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginTop: 20, fontSize: 13, color: "var(--ink-soft)" }}>
+                {locationInfo.airport      && <div><b style={{ display: "block", color: "var(--ink)" }}>Airport</b>{locationInfo.airport}</div>}
+                {locationInfo.railway      && <div><b style={{ display: "block", color: "var(--ink)" }}>Railway</b>{locationInfo.railway}</div>}
+                {locationInfo.hotelCluster && <div><b style={{ display: "block", color: "var(--ink)" }}>Hotel cluster</b>{locationInfo.hotelCluster}</div>}
+              </div>
+            )}
+
+            {hasReviews && (
+              <div style={{ marginTop: 32, paddingTop: 28, borderTop: "1px solid var(--line)" }}>
+                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--ink)", marginBottom: 16 }}>What couples say</h3>
+
+                {(googleMapsUrl || googleRating) && (
+                  <a
+                    href={googleMapsUrl ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "10px 16px", marginBottom: reviewItems.length > 0 ? 24 : 0, borderRadius: 10, border: "1px solid #e0e0e0", background: "#fff", textDecoration: "none", fontSize: 14, color: "var(--ink)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    {googleRating ? (
+                      <span>
+                        <strong style={{ fontSize: 16 }}>{googleRating}</strong>
+                        <span style={{ color: "#fbbc05", marginLeft: 4 }}>{"★".repeat(Math.round(Number(googleRating)))}</span>
+                        {googleReviewCount && <span style={{ color: "var(--ink-mute)", marginLeft: 6, fontSize: 13 }}>{Number(googleReviewCount).toLocaleString("en-IN")} reviews on Google</span>}
+                        <span style={{ marginLeft: 8, fontSize: 12, color: "#1a73e8" }}>Read on Google →</span>
+                      </span>
+                    ) : (
+                      <span style={{ color: "#1a73e8" }}>Read on Google →</span>
+                    )}
+                  </a>
+                )}
+
+                {reviewItems.length > 0 && (
+                  <>
+                    <div className="rev-summary">
                       <div>
-                        <h5>{r.name}</h5>
-                        <div className="rev-meta">{r.date} · <Stars value={5} size={11} /></div>
-                        <p>{r.text}</p>
+                        <div className="rev-big">{googleRating ?? v.rating}</div>
+                        <Stars value={Number(googleRating ?? v.rating)} size={18} />
+                        <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6 }}>{reviewItems.length} verified review{reviewItems.length !== 1 ? "s" : ""}</div>
                       </div>
                     </div>
-                  ))}
-                </>
-              )}
-            </section>
-          )}
+                    {reviewItems.map((r, i) => (
+                      <div key={i} className="rev-item">
+                        <div className="ava ph rose" />
+                        <div>
+                          <h5>{r.name}</h5>
+                          <div className="rev-meta">{r.date} · <Stars value={5} size={11} /></div>
+                          <p>{r.text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </section>
 
           {/* Instagram feed — Signature Resorts only */}
           {v.isSignature && (
@@ -492,34 +522,6 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             </section>
           )}
 
-          {/* Location */}
-          <section id="location" className="vd-section">
-            <Ornament>LOCATION</Ornament>
-            <h2>Getting here</h2>
-            <div className="ph ocean" style={{ height: 300, borderRadius: "var(--radius-md)", marginTop: 16 }}>
-              <span className="ph-label">map · {v.locality.toLowerCase()}</span>
-            </div>
-            {(locationInfo.airport || locationInfo.railway || locationInfo.hotelCluster) ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginTop: 20, fontSize: 13, color: "var(--ink-soft)" }}>
-                {locationInfo.airport && (
-                  <div><b style={{ display: "block", color: "var(--ink)" }}>Airport</b>{locationInfo.airport}</div>
-                )}
-                {locationInfo.railway && (
-                  <div><b style={{ display: "block", color: "var(--ink)" }}>Railway</b>{locationInfo.railway}</div>
-                )}
-                {locationInfo.hotelCluster && (
-                  <div><b style={{ display: "block", color: "var(--ink)" }}>Hotel cluster</b>{locationInfo.hotelCluster}</div>
-                )}
-              </div>
-            ) : (
-              // Fallback static location
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginTop: 20, fontSize: 13, color: "var(--ink-soft)" }}>
-                <div><b style={{ display: "block", color: "var(--ink)" }}>Airport</b>12 min · Dr. B.R. Ambedkar Intl</div>
-                <div><b style={{ display: "block", color: "var(--ink)" }}>Railway</b>18 min · Nagpur Junction</div>
-                <div><b style={{ display: "block", color: "var(--ink)" }}>Hotel cluster</b>Ramdaspeth · 8 min</div>
-              </div>
-            )}
-          </section>
         </main>
 
         <aside>
