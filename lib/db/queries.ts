@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { db, venuesTable, venueHallsTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable } from "@/lib/db";
+import { db, venuesTable, venueHallsTable, venueImagesTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable } from "@/lib/db";
 import { eq, and, or, ilike, gte, lte, sql, asc, desc, inArray, SQL } from "drizzle-orm";
 import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme, VenueMeta } from "@/lib/data";
 
@@ -54,7 +54,7 @@ type VenueRow = typeof VENUE_COLS extends Record<string, unknown>
   ? { [K in keyof typeof VENUE_COLS]: K extends "rating" ? string : K extends "amenities" ? unknown : K extends "rooms" ? number | null : K extends "isSignature" | "isActive" ? boolean : K extends "id" | "capacityMin" | "capacityMax" | "vegPlate" | "nvPlate" | "hallRent" | "minGuarantee" | "reviews" | "bookingsMonth" | "parking" ? number : string }
   : never;
 
-function toVenue(r: { id: number; slug: string; name: string; citySlug: string; locality: string; address: string; type: string; typeSlug: string; capacityMin: number; capacityMax: number; vegPlate: number; nvPlate: number; hallRent: number; minGuarantee: number; rating: string; reviews: number; bookingsMonth: number; tag: string; description: string; ph: string; scene: string; amenities: unknown; isSignature: boolean; parking: number; rooms: number | null; isActive: boolean }, halls: HallRow[], meta?: VenueMeta | null): Venue {
+function toVenue(r: { id: number; slug: string; name: string; citySlug: string; locality: string; address: string; type: string; typeSlug: string; capacityMin: number; capacityMax: number; vegPlate: number; nvPlate: number; hallRent: number; minGuarantee: number; rating: string; reviews: number; bookingsMonth: number; tag: string; description: string; ph: string; scene: string; amenities: unknown; isSignature: boolean; parking: number; rooms: number | null; isActive: boolean }, halls: HallRow[], meta?: VenueMeta | null, heroImage?: string | null): Venue {
   return {
     slug: r.slug,
     name: r.name,
@@ -81,6 +81,7 @@ function toVenue(r: { id: number; slug: string; name: string; citySlug: string; 
     rooms: r.rooms ?? undefined,
     halls: halls.map(toHall),
     meta: meta ?? undefined,
+    heroImage: heroImage ?? undefined,
   };
 }
 
@@ -165,17 +166,34 @@ export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
 
   if (!rows.length) return [];
   const venueIds = rows.map((r) => r.id);
-  const allHalls = await db
-    .select({ venueId: venueHallsTable.venueId, name: venueHallsTable.name, ph: venueHallsTable.ph, type: venueHallsTable.type, area: venueHallsTable.area, theatre: venueHallsTable.theatre, floating: venueHallsTable.floating, dining: venueHallsTable.dining })
-    .from(venueHallsTable)
-    .where(inArray(venueHallsTable.venueId, venueIds))
-    .orderBy(venueHallsTable.order);
+
+  const [allHalls, allHeroImages] = await Promise.all([
+    db
+      .select({ venueId: venueHallsTable.venueId, name: venueHallsTable.name, ph: venueHallsTable.ph, type: venueHallsTable.type, area: venueHallsTable.area, theatre: venueHallsTable.theatre, floating: venueHallsTable.floating, dining: venueHallsTable.dining })
+      .from(venueHallsTable)
+      .where(inArray(venueHallsTable.venueId, venueIds))
+      .orderBy(venueHallsTable.order),
+    db
+      .select({ venueId: venueImagesTable.venueId, url: venueImagesTable.url })
+      .from(venueImagesTable)
+      .where(inArray(venueImagesTable.venueId, venueIds))
+      .orderBy(venueImagesTable.order, venueImagesTable.id)
+      .catch(() => [] as { venueId: number; url: string }[]),
+  ]);
+
   const byVenue = new Map<number, HallRow[]>();
   for (const h of allHalls) {
     if (!byVenue.has(h.venueId)) byVenue.set(h.venueId, []);
     byVenue.get(h.venueId)!.push(h);
   }
-  return rows.map((r) => toVenue(r, byVenue.get(r.id) ?? []));
+
+  // First uploaded image per venue (already ordered by order ASC)
+  const heroByVenue = new Map<number, string>();
+  for (const img of allHeroImages) {
+    if (!heroByVenue.has(img.venueId)) heroByVenue.set(img.venueId, img.url);
+  }
+
+  return rows.map((r) => toVenue(r, byVenue.get(r.id) ?? [], undefined, heroByVenue.get(r.id)));
 }
 
 // Wrapped in React cache() so generateMetadata + page render share one result per request.

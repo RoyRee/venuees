@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { requireSection } from "@/lib/section-guard";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
@@ -15,6 +16,7 @@ export const metadata = {
 };
 
 export default async function RealWeddingsHub() {
+  await requireSection("section_real_weddings");
   const [realWeddings, siteConfig] = await Promise.all([getRealWeddings(), getSiteConfig()]);
   if (!siteConfig.section_real_weddings) return <SectionDisabled label="Real Weddings" />;
   return (

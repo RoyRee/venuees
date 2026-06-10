@@ -21,10 +21,12 @@ export async function POST(req: NextRequest) {
   const role = await getUserRole(user.id, user.email!);
   if (role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const updates: Record<string, boolean> = await req.json();
+  const updates: Record<string, unknown> = await req.json();
 
   for (const [key, value] of Object.entries(updates)) {
-    const val = value ? "true" : "false";
+    // Boolean toggles (from ConfigForm) come as JS booleans → "true"/"false".
+    // Content values (from ContentForm) come as strings → stored verbatim.
+    const val = typeof value === "boolean" ? (value ? "true" : "false") : String(value);
     await db
       .insert(siteConfigTable)
       .values({ key, value: val, updatedBy: user.id })

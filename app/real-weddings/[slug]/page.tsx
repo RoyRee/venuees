@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { requireSection } from "@/lib/section-guard";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
@@ -14,6 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function RealWeddingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  await requireSection("section_real_weddings");
   const { slug } = await params;
   const w = await getRealWeddingBySlug(slug);
   if (!w) return notFound();

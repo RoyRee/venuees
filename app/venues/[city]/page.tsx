@@ -6,6 +6,7 @@ import { I, Stars, Ornament } from "@/components/icons";
 import { Photo } from "@/components/photo";
 import { venueHero } from "@/lib/images";
 import { getVenues } from "@/lib/db/queries";
+import { requireSection } from "@/lib/section-guard";
 
 const CITY_META: Record<string, { name: string; state: string; tagline: string; description: string }> = {
   nagpur: {
@@ -43,6 +44,7 @@ export function generateStaticParams() {
 export const dynamic = "force-dynamic";
 
 export default async function CityVenuesPage({ params }: { params: Promise<{ city: string }> }) {
+  await requireSection("section_venues");
   const { city } = await params;
   const meta = CITY_META[city];
   if (!meta) return notFound();

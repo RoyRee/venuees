@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { I, Stars } from "@/components/icons";
-import { venueHero, venueGallery } from "@/lib/images";
+import { venueHero } from "@/lib/images";
 import type { Venue } from "@/lib/data";
 import type { SiteConfig } from "@/lib/site-config";
 
@@ -37,8 +37,7 @@ export function SignatureCarousel({ venues, interval, cfg }: Props) {
         <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius)" }}>
           {venues.map((v, i) => {
             const localitySlug = v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-");
-            const gallery = venueGallery(v.slug);
-            const imgSrc = gallery[1] ?? venueHero(v.slug);
+            const imgSrc = v.heroImage ?? venueHero(v.slug);
             return (
               <Link
                 key={v.slug}

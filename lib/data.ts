@@ -82,6 +82,7 @@ export type Venue = {
   rooms?: number;
   parking: number;
   meta?: VenueMeta;
+  heroImage?: string;
 };
 
 // All content is Nagpur, with Signature Resorts flagged as prime property.

@@ -12,6 +12,7 @@ import { venueHero } from "@/lib/images";
 import { getVenues } from "@/lib/db/queries";
 import { getSiteConfig } from "@/lib/site-config";
 import { SectionDisabled } from "@/components/section-disabled";
+import { requireSection } from "@/lib/section-guard";
 
 export const metadata = {
   title: "Wedding venues in Nagpur — Venuees.in",
@@ -40,6 +41,7 @@ export default async function VenuesListPage({
 }: {
   searchParams: Promise<SP>;
 }) {
+  await requireSection("section_venues");
   const [sp, siteConfig] = await Promise.all([searchParams, getSiteConfig()]);
   if (!siteConfig.section_venues) return <SectionDisabled label="Venues" />;
 
@@ -154,7 +156,7 @@ export default async function VenuesListPage({
               {ordered.map((v) => (
                 <Link key={v.slug} href={`/venues/nagpur/${v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-")}/${v.slug}`} className="vcard">
                   <Photo
-                    src={venueHero(v.slug)}
+                    src={v.heroImage ?? venueHero(v.slug)}
                     alt={`${v.name} — ${v.scene}`}
                     variant={v.ph}
                     label={v.scene}

@@ -3,6 +3,9 @@ import { Fraunces, Inter } from "next/font/google";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { WhatsAppFAB } from "@/components/whatsapp-fab";
 import { GoogleOneTap } from "@/components/google-one-tap";
+import { CityProvider } from "@/components/city-context";
+import { db, citiesTable } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import "@/styles/tokens.css";
 import "@/styles/app.css";
 import "@/styles/pages.css";
@@ -35,11 +38,27 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+async function getActiveCities() {
+  try {
+    return await db
+      .select({ id: citiesTable.id, name: citiesTable.name, slug: citiesTable.slug, lat: citiesTable.lat, lng: citiesTable.lng })
+      .from(citiesTable)
+      .where(eq(citiesTable.isActive, true))
+      .orderBy(citiesTable.name);
+  } catch {
+    return [{ id: 1, name: "Nagpur", slug: "nagpur", lat: 21.1458, lng: 79.0882 }];
+  }
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cities = await getActiveCities();
+
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
       <body data-theme="ivory">
-        {children}
+        <CityProvider cities={cities}>
+          {children}
+        </CityProvider>
         <ThemeSwitcher />
         <WhatsAppFAB phone={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "917125550180"} />
         <GoogleOneTap />

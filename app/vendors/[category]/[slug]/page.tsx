@@ -10,6 +10,7 @@ import { getVendorBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { vendorPhotos, venuePhotos } from "@/lib/images";
 import { EnquiryForm } from "@/components/enquiry-form";
+import { requireSection } from "@/lib/section-guard";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -19,6 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function VendorDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  await requireSection("section_vendors");
   const { slug } = await params;
   const v = await getVendorBySlug(slug);
   if (!v) return notFound();

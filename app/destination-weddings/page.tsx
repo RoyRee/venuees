@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { requireSection } from "@/lib/section-guard";
 import * as React from "react";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
@@ -17,6 +18,7 @@ export const metadata = {
 };
 
 export default async function DestinationHubPage() {
+  await requireSection("section_destinations");
   const [destinations, siteConfig] = await Promise.all([getDestinations(), getSiteConfig()]);
   if (!siteConfig.section_destinations) return <SectionDisabled label="Destination Weddings" />;
   return (

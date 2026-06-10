@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+import { requireSection } from "@/lib/section-guard";
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
@@ -16,7 +18,8 @@ const SERVICES = [
   { slug: "social", name: "Social & festival", desc: "Festive gatherings, Diwali parties, NYE soirees — curated menus, themed décor, licensed entertainment.", ph: "saffron" },
 ];
 
-export default function EventMgmtPage() {
+export default async function EventMgmtPage() {
+  await requireSection("section_event_management");
   return (
     <div>
       <MobileNav />
