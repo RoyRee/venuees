@@ -2,7 +2,7 @@
 
 /* ——— Site navigation ——— */
 .site-nav {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 36px;
   padding: 22px 40px;
   background: transparent;
   position: relative; z-index: 10;
@@ -12,7 +12,7 @@
 .site-nav .logo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--font-serif); font-size: 22px; letter-spacing: -0.01em;
-  line-height: 1.1;
+  line-height: 1.1; flex-shrink: 0;
 }
 .site-nav .logo .mark {
   width: 34px; height: 34px; border-radius: 50%;
@@ -26,17 +26,13 @@
   letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mute); margin-top: 2px;
 }
 .site-nav ul {
-  display: flex; gap: 26px; list-style: none; margin: 0; padding: 0;
+  display: flex; gap: 4px; list-style: none; margin: 0; padding: 0;
   font-size: 14px; font-weight: 500; color: var(--ink);
 }
-.site-nav ul a { padding: 8px 0; position: relative; cursor: pointer; }
-.site-nav ul a:hover { color: var(--brand); }
-.site-nav ul a.active { color: var(--brand); }
-.site-nav ul a.active::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 0;
-  height: 1px; background: var(--brand);
-}
-.site-nav .nav-right { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+.site-nav ul a { padding: 8px 12px; position: relative; cursor: pointer; border-radius: 8px; }
+.site-nav ul a:hover { color: var(--brand); background: var(--surface-raised, rgba(0,0,0,0.04)); }
+.site-nav ul a.active { color: var(--brand); background: rgba(193,90,116,0.08); border-radius: 8px; }
+.site-nav .nav-right { display: flex; align-items: center; gap: 14px; font-size: 13px; margin-left: auto; }
 .site-nav .city {
   display: flex; align-items: center; gap: 6px;
   padding: 7px 12px; border: 1px solid var(--line);
@@ -401,7 +397,7 @@
   }
 
   .dash-mobile-header {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; gap: 36px;
     padding: 14px 20px;
     border-bottom: 1px solid var(--line);
     background: var(--surface);
