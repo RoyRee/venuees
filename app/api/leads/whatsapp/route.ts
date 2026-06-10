@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
     await db.insert(enquiriesTable).values({
       kind: "whatsapp_click",
       venueSlug: (body.venueSlug as string) ?? null,
-      message: (body.page as string) ?? null,
+      phone:     (body.phone    as string) ?? null,
+      message:   (body.page     as string) ?? null,
       sourceUrl: req.headers.get("referer"),
       userAgent: req.headers.get("user-agent"),
       status: "new",
