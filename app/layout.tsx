@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { WhatsAppFAB } from "@/components/whatsapp-fab";
 import { GoogleOneTap } from "@/components/google-one-tap";
 import { ExitIntentPopup } from "@/components/exit-intent-popup";
@@ -56,11 +55,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
-      <body data-theme="ivory">
+      <body data-theme="blush">
         <CityProvider cities={cities}>
           {children}
         </CityProvider>
-        <ThemeSwitcher />
         <WhatsAppFAB phone={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919922151527"} />
         <GoogleOneTap />
         <ExitIntentPopup />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 interface Props {
   venueSlug: string;
@@ -48,11 +49,11 @@ export function SiteVisitButton({ venueSlug, venueName }: Props) {
         📍 Book a free site visit
       </button>
 
-      {open && (
-        <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 940, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      {open && createPortal(
+        <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 940, background: "rgba(0,0,0,0.35)" }}>
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ width: "100%", maxWidth: 560, background: "#fff", borderRadius: "16px 16px 0 0", padding: "24px 20px 32px", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)" }}
+            style={{ position: "fixed", bottom: 0, left: 0, right: 0, margin: "0 auto", width: "100%", maxWidth: 560, background: "#fff", borderRadius: "16px 16px 0 0", padding: "24px 20px 32px", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)", maxHeight: "85vh", overflowY: "auto", boxSizing: "border-box" }}
           >
             {done ? (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
@@ -105,7 +106,8 @@ export function SiteVisitButton({ venueSlug, venueName }: Props) {
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
