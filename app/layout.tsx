@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { WhatsAppFAB } from "@/components/whatsapp-fab";
+import { GoogleOneTap } from "@/components/google-one-tap";
 import "@/styles/tokens.css";
 import "@/styles/app.css";
 import "@/styles/pages.css";
@@ -39,6 +41,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body data-theme="ivory">
         {children}
         <ThemeSwitcher />
+        <WhatsAppFAB phone={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "917125550180"} />
+        <GoogleOneTap />
       </body>
     </html>
   );

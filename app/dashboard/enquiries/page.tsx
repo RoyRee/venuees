@@ -3,14 +3,19 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, enquiriesTable, venuesTable, vendorsTable } from "@/lib/db";
 import { eq, desc } from "drizzle-orm";
+import { EnquiryStatusButtons } from "@/components/enquiry-status-buttons";
+import { EnquiriesExportButton } from "@/components/enquiries-export-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Enquiries — Venuees.in" };
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  new:       { bg: "#fff8e8", color: "var(--accent)" },
-  contacted: { bg: "#e8f4ff", color: "#0066cc" },
-  closed:    { bg: "#f0f0f0", color: "var(--ink-mute)" },
+  new:                   { bg: "#fff8e8", color: "var(--accent)" },
+  contacted:             { bg: "#e8f4ff", color: "#0066cc" },
+  site_visit_scheduled:  { bg: "#edf9ed", color: "#1a7f37" },
+  closed_won:            { bg: "#e8fff0", color: "#087f23" },
+  closed_lost:           { bg: "#f0f0f0", color: "var(--ink-mute)" },
+  closed:                { bg: "#f0f0f0", color: "var(--ink-mute)" },
 };
 
 export default async function EnquiriesPage() {
@@ -40,11 +45,14 @@ export default async function EnquiriesPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>Enquiries</h1>
-        <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>
-          {enquiries.length} total{role === "admin" ? " across all listings" : role === "vendor" ? " for your listings" : " sent by you"}
-        </p>
+      <div style={{ marginBottom: 32, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>Enquiries</h1>
+          <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>
+            {enquiries.length} total{role === "admin" ? " across all listings" : role === "vendor" ? " for your listings" : " sent by you"}
+          </p>
+        </div>
+        {role === "admin" && <EnquiriesExportButton />}
       </div>
 
       {enquiries.length === 0 ? (
@@ -79,9 +87,13 @@ export default async function EnquiriesPage() {
                       {new Date(e.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </div>
                   </div>
-                  <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", flexShrink: 0, background: st.bg, color: st.color }}>
-                    {e.status}
-                  </span>
+                  {role !== "customer" ? (
+                    <EnquiryStatusButtons enquiryId={e.id} currentStatus={e.status} />
+                  ) : (
+                    <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", flexShrink: 0, background: st.bg, color: st.color }}>
+                      {e.status}
+                    </span>
+                  )}
                 </div>
               </div>
             );

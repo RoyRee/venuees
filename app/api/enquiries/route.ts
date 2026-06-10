@@ -23,6 +23,17 @@ const VALID_KINDS = new Set([
   "partner_apply",
   "getaway_enquiry",
   "vendor_enquiry",
+  "destination_enquiry",
+  "whatsapp_click",
+  "event_enquiry",
+  "budget_calculator",
+  "availability_check",
+  "bulk_enquiry",
+  "price_alert",
+  "site_visit",
+  "exit_intent",
+  "claim_request",
+  "price_request",
 ]);
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAILS?.split(",")[0]?.trim() ?? "hello@venuees.in";

@@ -9,6 +9,7 @@ import { Photo } from "@/components/photo";
 import { destinationPhotos } from "@/lib/images";
 import { getSiteConfig } from "@/lib/site-config";
 import { SectionDisabled } from "@/components/section-disabled";
+import { DestinationEnquiryForm } from "./_form";
 
 export const metadata = {
   title: "Destination weddings — Venuees.in",
@@ -141,26 +142,7 @@ export default async function DestinationHubPage() {
               Tell us your dream city, rough dates, guest count, and budget. One of our senior planners will call you back with a shortlist of 3 venues, a day-by-day outline, and a transparent estimate. No deposit, no commitment.
             </p>
           </div>
-          <div className="enq-fields">
-            <div><label>Name</label><input placeholder="Your full name" /></div>
-            <div><label>Phone / WhatsApp</label><input placeholder="+91 " /></div>
-            <div className="row2">
-              <div><label>Destination</label>
-                <select><option>Udaipur</option><option>Goa</option><option>Jaipur</option><option>Coorg</option><option>Jaisalmer</option><option>Rishikesh</option><option>Not sure yet</option></select>
-              </div>
-              <div><label>Month</label>
-                <select><option>Nov 2026</option><option>Dec 2026</option><option>Jan 2027</option><option>Feb 2027</option></select>
-              </div>
-            </div>
-            <div className="row2">
-              <div><label>Guests</label><input defaultValue="80" /></div>
-              <div><label>Budget (INR)</label>
-                <select><option>Under ₹25L</option><option>₹25L – ₹50L</option><option>₹50L – ₹1Cr</option><option>₹1Cr+</option></select>
-              </div>
-            </div>
-            <div><label>Anything else?</label><textarea rows={3} placeholder="Preferred vibe, guest profile, specific dates..." /></div>
-            <button className="enq-submit">Get a plan · free consult</button>
-          </div>
+          <DestinationEnquiryForm />
         </div>
       </section>
 

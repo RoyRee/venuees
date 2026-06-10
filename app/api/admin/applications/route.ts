@@ -20,9 +20,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid" }, { status: 400 });
 
   if (action === "reject") {
+    const [app] = await db.select({ contactName: listingApplicationsTable.contactName, email: listingApplicationsTable.email, businessName: listingApplicationsTable.businessName })
+      .from(listingApplicationsTable).where(eq(listingApplicationsTable.id, id)).limit(1);
     await db.update(listingApplicationsTable)
       .set({ status: "rejected", rejectionNote: note ?? null })
       .where(eq(listingApplicationsTable.id, id));
+    if (app) sendStatusEmail({ ...app, action: "rejected", note }).catch(() => {});
     return NextResponse.json({ ok: true });
   }
 
@@ -209,7 +212,59 @@ export async function POST(request: NextRequest) {
     .set({ status: "approved" })
     .where(eq(listingApplicationsTable.id, id));
 
+  sendStatusEmail({ contactName: app.contactName, email: app.email, businessName: app.businessName, action: "approved" }).catch(() => {});
+
   return NextResponse.json({ ok: true });
+}
+
+const ADMIN_FROM = "Venuees.in <notifications@venuees.in>";
+
+async function sendStatusEmail({
+  contactName, email, businessName, action, note,
+}: { contactName: string; email: string; businessName: string; action: "approved" | "rejected"; note?: string | null }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  const { Resend } = await import(/* webpackIgnore: true */ "resend");
+  const resend = new Resend(apiKey);
+
+  if (action === "approved") {
+    await resend.emails.send({
+      from: ADMIN_FROM,
+      to:   email,
+      subject: `Your listing is live on Venuees.in — ${businessName}`,
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+        <h2 style="color:#C15A74">Congratulations, ${contactName.split(" ")[0]}!</h2>
+        <p style="font-size:14px;color:#444;line-height:1.6">
+          <strong>${businessName}</strong> is now live on Venuees.in. Couples searching for venues in your city will be able to find and enquire about your listing.
+        </p>
+        <p style="margin-top:20px">
+          <a href="https://venuees.in/dashboard" style="background:#C15A74;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px">Manage your listing →</a>
+        </p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+        <p style="font-size:12px;color:#999;">Venuees.in · hello@venuees.in</p>
+      </div>`,
+    });
+  } else {
+    await resend.emails.send({
+      from: ADMIN_FROM,
+      to:   email,
+      subject: `Update on your Venuees.in application — ${businessName}`,
+      html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+        <h2 style="color:#C15A74">Application update</h2>
+        <p style="font-size:14px;color:#444;line-height:1.6">
+          Hi ${contactName.split(" ")[0]}, thank you for applying to list <strong>${businessName}</strong> on Venuees.in.
+          After review, we weren&rsquo;t able to approve this application at this time.
+          ${note ? `<br/><br/>Reason: ${note}` : ""}
+        </p>
+        <p style="font-size:14px;color:#444;">
+          If you believe this is an error or would like to reapply, please write to
+          <a href="mailto:hello@venuees.in" style="color:#C15A74">hello@venuees.in</a>.
+        </p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+        <p style="font-size:12px;color:#999;">Venuees.in · hello@venuees.in</p>
+      </div>`,
+    });
+  }
 }
 
 function slugify(s: string) {
