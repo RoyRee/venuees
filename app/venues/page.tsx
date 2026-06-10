@@ -13,6 +13,7 @@ import { getVenues } from "@/lib/db/queries";
 import { getSiteConfig } from "@/lib/site-config";
 import { SectionDisabled } from "@/components/section-disabled";
 import { requireSection } from "@/lib/section-guard";
+import { StickyLeadBar } from "@/components/sticky-lead-bar";
 
 export const metadata = {
   title: "Wedding venues in Nagpur — Venuees.in",
@@ -201,6 +202,7 @@ export default async function VenuesListPage({
         </main>
       </div>
 
+      <StickyLeadBar />
       <Footer />
       <MobileTabbar active="Venues" />
     </div>

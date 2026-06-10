@@ -42,11 +42,9 @@ export async function Footer() {
               <ul>
                 {cfg.section_getaways       && <li><Link href="/weekend-getaways">Weekend getaways</Link></li>}
                 {cfg.section_destinations   && <li><Link href="/destination-weddings">Destination weddings</Link></li>}
-                {cfg.section_event_management && <>
+                {cfg.section_event_management && (
                   <li><Link href="/event-management">Event management</Link></li>
-                  <li><Link href="/event-management/hospitality">Hospitality</Link></li>
-                  <li><Link href="/event-management/corporate-events">Corporate events</Link></li>
-                </>}
+                )}
               </ul>
             </div>
           )}
@@ -68,6 +66,7 @@ export async function Footer() {
             <h6>Company</h6>
             <ul>
               <li><Link href="/about">About us</Link></li>
+              <li><Link href="/tools/wedding-budget-calculator">Budget calculator</Link></li>
               {cfg.section_real_weddings && <li><Link href="/real-weddings">Real weddings</Link></li>}
               {cfg.section_blog         && <li><Link href="/blog">Journal</Link></li>}
               <li><Link href="/list-your-business">List your business</Link></li>

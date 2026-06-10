@@ -15,6 +15,8 @@ import { VenueTabs } from "@/components/venue-tabs";
 import { VenueCalendar } from "@/components/venue-calendar";
 import { requireSection } from "@/lib/section-guard";
 import { getGooglePlaceInfo } from "@/lib/google-places";
+import { SiteVisitButton } from "@/components/site-visit-button";
+import { StickyLeadBar } from "@/components/sticky-lead-bar";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -190,7 +192,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             }
           </div>
         </div>
-        <aside className="vd-sidebar">
+        <aside className="vd-sidebar" id="enquire">
           <div className="vd-price-row">
             <div>
               <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Veg plate</div>
@@ -215,6 +217,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             whatsapp={contact?.whatsapp ?? undefined}
             variant="sidebar"
           />
+          <SiteVisitButton venueSlug={v.slug} venueName={v.name} />
         </aside>
       </header>
 
@@ -543,9 +546,13 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
       </div>
 
       <div className="mobile-sticky-cta">
-        <Link href="#" className="btn btn-ghost"><I.Phone width={14} height={14} /> Call</Link>
-        <Link href="/contact" className="btn btn-primary">Request availability</Link>
+        <a href={`tel:${(contact?.contactPhone ?? "+919922151527").replace(/\s/g, "")}`} className="btn btn-ghost">
+          <I.Phone width={14} height={14} /> Call
+        </a>
+        <a href="#enquire" className="btn btn-primary">Request availability</a>
       </div>
+
+      <StickyLeadBar venueSlug={v.slug} venueName={v.name} />
 
       <Footer />
       <MobileTabbar active="Venues" />
