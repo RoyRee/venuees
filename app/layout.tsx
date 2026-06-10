@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { WhatsAppFAB } from "@/components/whatsapp-fab";
+import { GoogleOneTap } from "@/components/google-one-tap";
 import { CityProvider } from "@/components/city-context";
 import { db, citiesTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -58,6 +60,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
         </CityProvider>
         <ThemeSwitcher />
+        <WhatsAppFAB phone={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "917125550180"} />
+        <GoogleOneTap />
       </body>
     </html>
   );

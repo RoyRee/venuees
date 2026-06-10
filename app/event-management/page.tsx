@@ -51,7 +51,7 @@ export default async function EventMgmtPage() {
         </h2>
         <div className="vgrid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
           {SERVICES.map((s) => (
-            <Link key={s.slug} href={`/event-management/${s.slug}`} className="vcard">
+            <Link key={s.slug} href="#enquiry" className="vcard">
               <div className={`ph ${s.ph} vcard-img`} style={{ height: 280 }}>
                 <span className="ph-label">{s.name.toLowerCase()}</span>
               </div>
@@ -80,7 +80,7 @@ export default async function EventMgmtPage() {
         </div>
       </section>
 
-      <section>
+      <section id="enquiry">
         <div className="enq-form">
           <div>
             <h2>Have an event coming up?</h2>
