@@ -280,26 +280,6 @@
 }
 .search-hints span:hover { border-color: var(--brand); color: var(--brand); }
 
-/* Theme switcher (floating) */
-.theme-float {
-  position: fixed; bottom: 22px; right: 22px; z-index: 30;
-  display: flex; gap: 6px;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 40px; padding: 6px;
-  box-shadow: 0 10px 30px -12px rgba(0,0,0,0.18);
-}
-.theme-float button {
-  width: 26px; height: 26px; border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: transform var(--dur);
-}
-.theme-float button:hover { transform: scale(1.1); }
-.theme-float button.active { border-color: var(--ink); }
-@media (max-width: 900px) {
-  .theme-float { bottom: 80px; right: 12px; }
-}
-
 /* ——— Dashboard page layouts ——— */
 .dash-stats {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px;
