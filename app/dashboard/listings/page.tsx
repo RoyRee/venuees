@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, listingApplicationsTable, venuesTable, vendorsTable } from "@/lib/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { ToggleActiveButton, ToggleFlagshipButton } from "./toggle-button";
 import { GoogleSetupButton } from "@/components/google-setup-button";
 
@@ -28,7 +28,7 @@ export default async function ListingsPage() {
   const role = await getUserRole(user.id, user.email!);
 
   if (role === "admin") {
-    const [venues, vendors] = await Promise.all([
+    const [venues, vendors, pendingEdits, pendingNew] = await Promise.all([
       db.select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug, locality: venuesTable.locality, isActive: venuesTable.isActive, isSignature: venuesTable.isSignature, ownerUserId: venuesTable.ownerUserId }).from(venuesTable).orderBy(desc(venuesTable.createdAt))
         .then(async (rows) => {
           // Fetch meta separately so admin page works even if meta column doesn't exist yet
@@ -37,8 +37,10 @@ export default async function ListingsPage() {
           return rows.map(r => ({ ...r, meta: (metaMap.get(r.id) ?? null) as Record<string,unknown> | null }));
         }),
       db.select({ id: vendorsTable.id, name: vendorsTable.name, slug: vendorsTable.slug, category: vendorsTable.category, isActive: vendorsTable.isActive, ownerUserId: vendorsTable.ownerUserId }).from(vendorsTable).orderBy(desc(vendorsTable.createdAt)),
+      db.select({ id: listingApplicationsTable.id }).from(listingApplicationsTable).where(and(eq(listingApplicationsTable.status, "pending"), sql`(details->>'_isEdit')::text = 'true'`)),
+      db.select({ id: listingApplicationsTable.id }).from(listingApplicationsTable).where(and(eq(listingApplicationsTable.status, "pending"), sql`(details->>'_isEdit') IS NULL`)),
     ]);
-    return <AdminListings venues={venues} vendors={vendors} />;
+    return <AdminListings venues={venues} vendors={vendors} pendingEdits={pendingEdits.length} pendingNew={pendingNew.length} />;
   }
 
   const [apps, myVenues, myVendors] = await Promise.all([
@@ -80,15 +82,33 @@ export default async function ListingsPage() {
   return <VendorListings apps={apps} venues={myVenues} vendors={myVendors} />;
 }
 
-function AdminListings({ venues, vendors }: {
+function AdminListings({ venues, vendors, pendingEdits, pendingNew }: {
   venues: { id: number; name: string; slug: string; locality: string; isActive: boolean; isSignature: boolean; ownerUserId: string | null; meta: Record<string, unknown> | null }[];
   vendors: { id: number; name: string; slug: string; category: string; isActive: boolean; ownerUserId: string | null }[];
+  pendingEdits: number;
+  pendingNew: number;
 }) {
   return (
     <div>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>All Listings</h1>
-        <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>{venues.length} venues · {vendors.length} vendors</p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 32 }}>
+        <div>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>All Listings</h1>
+          <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>{venues.length} venues · {vendors.length} vendors</p>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          {pendingNew > 0 && (
+            <Link href="/dashboard/applications" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 8, background: "#fff8e8", border: "1px solid #f5d87a", color: "var(--accent)", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+              <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--accent)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{pendingNew}</span>
+              New applications
+            </Link>
+          )}
+          {pendingEdits > 0 && (
+            <Link href="/dashboard/applications" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 8, background: "#eef", border: "1px solid #99b", color: "#448", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+              <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#448", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{pendingEdits}</span>
+              Pending edits
+            </Link>
+          )}
+        </div>
       </div>
       {[
         { title: "Venues",  items: venues.map((v)  => ({ ...v, sub: v.locality, listingType: "venue"  as const })) },
@@ -123,6 +143,7 @@ function AdminListings({ venues, vendors }: {
                       <ToggleFlagshipButton id={item.id} isSignature={item.isSignature} />
                     )}
                     <ToggleActiveButton id={item.id} type={item.listingType} isActive={item.isActive} />
+                    <Link href={`/dashboard/listings/edit/${item.listingType}/${item.id}`} style={{ fontSize: 13, color: "var(--ink-soft)", textDecoration: "none", padding: "4px 12px", border: "1px solid var(--line)", borderRadius: 6 }}>Edit</Link>
                   </div>
                 </div>
               ))}

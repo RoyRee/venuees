@@ -17,6 +17,7 @@ import { requireSection } from "@/lib/section-guard";
 import { getGooglePlaceInfo } from "@/lib/google-places";
 import { SiteVisitButton } from "@/components/site-visit-button";
 import { StickyLeadBar } from "@/components/sticky-lead-bar";
+import { AvailabilityChecker } from "@/components/availability-checker";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -104,14 +105,15 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
       .where(eq(venuesTable.slug, slug))
       .orderBy(venueImagesTable.order)
       .catch(() => [] as { url: string; alt: string; order: number }[]),
-    db.select({ contactName: venuesTable.contactName, contactPhone: venuesTable.contactPhone, contactEmail: venuesTable.contactEmail, whatsapp: venuesTable.whatsapp })
+    db.select({ id: venuesTable.id, contactName: venuesTable.contactName, contactPhone: venuesTable.contactPhone, contactEmail: venuesTable.contactEmail, whatsapp: venuesTable.whatsapp })
       .from(venuesTable)
       .where(eq(venuesTable.slug, slug))
       .limit(1)
-      .catch(() => [] as { contactName: string | null; contactPhone: string | null; contactEmail: string | null; whatsapp: string | null }[]),
+      .catch(() => [] as { id: number; contactName: string | null; contactPhone: string | null; contactEmail: string | null; whatsapp: string | null }[]),
   ]);
   if (!v) return notFound();
   const contact = contactRows[0] ?? null;
+  const venueDbId = contact?.id ?? 0;
 
   const meta = v.meta ?? {};
 
@@ -218,6 +220,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             variant="sidebar"
           />
           <SiteVisitButton venueSlug={v.slug} venueName={v.name} />
+          <AvailabilityChecker venueId={venueDbId} venueName={v.name} venueSlug={v.slug} />
         </aside>
       </header>
 

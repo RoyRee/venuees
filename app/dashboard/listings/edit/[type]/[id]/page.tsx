@@ -31,7 +31,7 @@ export default async function EditListingPage({
 
   if (type === "venue") {
     const [venue] = await db.select().from(venuesTable).where(eq(venuesTable.id, id));
-    if (!venue || venue.ownerUserId !== user.id) return notFound();
+    if (!venue || (venue.ownerUserId !== user.id && role !== "admin")) return notFound();
 
     const imgs = await db.select({ id: venueImagesTable.id })
       .from(venueImagesTable).where(eq(venueImagesTable.venueId, id));
@@ -68,6 +68,7 @@ export default async function EditListingPage({
       completed: "",
       description: venue.description,
       amenities: (venue.amenities ?? []) as string[],
+      blockedDates: ((venue.meta as Record<string, unknown> | null)?.blockedDates ?? []) as string[],
     };
   } else {
     const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, id));
@@ -106,6 +107,7 @@ export default async function EditListingPage({
       completed: vendor.completed ? String(vendor.completed) : "",
       description: vendor.description ?? "",
       amenities: [],
+      blockedDates: [],
     };
   }
 
