@@ -25,6 +25,16 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
   const v = await getVendorBySlug(slug);
   if (!v) return notFound();
 
+  // Gallery grid style adapts to actual photo count so there's never blank cells.
+  function galleryGridStyle(count: number) {
+    if (count <= 0) return {};
+    if (count === 1) return { gridTemplateColumns: "1fr", gridTemplateRows: "480px" };
+    if (count === 2) return { gridTemplateColumns: "1fr 1fr", gridTemplateRows: "480px" };
+    if (count === 3) return { gridTemplateColumns: "repeat(3, 1fr)", gridTemplateRows: "400px" };
+    if (count === 4) return { gridTemplateColumns: "2fr 1fr 1fr", gridTemplateRows: "240px 240px" };
+    return {};
+  }
+
   // Fetch uploaded photos + contact info in parallel
   const [dbImages, contactRows] = await Promise.all([
     db.select({ url: vendorImagesTable.url, alt: vendorImagesTable.alt, order: vendorImagesTable.order })
@@ -54,7 +64,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
         <span style={{ color: "var(--ink)" }}>{v.name}</span>
       </nav>
 
-      <div className="vd-gallery">
+      <div className="vd-gallery" style={dbImages.length > 0 ? galleryGridStyle(Math.min(dbImages.length, 5)) : {}}>
         {dbImages.length > 0 ? (
           // Show uploaded photos from listing application
           dbImages.slice(0, 5).map((img, i) => (

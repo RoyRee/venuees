@@ -171,7 +171,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         images={galleryImages}
       />
 
-      <header className="vd-header">
+      <header className="vd-header" style={{ gridTemplateColumns: "1fr" }}>
         <div>
           <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
             <span className="chip" style={{ background: "var(--brand)", color: "#fff" }}>{v.tag}</span>
@@ -224,37 +224,10 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             </div>
           </div>
         </div>
-        <aside className="vd-sidebar" id="enquire">
-          <div className="vd-price-row">
-            <div>
-              <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Veg plate</div>
-              <div className="plate">₹{v.vegPlate.toLocaleString("en-IN")}</div>
-              <small>Non-veg ₹{v.nvPlate.toLocaleString("en-IN")} · Hall rent ₹{(v.hallRent / 1000).toFixed(0)}k</small>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Min spend</div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink)" }}>
-                ₹{(v.minGuarantee / 100000).toFixed(1)}L
-              </div>
-            </div>
-          </div>
-          <div className="calendar-mini">
-            Tap a date in Availability to check muhurtas
-          </div>
-          <EnquiryForm
-            kind="venue_enquiry"
-            venueSlug={v.slug}
-            venueName={v.name}
-            contactPhone={contact?.contactPhone ?? undefined}
-            whatsapp={contact?.whatsapp ?? undefined}
-            variant="sidebar"
-          />
-          <SiteVisitButton venueSlug={v.slug} venueName={v.name} />
-          <AvailabilityChecker venueId={venueDbId} venueName={v.name} venueSlug={v.slug} />
-        </aside>
       </header>
 
       <VenueTabs sections={[
+        { id: "overview", label: "Overview" },
         ...(halls.length > 0        ? [{ id: "halls",        label: "Halls & capacity" }] : []),
         ...(packages.length > 0     ? [{ id: "packages",     label: "Packages" }]         : []),
         ...(v.amenities.length > 0  ? [{ id: "amenities",    label: "Amenities" }]        : []),
@@ -264,6 +237,35 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
 
       <div className="vd-body">
         <main>
+          {/* Overview */}
+          <section id="overview" className="vd-section">
+            <Ornament>OVERVIEW</Ornament>
+            <h2 style={{ fontSize: "clamp(24px, 2.4vw, 34px)", margin: "14px 0 14px", letterSpacing: "-0.02em", lineHeight: 1.15 }}>About {v.name}</h2>
+            <p style={{ color: "var(--ink-soft)", lineHeight: 1.7, maxWidth: 640 }}>{v.description}</p>
+            <div className="vd-quickspecs">
+              <div>
+                <div className="lbl">Guest capacity</div>
+                <div className="val">{v.capacity.min}–{v.capacity.max}<small>pax</small></div>
+              </div>
+              <div>
+                <div className="lbl">Event halls</div>
+                <div className="val">{halls.length || "—"}<small>indoor + open</small></div>
+              </div>
+              <div>
+                <div className="lbl">Parking</div>
+                <div className="val">{v.parking || "—"}<small>cars</small></div>
+              </div>
+              <div>
+                <div className="lbl">Rooms</div>
+                <div className="val">{v.rooms || "—"}<small>{v.rooms ? "on-site" : "off-site"}</small></div>
+              </div>
+              <div>
+                <div className="lbl">Veg plate</div>
+                <div className="val">₹{v.vegPlate.toLocaleString("en-IN")}<small>/plate</small></div>
+              </div>
+            </div>
+          </section>
+
           {/* Halls */}
           {halls.length > 0 && (
             <section id="halls" className="vd-section">
@@ -531,19 +533,33 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         </main>
 
         <aside>
-          <div className="vd-sidebar" style={{ position: "sticky", top: 70 }}>
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, lineHeight: 1.1, marginBottom: 12 }}>
-              Lock {v.name.split(" ")[0]} for your date
+          <div className="vd-sidebar" id="enquire" style={{ position: "sticky", top: 70 }}>
+            <div className="vd-price-row">
+              <div>
+                <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Veg plate</div>
+                <div className="plate">₹{v.vegPlate.toLocaleString("en-IN")}</div>
+                <small>Non-veg ₹{v.nvPlate.toLocaleString("en-IN")} · Hall rent ₹{(v.hallRent / 1000).toFixed(0)}k</small>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Min spend</div>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink)" }}>
+                  ₹{(v.minGuarantee / 100000).toFixed(1)}L
+                </div>
+              </div>
             </div>
-            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 16 }}>
-              Hold good for 72 hours · ₹25,000 refundable deposit · no credit card on file.
-            </p>
-            <Link href="/contact" className="btn btn-primary btn-lg" style={{ width: "100%" }}>
-              Hold this date <I.Arrow width={14} height={14} />
-            </Link>
-            <Link href="/contact" className="btn btn-ghost" style={{ width: "100%", marginTop: 10 }}>
-              <I.Phone width={14} height={14} /> Talk to a planner
-            </Link>
+            <div className="calendar-mini">
+              Tap a date in Availability to check muhurtas
+            </div>
+            <EnquiryForm
+              kind="venue_enquiry"
+              venueSlug={v.slug}
+              venueName={v.name}
+              contactPhone={contact?.contactPhone ?? undefined}
+              whatsapp={contact?.whatsapp ?? undefined}
+              variant="sidebar"
+            />
+            <SiteVisitButton venueSlug={v.slug} venueName={v.name} />
+            <AvailabilityChecker venueId={venueDbId} venueName={v.name} venueSlug={v.slug} />
           </div>
         </aside>
       </div>
