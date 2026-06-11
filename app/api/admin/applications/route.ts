@@ -4,6 +4,7 @@ import { getUserRole } from "@/lib/auth/role";
 import { db } from "@/lib/db";
 import { listingApplicationsTable, listingApplicationMediaTable, venuesTable, vendorsTable, venueImagesTable, vendorImagesTable } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { vendorCategoryFor } from "@/lib/vendor-categories";
 
 export const dynamic = "force-dynamic";
 
@@ -127,11 +128,12 @@ export async function POST(request: NextRequest) {
   const slug = slugify(app.businessName);
 
   if (app.listingType === "vendor") {
+    const cat = vendorCategoryFor(app.businessType);
     const [vendor] = await db.insert(vendorsTable).values({
       slug,
       name:         app.businessName,
-      category:     app.businessType,
-      categorySlug: slugify(app.businessType),
+      category:     cat.name,
+      categorySlug: cat.slug,
       city:         app.city,
       locality:     app.locality ?? "",
       priceFrom:    num(details.priceFrom),

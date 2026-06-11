@@ -1,7 +1,8 @@
 import { cache } from "react";
 import { db, venuesTable, venueHallsTable, venueImagesTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable } from "@/lib/db";
-import { eq, and, or, ilike, gte, lte, sql, asc, desc, inArray, SQL } from "drizzle-orm";
+import { eq, and, or, ilike, gte, lte, sql, asc, desc, inArray, notInArray, SQL } from "drizzle-orm";
 import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme, VenueMeta } from "@/lib/data";
+import { CATEGORY_SLUG_ALIASES } from "@/lib/vendor-categories";
 
 // ─── Venues ──────────────────────────────────────────────────────────────────
 
@@ -101,8 +102,15 @@ export interface VenueFiltersInput {
   sort?: string;           // "price-asc" | "price-desc" | "rating" | "bookings"
 }
 
+// Application businessTypes for getaways land in venuesTable with these
+// typeSlugs. They're shown on /weekend-getaways, not in the venues list.
+const GETAWAY_TYPE_SLUGS = ["resort-hotel", "farmstay", "heritage-property", "villa-bungalow"];
+
 export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
-  const conds: SQL[] = [eq(venuesTable.isActive, true)];
+  const conds: SQL[] = [
+    eq(venuesTable.isActive, true),
+    notInArray(venuesTable.typeSlug, GETAWAY_TYPE_SLUGS),
+  ];
 
   // Text search
   if (params?.q?.trim()) {
@@ -251,7 +259,12 @@ export async function getVendors(params?: VendorFiltersInput | string): Promise<
   const p: VendorFiltersInput = typeof params === "string" ? { categorySlug: params } : (params ?? {});
 
   const conds: SQL[] = [eq(vendorsTable.isActive, true)];
-  if (p.categorySlug) conds.push(eq(vendorsTable.categorySlug, p.categorySlug));
+  if (p.categorySlug) {
+    // Match legacy slug variants too (e.g. "photography" rows created before
+    // the businessType → category mapping existed).
+    const aliases = CATEGORY_SLUG_ALIASES[p.categorySlug] ?? [p.categorySlug];
+    conds.push(inArray(vendorsTable.categorySlug, aliases));
+  }
   if (p.minPrice)     conds.push(gte(vendorsTable.priceFrom, p.minPrice));
   if (p.maxPrice)     conds.push(lte(vendorsTable.priceFrom, p.maxPrice));
   if (p.minYears)     conds.push(gte(vendorsTable.yearsExp, p.minYears));
@@ -300,6 +313,36 @@ function toGetaway(r: typeof getawaysTable.$inferSelect): Getaway {
   };
 }
 
+// Vendor-submitted getaways are approved into venuesTable (so the owner can
+// manage them from the dashboard like any other listing). Map those rows into
+// the Getaway shape; the application form repurposes vegPlate/nvPlate as the
+// weekday/weekend rates and capacityMin as the room count.
+function venueRowToGetaway(r: { slug: string; name: string; locality: string; rooms: number | null; capacityMax: number; vegPlate: number; nvPlate: number; rating: string; reviews: number; ph: string; scene: string; description: string }): Getaway {
+  return {
+    slug: r.slug,
+    name: r.name,
+    location: r.locality,
+    hoursFromNagpur: "—",
+    beds: r.rooms ?? 0,
+    guests: r.capacityMax,
+    weekday: r.vegPlate,
+    weekend: r.nvPlate,
+    rating: parseFloat(r.rating),
+    reviews: r.reviews,
+    ph: r.ph as PhTheme,
+    scene: r.scene,
+    tagline: r.description.slice(0, 90),
+  };
+}
+
+const GETAWAY_VENUE_COLS = {
+  slug: venuesTable.slug, name: venuesTable.name, locality: venuesTable.locality,
+  rooms: venuesTable.rooms, capacityMax: venuesTable.capacityMax,
+  vegPlate: venuesTable.vegPlate, nvPlate: venuesTable.nvPlate,
+  rating: venuesTable.rating, reviews: venuesTable.reviews,
+  ph: venuesTable.ph, scene: venuesTable.scene, description: venuesTable.description,
+};
+
 export async function getGetaways(params?: { maxBudget?: number; minBeds?: number; sort?: string }): Promise<Getaway[]> {
   const conds: SQL[] = [eq(getawaysTable.isActive, true)];
   if (params?.maxBudget) conds.push(lte(getawaysTable.weekday, params.maxBudget));
@@ -311,18 +354,36 @@ export async function getGetaways(params?: { maxBudget?: number; minBeds?: numbe
     : params?.sort === "rating"     ? desc(sql`CAST(${getawaysTable.rating} AS numeric)`)
     : asc(getawaysTable.weekday); // default: cheapest first
 
-  const rows = await db
-    .select()
-    .from(getawaysTable)
-    .where(and(...conds))
-    .orderBy(orderClause);
-  return rows.map(toGetaway);
+  const venueConds: SQL[] = [
+    eq(venuesTable.isActive, true),
+    inArray(venuesTable.typeSlug, GETAWAY_TYPE_SLUGS),
+  ];
+  if (params?.maxBudget) venueConds.push(lte(venuesTable.vegPlate, params.maxBudget));
+  if (params?.minBeds)   venueConds.push(gte(venuesTable.rooms, params.minBeds));
+
+  const [rows, venueRows] = await Promise.all([
+    db.select().from(getawaysTable).where(and(...conds)).orderBy(orderClause),
+    db.select(GETAWAY_VENUE_COLS).from(venuesTable).where(and(...venueConds)),
+  ]);
+
+  const merged = [...rows.map(toGetaway), ...venueRows.map(venueRowToGetaway)];
+  // Re-sort the merged list so vendor-submitted getaways respect the sort too
+  if (params?.sort === "price-desc")   merged.sort((a, b) => b.weekday - a.weekday);
+  else if (params?.sort === "rating")  merged.sort((a, b) => b.rating - a.rating);
+  else                                 merged.sort((a, b) => a.weekday - b.weekday);
+  return merged;
 }
 
 export async function getGetawayBySlug(slug: string): Promise<Getaway | null> {
   const rows = await db.select().from(getawaysTable).where(eq(getawaysTable.slug, slug)).limit(1);
-  if (!rows.length) return null;
-  return toGetaway(rows[0]);
+  if (rows.length) return toGetaway(rows[0]);
+  // Fall back to vendor-submitted getaways stored in venuesTable
+  const venueRows = await db.select(GETAWAY_VENUE_COLS).from(venuesTable)
+    .where(and(eq(venuesTable.slug, slug), inArray(venuesTable.typeSlug, GETAWAY_TYPE_SLUGS), eq(venuesTable.isActive, true)))
+    .limit(1)
+    .catch(() => []);
+  if (!venueRows.length) return null;
+  return venueRowToGetaway(venueRows[0]);
 }
 
 // ─── Destinations ─────────────────────────────────────────────────────────────

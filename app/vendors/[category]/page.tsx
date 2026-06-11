@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Stars } from "@/components/icons";
@@ -23,7 +22,17 @@ const CATEGORY_META: Record<string, { name: string; blurb: string; ph: string }>
   mehendi: { name: "Mehendi artists", blurb: "Arabic, Rajasthani, bridal, kids — solo artists and 4-artist crews that handle full guest lists without smudges.", ph: "v5" },
   music: { name: "Music & DJs", blurb: "Sangeet specialists, shaadi DJs, live instrumentalists and dhol players. Every sound system tested for banquet and lawn acoustics.", ph: "plum" },
   pandits: { name: "Pandits", blurb: "Multi-regional pandits — Maharashtrian, Rajasthani, South Indian, inter-caste ceremonies. Sanskrit shlokas explained in Marathi / Hindi / English.", ph: "v2" },
+  "event-management": { name: "Event planners", blurb: "Full-service wedding planners and coordinators — from single-event management to complete multi-day production.", ph: "dusk" },
+  invitations: { name: "Invitations & stationery", blurb: "Printed cards, digital invites, boxed invitations and wedding stationery — designs for every budget and tradition.", ph: "ocean" },
 };
+
+// Categories not in the curated list (e.g. vendor signed up as "Other") still
+// get a usable page instead of a 404.
+function metaForCategory(slug: string) {
+  if (CATEGORY_META[slug]) return CATEGORY_META[slug];
+  const name = slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return { name, blurb: `${name} for weddings and celebrations in Nagpur — vetted and verified by Venuees.`, ph: "v2" };
+}
 
 export function generateStaticParams() {
   return Object.keys(CATEGORY_META).map((category) => ({ category }));
@@ -31,8 +40,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
-  const meta = CATEGORY_META[category];
-  if (!meta) return {};
+  const meta = metaForCategory(category);
   return { title: `${meta.name} in Nagpur — Venuees.in`, description: meta.blurb };
 }
 
@@ -52,8 +60,7 @@ export default async function VendorCategoryPage({
   const [{ category }, sp, siteConfig] = await Promise.all([params, searchParams, getSiteConfig()]);
   if (!siteConfig.section_vendors) return <SectionDisabled label="Vendors" />;
 
-  const meta = CATEGORY_META[category];
-  if (!meta) return notFound();
+  const meta = metaForCategory(category);
   const basePath = `/vendors/${category}`;
 
   const list = await getVendors({
