@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { WhatsAppFAB } from "@/components/whatsapp-fab";
 import { GoogleOneTap } from "@/components/google-one-tap";
 import { ExitIntentPopup } from "@/components/exit-intent-popup";
@@ -63,6 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <GoogleOneTap />
         <ExitIntentPopup />
       </body>
+      {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
     </html>
   );
 }

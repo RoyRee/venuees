@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { db, venuesTable, venueHallsTable, venueImagesTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable } from "@/lib/db";
+import { db, venuesTable, venueHallsTable, venueImagesTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable, enquiriesTable } from "@/lib/db";
 import { eq, and, or, ilike, gte, lte, sql, asc, desc, inArray, notInArray, SQL } from "drizzle-orm";
 import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme, VenueMeta } from "@/lib/data";
 import { CATEGORY_SLUG_ALIASES } from "@/lib/vendor-categories";
@@ -435,4 +435,26 @@ export async function getRealWeddingBySlug(slug: string): Promise<RealWedding | 
   const rows = await db.select().from(realWeddingsTable).where(eq(realWeddingsTable.slug, slug)).limit(1);
   if (!rows.length) return null;
   return toRealWedding(rows[0]);
+}
+
+// ─── Social proof ─────────────────────────────────────────────────────────────
+
+/** Enquiry counts per venue slug for the last 7 days. Used for social-proof badges. */
+export async function getRecentEnquiryCounts(): Promise<Map<string, number>> {
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({
+      venueSlug: enquiriesTable.venueSlug,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(enquiriesTable)
+    .where(and(gte(enquiriesTable.createdAt, since), sql`${enquiriesTable.venueSlug} is not null`))
+    .groupBy(enquiriesTable.venueSlug)
+    .catch(() => [] as { venueSlug: string | null; count: number }[]);
+
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    if (r.venueSlug) map.set(r.venueSlug, r.count);
+  }
+  return map;
 }

@@ -12,6 +12,7 @@ import { CarouselWrap } from "@/components/carousel-wrap";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { SignatureCarousel } from "@/components/signature-carousel";
 import { getVenues, getGetaways, getDestinations, getRealWeddings } from "@/lib/db/queries";
+import { RecentlyViewed } from "@/components/recently-viewed";
 import { getSiteConfig, getSiteContent, CONFIG_DEFAULTS, CONTENT_DEFAULTS } from "@/lib/site-config";
 
 export default async function HomePage() {
@@ -268,6 +269,7 @@ export default async function HomePage() {
         </section>
       )}
 
+      <RecentlyViewed />
       <Footer />
       <MobileTabbar active="Home" />
     </div>

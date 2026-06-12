@@ -9,7 +9,9 @@ import { Photo } from "@/components/photo";
 import { VenueFilters } from "@/components/venue-filters";
 import { SortSelect } from "@/components/sort-select";
 import { venueHero } from "@/lib/images";
-import { getVenues } from "@/lib/db/queries";
+import { getVenues, getRecentEnquiryCounts } from "@/lib/db/queries";
+import { CompareButton } from "@/components/compare-button";
+import { CompareBar } from "@/components/compare-bar";
 import { getSiteConfig } from "@/lib/site-config";
 import { SectionDisabled } from "@/components/section-disabled";
 import { requireSection } from "@/lib/section-guard";
@@ -49,21 +51,24 @@ export default async function VenuesListPage({
   // Normalise: params can be string or string[] (when repeated)
   const toArr = (v?: string | string[]) => v ? (Array.isArray(v) ? v : [v]) : undefined;
 
-  const venues = await getVenues({
-    q:           sp.q,
-    types:       toArr(sp.type),
-    localities:  toArr(sp.locality),
-    minCap:      sp.minCap     ? Number(sp.minCap)     : undefined,
-    maxVegPlate: sp.maxVegPlate? Number(sp.maxVegPlate): undefined,
-    minRating:   sp.minRating  ? Number(sp.minRating)  : undefined,
-    hasRooms:    !!sp.rooms,
-    hasParking:  !!sp.parking,
-    hasBar:      !!sp.bar,
-    hasDJ:       !!sp.dj,
-    hasGenerator:!!sp.generator,
-    hasCatering: !!sp.catering,
-    sort:        sp.sort,
-  }).catch(() => [] as Awaited<ReturnType<typeof getVenues>>);
+  const [venues, enquiryCounts] = await Promise.all([
+    getVenues({
+      q:           sp.q,
+      types:       toArr(sp.type),
+      localities:  toArr(sp.locality),
+      minCap:      sp.minCap     ? Number(sp.minCap)     : undefined,
+      maxVegPlate: sp.maxVegPlate? Number(sp.maxVegPlate): undefined,
+      minRating:   sp.minRating  ? Number(sp.minRating)  : undefined,
+      hasRooms:    !!sp.rooms,
+      hasParking:  !!sp.parking,
+      hasBar:      !!sp.bar,
+      hasDJ:       !!sp.dj,
+      hasGenerator:!!sp.generator,
+      hasCatering: !!sp.catering,
+      sort:        sp.sort,
+    }).catch(() => [] as Awaited<ReturnType<typeof getVenues>>),
+    getRecentEnquiryCounts().catch(() => new Map<string, number>()),
+  ]);
 
   const hasFilters = !!(sp.q || sp.type || sp.locality || sp.minCap ||
     sp.maxVegPlate || sp.minRating || sp.rooms || sp.parking ||
@@ -192,7 +197,14 @@ export default async function VenuesListPage({
                         <b>₹{v.vegPlate.toLocaleString("en-IN")}</b>
                         <small style={{ marginLeft: 4, color: "var(--ink-mute)", fontSize: 11 }}>/plate</small>
                       </div>
-                      <span className="chip">View details</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {(enquiryCounts.get(v.slug) ?? 0) > 0 && (
+                          <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 600 }}>
+                            🔥 {enquiryCounts.get(v.slug)} this week
+                          </span>
+                        )}
+                        <CompareButton slug={v.slug} name={v.name} vegPlate={v.vegPlate} locality={v.locality} />
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -202,6 +214,7 @@ export default async function VenuesListPage({
         </main>
       </div>
 
+      <CompareBar />
       <StickyLeadBar />
       <Footer />
       <MobileTabbar active="Venues" />
