@@ -397,3 +397,50 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ── Compare button (venue cards) ── */
+.compare-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+  border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink-soft); cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.compare-btn:hover { border-color: var(--brand); color: var(--brand); }
+.compare-btn.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* ── Compare bar (sticky bottom) ── */
+.compare-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 800;
+  background: var(--ink); color: #fff;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+  padding: 12px 20px;
+}
+.compare-bar-inner {
+  max-width: var(--max-w); margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.compare-venues {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.compare-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.12); border-radius: 20px;
+  padding: 4px 10px; font-size: 12px;
+}
+.compare-chip button {
+  opacity: 0.7; cursor: pointer; display: flex; align-items: center;
+}
+.compare-chip button:hover { opacity: 1; }
+.compare-slot {
+  font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em;
+}
+.compare-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.compare-input {
+  padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08); color: #fff; font-size: 13px;
+  width: 160px;
+}
+.compare-input::placeholder { color: rgba(255,255,255,0.45); }

@@ -18,6 +18,7 @@ import { getGooglePlaceInfo } from "@/lib/google-places";
 import { SiteVisitButton } from "@/components/site-visit-button";
 import { StickyLeadBar } from "@/components/sticky-lead-bar";
 import { AvailabilityChecker } from "@/components/availability-checker";
+import { RecordView } from "@/components/record-view";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -571,6 +572,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         <a href="#enquire" className="btn btn-primary">Request availability</a>
       </div>
 
+      <RecordView slug={v.slug} name={v.name} locality={v.locality} vegPlate={v.vegPlate} ph={v.ph} heroImage={v.heroImage} />
       <StickyLeadBar venueSlug={v.slug} venueName={v.name} />
 
       <Footer />
