@@ -269,7 +269,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      <RecentlyViewed />
+      <RecentlyViewed enabledSections={Object.entries(cfg).filter(([, v]) => v === true).map(([k]) => k)} />
       <Footer />
       <MobileTabbar active="Home" />
     </div>

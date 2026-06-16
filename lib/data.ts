@@ -357,6 +357,7 @@ export type Vendor = {
   ph: PhTheme;
   scene: string;
   tagline: string;
+  description?: string | null;
 };
 
 export const vendors: Vendor[] = [

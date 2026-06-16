@@ -9,6 +9,7 @@ import { getGetawayBySlug } from "@/lib/db/queries";
 import { Photo } from "@/components/photo";
 import { getawayPhotos } from "@/lib/images";
 import { EnquiryForm } from "@/components/enquiry-form";
+import { RecordView } from "@/components/record-view";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -194,6 +195,7 @@ export default async function GetawayDetailPage({ params }: { params: Promise<{ 
         </aside>
       </header>
 
+      <RecordView slug={g.slug} name={g.name} locality={g.location} vegPlate={g.weekday} ph={g.ph} heroImage={getawayPhotos[g.slug]?.hero} type="getaway" />
       <Footer />
       <MobileTabbar />
     </div>
