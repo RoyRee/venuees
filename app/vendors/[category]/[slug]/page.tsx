@@ -11,6 +11,7 @@ import { Photo } from "@/components/photo";
 import { vendorPhotos, venuePhotos } from "@/lib/images";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { requireSection } from "@/lib/section-guard";
+import { RecordView } from "@/components/record-view";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -268,6 +269,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
         </aside>
       </div>
 
+      <RecordView slug={v.slug} name={v.name} locality={`${v.locality}, ${v.city}`} vegPlate={v.priceFrom} ph={v.ph} type="vendor" categorySlug={v.categorySlug} />
       <Footer />
       <MobileTabbar />
     </div>

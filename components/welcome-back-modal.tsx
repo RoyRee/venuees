@@ -11,7 +11,27 @@ const MODAL_GAP   = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MIN_AWAY    = 1 * 24 * 60 * 60 * 1000;  // must have been gone at least 1 day
 const MAX_AWAY    = 30 * 24 * 60 * 60 * 1000; // but not more than 30 days
 
-export function WelcomeBackModal() {
+function itemUrl(v: RecentItem): string {
+  if (v.type === "vendor") return `/vendors/${v.categorySlug ?? ""}/${v.slug}`;
+  if (v.type === "getaway") return `/weekend-getaways/${v.slug}`;
+  const localitySlug = v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-");
+  return `/venues/nagpur/${localitySlug}/${v.slug}`;
+}
+
+function sectionFor(type: RecentItem["type"] | undefined): string {
+  if (type === "vendor") return "section_vendors";
+  if (type === "getaway") return "section_getaways";
+  return "section_venues";
+}
+
+function priceDetail(v: RecentItem): string {
+  if (v.vegPlate <= 0) return "";
+  if (v.type === "vendor") return `From ₹${v.vegPlate.toLocaleString("en-IN")}`;
+  if (v.type === "getaway") return `₹${v.vegPlate.toLocaleString("en-IN")}/night`;
+  return `₹${v.vegPlate.toLocaleString("en-IN")}/plate`;
+}
+
+export function WelcomeBackModal({ enabledSections }: { enabledSections?: string[] }) {
   const [show, setShow] = useState(false);
   const [recent, setRecent] = useState<RecentItem[]>([]);
 
@@ -22,19 +42,20 @@ export function WelcomeBackModal() {
       const lastModal = parseInt(localStorage.getItem(MODAL_KEY) ?? "0", 10);
       const away      = now - lastVisit;
 
-      // Update visit timestamp every time
       localStorage.setItem(VISIT_KEY, String(now));
 
-      // Show only if: returning visitor, away 1–30 days, not shown in last 7 days
       if (lastVisit > 0 && away >= MIN_AWAY && away <= MAX_AWAY && now - lastModal >= MODAL_GAP) {
-        const recentList: RecentItem[] = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
-        if (recentList.length > 0) {
-          setRecent(recentList.slice(0, 3));
-          // Small delay so page content renders first
+        const all: RecentItem[] = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+        const filtered = enabledSections
+          ? all.filter((v) => enabledSections.includes(sectionFor(v.type)))
+          : all;
+        if (filtered.length > 0) {
+          setRecent(filtered.slice(0, 3));
           setTimeout(() => setShow(true), 1200);
         }
       }
     } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function dismiss() {
@@ -66,16 +87,16 @@ export function WelcomeBackModal() {
         </div>
 
         <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 16, lineHeight: 1.5 }}>
-          You looked at {recent.length === 1 ? "a venue" : `${recent.length} venues`} last time. Dates may have changed — check availability now.
+          You looked at {recent.length === 1 ? "something" : `${recent.length} listings`} last time. Availability may have changed — check now.
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {recent.map((v) => {
-            const localitySlug = v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-");
+            const price = priceDetail(v);
             return (
               <Link
                 key={v.slug}
-                href={`/venues/nagpur/${localitySlug}/${v.slug}`}
+                href={itemUrl(v)}
                 onClick={dismiss}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", border: "1px solid var(--line-soft)", borderRadius: 10, textDecoration: "none", background: "var(--surface)", transition: "border-color 0.15s" }}
               >
@@ -86,7 +107,7 @@ export function WelcomeBackModal() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>{v.locality.split(",")[0]}{v.vegPlate > 0 ? ` · ₹${v.vegPlate.toLocaleString("en-IN")}/plate` : ""}</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>{v.locality.split(",")[0]}{price ? ` · ${price}` : ""}</div>
                 </div>
                 <I.Arrow width={14} height={14} style={{ color: "var(--brand)", flexShrink: 0 }} />
               </Link>

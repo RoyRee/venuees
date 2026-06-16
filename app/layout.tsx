@@ -8,6 +8,7 @@ import { WelcomeBackModal } from "@/components/welcome-back-modal";
 import { CityProvider } from "@/components/city-context";
 import { db, citiesTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { getSiteConfig } from "@/lib/site-config";
 import "@/styles/tokens.css";
 import "@/styles/app.css";
 import "@/styles/pages.css";
@@ -53,7 +54,8 @@ async function getActiveCities() {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const cities = await getActiveCities();
+  const [cities, cfg] = await Promise.all([getActiveCities(), getSiteConfig().catch(() => null)]);
+  const enabledSections = cfg ? Object.entries(cfg).filter(([, v]) => v === true).map(([k]) => k) : undefined;
 
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
@@ -64,7 +66,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <WhatsAppFAB phone={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919922151527"} />
         <GoogleOneTap />
         <ExitIntentPopup />
-        <WelcomeBackModal />
+        <WelcomeBackModal enabledSections={enabledSections} />
       </body>
       {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
     </html>

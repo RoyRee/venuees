@@ -574,7 +574,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         <a href="#enquire" className="btn btn-primary">Request availability</a>
       </div>
 
-      <RecordView slug={v.slug} name={v.name} locality={v.locality} vegPlate={v.vegPlate} ph={v.ph} heroImage={v.heroImage} />
+      <RecordView slug={v.slug} name={v.name} locality={v.locality} vegPlate={v.vegPlate} ph={v.ph} heroImage={v.heroImage} type="venue" />
       <StickyLeadBar venueSlug={v.slug} venueName={v.name} />
 
       <Footer />

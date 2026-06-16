@@ -8,6 +8,8 @@ export type RecentItem = {
   vegPlate: number;
   ph: string;
   heroImage?: string;
+  type: "venue" | "vendor" | "getaway";
+  categorySlug?: string; // vendor URL segment: /vendors/{categorySlug}/{slug}
 };
 
 const KEY = "venuees_recent";
