@@ -5,7 +5,7 @@ import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament, Stars } from "@/components/icons";
 import { VenueGallery } from "@/components/venue-gallery";
-import { venueGallery, venuePhotos, signatureResortsVideos } from "@/lib/images";
+import { venueGallery, venuePhotos, venueHero, signatureResortsVideos } from "@/lib/images";
 import { db, venueImagesTable, venuesTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getVenueBySlug } from "@/lib/db/queries";
@@ -574,7 +574,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         <a href="#enquire" className="btn btn-primary">Request availability</a>
       </div>
 
-      <RecordView slug={v.slug} name={v.name} locality={v.locality} vegPlate={v.vegPlate} ph={v.ph} heroImage={v.heroImage} type="venue" />
+      <RecordView slug={v.slug} name={v.name} locality={v.locality} vegPlate={v.vegPlate} ph={v.ph} heroImage={v.heroImage ?? venueHero(v.slug)} type="venue" />
       <StickyLeadBar venueSlug={v.slug} venueName={v.name} />
 
       <Footer />

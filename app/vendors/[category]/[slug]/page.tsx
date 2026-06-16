@@ -269,7 +269,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
         </aside>
       </div>
 
-      <RecordView slug={v.slug} name={v.name} locality={`${v.locality}, ${v.city}`} vegPlate={v.priceFrom} ph={v.ph} type="vendor" categorySlug={v.categorySlug} />
+      <RecordView slug={v.slug} name={v.name} locality={`${v.locality}, ${v.city}`} vegPlate={v.priceFrom} ph={v.ph} heroImage={vendorPhotos[v.slug]} type="vendor" categorySlug={v.categorySlug} />
       <Footer />
       <MobileTabbar />
     </div>
