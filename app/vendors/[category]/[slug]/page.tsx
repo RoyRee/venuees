@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
-import { I, Ornament, Stars } from "@/components/icons";
+import { I, Stars } from "@/components/icons";
 import { db, vendorImagesTable, vendorsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getVendorBySlug } from "@/lib/db/queries";
@@ -12,6 +12,7 @@ import { vendorPhotos, venuePhotos } from "@/lib/images";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { requireSection } from "@/lib/section-guard";
 import { RecordView } from "@/components/record-view";
+import { VendorTabs } from "@/components/vendor-tabs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -103,7 +104,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
             &ldquo;{v.tagline}&rdquo;
           </p>
         </div>
-        <aside className="vd-sidebar">
+        <aside className="vd-sidebar" id="enquire">
           <div className="vd-price-row">
             <div>
               <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Package starts at</div>
@@ -122,152 +123,22 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
         </aside>
       </header>
 
-      <div className="vd-tabs">
-        <button className="active">About</button>
-        <button>Portfolio</button>
-        <button>Packages</button>
-        <button>Reviews ({v.reviews})</button>
-        <button>Availability</button>
-      </div>
-
-      <div className="vd-body">
-        <main>
-          <section className="vd-section">
-            <Ornament>ABOUT</Ornament>
-            <h2>The story</h2>
-            <p>
-              {v.name} has been in the Nagpur wedding circuit for {v.yearsExp} years. Started as a {v.category.toLowerCase().replace(/s$/, "")} apprentice in {v.locality}, took on solo weddings from 2018 onwards, now leads a team of 4 across Vidarbha. Every wedding listed here was personally attended — no outsourced shoots, no subcontracted teams.
-            </p>
-            <div className="vd-quickspecs">
-              <div><div className="lbl">Weddings completed</div><div className="val">{v.completed}<small>lifetime</small></div></div>
-              <div><div className="lbl">Experience</div><div className="val">{v.yearsExp}<small>years</small></div></div>
-              <div><div className="lbl">Rating</div><div className="val">{v.rating}<small>/ 5.0</small></div></div>
-              <div><div className="lbl">Team size</div><div className="val">4<small>crew</small></div></div>
-              <div><div className="lbl">Base city</div><div className="val">NGP<small>travels nationwide</small></div></div>
-            </div>
-          </section>
-
-          <section className="vd-section">
-            <Ornament>PORTFOLIO</Ornament>
-            <h2>Recent work · 2025</h2>
-            <div className="halls" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-              {[
-                { c: "Aarti × Mohit", v: "Chitnavis Centre", d: "Dec 2025", p: "v3", src: venuePhotos["chitnavis-centre"]?.gallery[0] },
-                { c: "Neha × Sahil", v: "Centre Point Grand", d: "Nov 2025", p: "dusk", src: venuePhotos["the-centre-point-grand"]?.gallery[2] },
-                { c: "Riya × Vikram", v: "Mahalaxmi Lawns", d: "Feb 2025", p: "garden", src: venuePhotos["mahalaxmi-lawns"]?.gallery[0] },
-                { c: "Meera × Karan", v: "Haveli Ashirwad", d: "Jan 2025", p: "v5", src: venuePhotos["haveli-ashirwad"]?.gallery[0] },
-                { c: "Ishita × Dev", v: "Pench", d: "Oct 2024", p: "v4", src: vendorPhotos["lenslight-films"] },
-                { c: "Priya × Arjun", v: "Signature Resorts", d: "Dec 2024", p: "plum", src: venuePhotos["signature-resorts-nagpur"]?.gallery[0] },
-              ].map((p, i) => (
-                <div key={i} className="hallcard">
-                  <Photo src={p.src} variant={p.p} label={p.c.toLowerCase()} />
-                  <div className="body">
-                    <h4 style={{ fontSize: 17 }}>{p.c}</h4>
-                    <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>{p.v} · {p.d}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="vd-section">
-            <Ornament>PACKAGES</Ornament>
-            <h2>Three tiers · transparent pricing</h2>
-            <div className="pkgs">
-              <div className="h rowlbl">Starts at</div>
-              <div className="h">
-                <div className="pname">Solo</div>
-                <div className="pprice">₹{v.priceFrom.toLocaleString("en-IN")}</div>
-              </div>
-              <div className="h feat">
-                <div className="pname" style={{ color: "#fff" }}>Classic</div>
-                <div className="pprice" style={{ color: "#fff" }}>₹{(v.priceFrom * 1.8).toLocaleString("en-IN")}</div>
-              </div>
-              <div className="h">
-                <div className="pname">Cinematic</div>
-                <div className="pprice">₹{(v.priceFrom * 3.2).toLocaleString("en-IN")}</div>
-              </div>
-
-              <div className="rowlbl">Event days</div>
-              <div>1 day</div>
-              <div>2 days</div>
-              <div>3+ days</div>
-
-              <div className="rowlbl">Team</div>
-              <div>{v.name.split(" ")[0]} solo</div>
-              <div>Lead + 1 assistant</div>
-              <div>Lead + 2 assistants + drone op</div>
-
-              <div className="rowlbl">Deliverables</div>
-              <div>300 edited photos</div>
-              <div>800 photos + 3-min film</div>
-              <div>1,500 photos + 15-min film + reels</div>
-
-              <div className="rowlbl">Turnaround</div>
-              <div>30 days</div>
-              <div>21 days</div>
-              <div>14 days · same-day reel</div>
-
-              <div className="rowlbl" style={{ borderBottom: "none" }}>Travel included</div>
-              <div style={{ borderBottom: "none" }}>Nagpur only</div>
-              <div style={{ borderBottom: "none" }}>Within Maharashtra</div>
-              <div style={{ borderBottom: "none" }}>Anywhere in India</div>
-            </div>
-          </section>
-
-          <section className="vd-section">
-            <Ornament>REVIEWS</Ornament>
-            <h2>What couples say</h2>
-            <div className="rev-summary">
-              <div>
-                <div className="rev-big">{v.rating}</div>
-                <Stars value={v.rating} size={18} />
-                <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6 }}>{v.reviews} verified reviews</div>
-              </div>
-              <div className="rev-bars">
-                {[
-                  { l: "Professionalism", v: 98 },
-                  { l: "Quality", v: 96 },
-                  { l: "Punctuality", v: 94 },
-                  { l: "Value for money", v: 90 },
-                  { l: "Responsiveness", v: 92 },
-                ].map((r) => (
-                  <div key={r.l}>
-                    <span>{r.l}</span>
-                    <div className="rev-bar-fill"><div style={{ width: `${r.v}%` }} /></div>
-                    <span style={{ textAlign: "right" }}>{(r.v / 20).toFixed(1)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {[
-              { n: "Sanya G.", d: "Nov 2025 · 1-day wedding", t: "Final delivery was in 12 days. Every photo was in focus, every emotion captured. Our family is still asking who shot the wedding." },
-              { n: "Arjun P.", d: "Jan 2025 · 3-day destination (Udaipur)", t: "Travelled with us, stayed with us, shot from dawn to midnight for 3 days. Zero ego, full results." },
-            ].map((r) => (
-              <div key={r.n} className="rev-item">
-                <div className="ava ph rose" />
-                <div>
-                  <h5>{r.n}</h5>
-                  <div className="rev-meta">{r.d} · <Stars value={5} size={11} /></div>
-                  <p>{r.t}</p>
-                </div>
-              </div>
-            ))}
-          </section>
-        </main>
-
-        <aside>
-          <div className="vd-sidebar" style={{ position: "sticky", top: 70 }}>
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, lineHeight: 1.1, marginBottom: 12 }}>Book {v.name.split(" ")[0]}</div>
-            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 16 }}>
-              Date hold against a ₹5,000 refundable deposit. Full balance only after the shoot.
-            </p>
-            <button className="btn btn-primary btn-lg" style={{ width: "100%" }}>
-              Check dates <I.Arrow width={14} height={14} />
-            </button>
-          </div>
-        </aside>
-      </div>
+      <VendorTabs
+        vendor={{
+          name: v.name,
+          category: v.category,
+          yearsExp: v.yearsExp,
+          completed: v.completed,
+          rating: v.rating,
+          reviews: v.reviews,
+          priceFrom: v.priceFrom,
+          locality: v.locality,
+          city: v.city,
+          description: v.description,
+          ph: v.ph,
+        }}
+        images={dbImages}
+      />
 
       <RecordView slug={v.slug} name={v.name} locality={`${v.locality}, ${v.city}`} vegPlate={v.priceFrom} ph={v.ph} heroImage={vendorPhotos[v.slug]} type="vendor" categorySlug={v.categorySlug} />
       <Footer />

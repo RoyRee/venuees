@@ -241,6 +241,7 @@ function toVendor(r: typeof vendorsTable.$inferSelect): Vendor {
     ph: r.ph as PhTheme,
     scene: r.scene,
     tagline: r.tagline,
+    description: r.description,
   };
 }
 
