@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getSiteConfig } from "@/lib/site-config";
 import { ApplyForm } from "./apply-form";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +15,9 @@ export const metadata = {
 };
 
 export default async function ListYourBusinessPage() {
+  const cfg = await getSiteConfig().catch(() => null);
+  if (cfg && cfg.feature_applications === false) redirect("/");
+
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase!.auth.getUser();
   const prefillEmail = user?.email ?? "";

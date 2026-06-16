@@ -11,6 +11,7 @@ import { Photo } from "@/components/photo";
 import { vendorPhotos, venuePhotos } from "@/lib/images";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { requireSection } from "@/lib/section-guard";
+import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
 import { RecordView } from "@/components/record-view";
 import { VendorTabs } from "@/components/vendor-tabs";
 
@@ -24,7 +25,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function VendorDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireSection("section_vendors");
   const { slug } = await params;
-  const v = await getVendorBySlug(slug);
+  const [v, cfg] = await Promise.all([
+    getVendorBySlug(slug),
+    getSiteConfig().catch(() => ({ ...CONFIG_DEFAULTS })),
+  ]);
   if (!v) return notFound();
 
   // Gallery grid style adapts to actual photo count so there's never blank cells.
@@ -112,14 +116,20 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
               <small>Final price varies by event days + team size</small>
             </div>
           </div>
-          <EnquiryForm
-            kind="vendor_enquiry"
-            vendorSlug={v.slug}
-            venueName={v.name}
-            contactPhone={contact?.contactPhone ?? undefined}
-            whatsapp={contact?.whatsapp ?? undefined}
-            variant="sidebar"
-          />
+          {cfg.feature_enquiries !== false ? (
+            <EnquiryForm
+              kind="vendor_enquiry"
+              vendorSlug={v.slug}
+              venueName={v.name}
+              contactPhone={contact?.contactPhone ?? undefined}
+              whatsapp={contact?.whatsapp ?? undefined}
+              variant="sidebar"
+            />
+          ) : (
+            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 12 }}>
+              Enquiries are temporarily paused. <Link href="/contact" style={{ color: "var(--brand)" }}>Contact us directly →</Link>
+            </p>
+          )}
         </aside>
       </header>
 

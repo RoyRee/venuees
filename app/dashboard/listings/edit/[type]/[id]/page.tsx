@@ -72,7 +72,7 @@ export default async function EditListingPage({
     };
   } else {
     const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, id));
-    if (!vendor || vendor.ownerUserId !== user.id) return notFound();
+    if (!vendor || (vendor.ownerUserId !== user.id && role !== "admin")) return notFound();
 
     const imgs = await db.select({ id: vendorImagesTable.id })
       .from(vendorImagesTable).where(eq(vendorImagesTable.vendorId, id));
