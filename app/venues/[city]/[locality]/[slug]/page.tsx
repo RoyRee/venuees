@@ -19,6 +19,7 @@ import { SiteVisitButton } from "@/components/site-visit-button";
 import { StickyLeadBar } from "@/components/sticky-lead-bar";
 import { AvailabilityChecker } from "@/components/availability-checker";
 import { RecordView } from "@/components/record-view";
+import { PriceAlertWidget } from "@/components/price-alert-widget";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -561,6 +562,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             />
             <SiteVisitButton venueSlug={v.slug} venueName={v.name} />
             <AvailabilityChecker venueId={venueDbId} venueName={v.name} venueSlug={v.slug} />
+            <PriceAlertWidget venueSlug={v.slug} venueName={v.name} />
           </div>
         </aside>
       </div>

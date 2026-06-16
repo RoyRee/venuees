@@ -4,6 +4,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { WhatsAppFAB } from "@/components/whatsapp-fab";
 import { GoogleOneTap } from "@/components/google-one-tap";
 import { ExitIntentPopup } from "@/components/exit-intent-popup";
+import { WelcomeBackModal } from "@/components/welcome-back-modal";
 import { CityProvider } from "@/components/city-context";
 import { db, citiesTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -63,6 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <WhatsAppFAB phone={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919922151527"} />
         <GoogleOneTap />
         <ExitIntentPopup />
+        <WelcomeBackModal />
       </body>
       {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
     </html>
