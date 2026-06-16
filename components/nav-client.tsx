@@ -85,16 +85,18 @@ export function TopNavClient({ cfg }: { cfg: SiteConfig }) {
           })}
         </ul>
         <div className="nav-right">
-          <button aria-label="Search" onClick={() => setSearchOpen(true)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", display: "flex", alignItems: "center" }}>
-            <I.Search width={18} height={18} />
-          </button>
+          {cfg.feature_search !== false && (
+            <button aria-label="Search" onClick={() => setSearchOpen(true)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", display: "flex", alignItems: "center" }}>
+              <I.Search width={18} height={18} />
+            </button>
+          )}
           <span className="city"><I.Pin width={13} height={13} /> {city.name}</span>
           <NavUserButton />
           <Link href="/contact" className="btn btn-primary btn-sm">Enquire</Link>
         </div>
       </nav>
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+      {searchOpen && cfg.feature_search !== false && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </>
   );
 }
@@ -111,13 +113,13 @@ export function MobileNavClient({ cfg }: { cfg: SiteConfig }) {
       <nav className="mobile-nav">
         <Link href="/" className="logo">v<em>enuee</em>s</Link>
         <div className="mobile-icons">
-          <button aria-label="Search" onClick={() => setSearchOpen(true)}><I.Search width={20} height={20} /></button>
-          <button aria-label="Saved" onClick={() => goToSaved(router)}><I.Heart width={20} height={20} /></button>
+          {cfg.feature_search !== false && <button aria-label="Search" onClick={() => setSearchOpen(true)}><I.Search width={20} height={20} /></button>}
+          {cfg.feature_saved !== false && <button aria-label="Saved" onClick={() => goToSaved(router)}><I.Heart width={20} height={20} /></button>}
           <button aria-label="Menu" onClick={() => setOpen(true)}><I.Menu width={22} height={22} /></button>
         </div>
       </nav>
 
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+      {searchOpen && cfg.feature_search !== false && <SearchOverlay onClose={() => setSearchOpen(false)} />}
 
       {open && (
         <div className="mob-drawer">

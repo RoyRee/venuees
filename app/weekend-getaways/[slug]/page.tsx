@@ -10,6 +10,7 @@ import { Photo } from "@/components/photo";
 import { getawayPhotos } from "@/lib/images";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { RecordView } from "@/components/record-view";
+import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -28,7 +29,10 @@ const ADDONS = [
 export default async function GetawayDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireSection("section_getaways");
   const { slug } = await params;
-  const g = await getGetawayBySlug(slug);
+  const [g, cfg] = await Promise.all([
+    getGetawayBySlug(slug),
+    getSiteConfig().catch(() => ({ ...CONFIG_DEFAULTS })),
+  ]);
   if (!g) return notFound();
 
   const nights = 2;
@@ -186,12 +190,18 @@ export default async function GetawayDetailPage({ params }: { params: Promise<{ 
             <div className="total"><span>Total · {nights} nights</span><span>₹{total.toLocaleString("en-IN")}</span></div>
           </div>
 
-          <EnquiryForm
-            kind="getaway_enquiry"
-            getawaySlug={g.slug}
-            venueName={g.name}
-            variant="sidebar"
-          />
+          {cfg.feature_enquiries !== false ? (
+            <EnquiryForm
+              kind="getaway_enquiry"
+              getawaySlug={g.slug}
+              venueName={g.name}
+              variant="sidebar"
+            />
+          ) : (
+            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 12 }}>
+              Enquiries are temporarily paused. <Link href="/contact" style={{ color: "var(--brand)" }}>Contact us directly →</Link>
+            </p>
+          )}
         </aside>
       </header>
 

@@ -14,6 +14,7 @@ import { EnquiryForm } from "@/components/enquiry-form";
 import { VenueTabs } from "@/components/venue-tabs";
 import { VenueCalendar } from "@/components/venue-calendar";
 import { requireSection } from "@/lib/section-guard";
+import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
 import { getGooglePlaceInfo } from "@/lib/google-places";
 import { SiteVisitButton } from "@/components/site-visit-button";
 import { StickyLeadBar } from "@/components/sticky-lead-bar";
@@ -97,6 +98,7 @@ function amenIcon(text: string) {
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireSection("section_venues");
   const { slug } = await params;
+  const cfg = await getSiteConfig().catch(() => ({ ...CONFIG_DEFAULTS }));
 
   // All DB operations run in parallel; any failure falls back gracefully.
   const [v, dbImages, contactRows] = await Promise.all([
@@ -552,17 +554,25 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <div className="calendar-mini">
               Tap a date in Availability to check muhurtas
             </div>
-            <EnquiryForm
-              kind="venue_enquiry"
-              venueSlug={v.slug}
-              venueName={v.name}
-              contactPhone={contact?.contactPhone ?? undefined}
-              whatsapp={contact?.whatsapp ?? undefined}
-              variant="sidebar"
-            />
-            <SiteVisitButton venueSlug={v.slug} venueName={v.name} />
-            <AvailabilityChecker venueId={venueDbId} venueName={v.name} venueSlug={v.slug} />
-            <PriceAlertWidget venueSlug={v.slug} venueName={v.name} />
+            {cfg.feature_enquiries !== false ? (
+              <>
+                <EnquiryForm
+                  kind="venue_enquiry"
+                  venueSlug={v.slug}
+                  venueName={v.name}
+                  contactPhone={contact?.contactPhone ?? undefined}
+                  whatsapp={contact?.whatsapp ?? undefined}
+                  variant="sidebar"
+                />
+                <SiteVisitButton venueSlug={v.slug} venueName={v.name} />
+                <AvailabilityChecker venueId={venueDbId} venueName={v.name} venueSlug={v.slug} />
+                <PriceAlertWidget venueSlug={v.slug} venueName={v.name} />
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 12 }}>
+                Enquiries are temporarily paused. <Link href="/contact" style={{ color: "var(--brand)" }}>Contact us directly →</Link>
+              </p>
+            )}
           </div>
         </aside>
       </div>

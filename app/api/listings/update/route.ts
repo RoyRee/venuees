@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getUserRole } from "@/lib/auth/role";
 import { db, listingApplicationsTable, venuesTable, vendorsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
@@ -21,16 +22,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // Verify ownership before creating the edit application
+  const role = await getUserRole(user.id, user.email!);
+
+  // Verify ownership before creating the edit application (admin can edit any listing)
   if (linkedType === "venue") {
     const [row] = await db.select({ ownerUserId: venuesTable.ownerUserId })
       .from(venuesTable).where(eq(venuesTable.id, linkedId)).limit(1);
-    if (!row || row.ownerUserId !== user.id)
+    if (!row || (row.ownerUserId !== user.id && role !== "admin"))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   } else if (linkedType === "vendor") {
     const [row] = await db.select({ ownerUserId: vendorsTable.ownerUserId })
       .from(vendorsTable).where(eq(vendorsTable.id, linkedId)).limit(1);
-    if (!row || row.ownerUserId !== user.id)
+    if (!row || (row.ownerUserId !== user.id && role !== "admin"))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   } else {
     return NextResponse.json({ error: "Invalid linked type" }, { status: 400 });

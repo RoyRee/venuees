@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
+import { NewsletterForm } from "./newsletter-form";
 
 export async function Footer() {
   const cfg = await getSiteConfig().catch(() => ({ ...CONFIG_DEFAULTS }));
@@ -21,6 +22,7 @@ export async function Footer() {
               <br />
               hello@venuees.in
             </div>
+            {cfg.feature_newsletter !== false && <NewsletterForm />}
           </div>
 
           {cfg.section_venues && (
@@ -69,7 +71,7 @@ export async function Footer() {
               <li><Link href="/tools/wedding-budget-calculator">Budget calculator</Link></li>
               {cfg.section_real_weddings && <li><Link href="/real-weddings">Real weddings</Link></li>}
               {cfg.section_blog         && <li><Link href="/blog">Journal</Link></li>}
-              <li><Link href="/list-your-business">List your business</Link></li>
+              {cfg.feature_applications !== false && <li><Link href="/list-your-business">List your business</Link></li>}
               <li><Link href="/contact">Contact</Link></li>
             </ul>
           </div>

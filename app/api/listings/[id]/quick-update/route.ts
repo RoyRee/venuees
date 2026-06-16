@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getUserRole } from "@/lib/auth/role";
 import { db, venuesTable, vendorsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
@@ -19,11 +20,12 @@ export async function PATCH(
 
   const body = await request.json();
   const { type } = body;
+  const role = await getUserRole(user.id, user.email!);
 
   if (type === "venue") {
     const [venue] = await db.select({ ownerUserId: venuesTable.ownerUserId })
       .from(venuesTable).where(eq(venuesTable.id, id)).limit(1);
-    if (!venue || venue.ownerUserId !== user.id)
+    if (!venue || (venue.ownerUserId !== user.id && role !== "admin"))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -49,7 +51,7 @@ export async function PATCH(
   if (type === "vendor") {
     const [vendor] = await db.select({ ownerUserId: vendorsTable.ownerUserId })
       .from(vendorsTable).where(eq(vendorsTable.id, id)).limit(1);
-    if (!vendor || vendor.ownerUserId !== user.id)
+    if (!vendor || (vendor.ownerUserId !== user.id && role !== "admin"))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
