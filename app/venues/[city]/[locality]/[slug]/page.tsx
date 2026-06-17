@@ -197,36 +197,6 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
                 </>
             }
           </div>
-
-          {/* Overview lives here (not a separate section below) so the header's
-              left column fills the height of the enquiry sidebar. */}
-          <div id="overview" style={{ marginTop: 28 }}>
-            <Ornament>OVERVIEW</Ornament>
-            <h2 style={{ fontSize: "clamp(24px, 2.4vw, 34px)", margin: "14px 0 14px", letterSpacing: "-0.02em", lineHeight: 1.15 }}>About {v.name}</h2>
-            <p style={{ color: "var(--ink-soft)", lineHeight: 1.7, maxWidth: 640 }}>{v.description}</p>
-            <div className="vd-quickspecs">
-              <div>
-                <div className="lbl">Guest capacity</div>
-                <div className="val">{v.capacity.min}–{v.capacity.max}<small>pax</small></div>
-              </div>
-              <div>
-                <div className="lbl">Event halls</div>
-                <div className="val">{halls.length || "—"}<small>indoor + open</small></div>
-              </div>
-              <div>
-                <div className="lbl">Parking</div>
-                <div className="val">{v.parking || "—"}<small>cars</small></div>
-              </div>
-              <div>
-                <div className="lbl">Rooms</div>
-                <div className="val">{v.rooms || "—"}<small>{v.rooms ? "on-site" : "off-site"}</small></div>
-              </div>
-              <div>
-                <div className="lbl">Veg plate</div>
-                <div className="val">₹{v.vegPlate.toLocaleString("en-IN")}<small>/plate</small></div>
-              </div>
-            </div>
-          </div>
         </div>
       </header>
 
