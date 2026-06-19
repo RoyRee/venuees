@@ -119,7 +119,7 @@ export default async function HomePage() {
                 <div className="vcard-price">
                   <div>
                     <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Veg plate from</div>
-                    <b>₹{v.vegPlate.toLocaleString("en-IN")}</b>
+                    <b>{v.vegPlate > 0 ? `₹${v.vegPlate.toLocaleString("en-IN")}` : "On request"}</b>
                   </div>
                   <span className="chip">View</span>
                 </div>

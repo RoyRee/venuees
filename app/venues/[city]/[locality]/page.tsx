@@ -158,8 +158,12 @@ export default async function LocalityVenuesPage({ params }: { params: Promise<{
                     <div className="vcard-price">
                       <div>
                         <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Veg from</div>
-                        <b>₹{v.vegPlate.toLocaleString("en-IN")}</b>
-                        <small style={{ marginLeft: 4, color: "var(--ink-mute)", fontSize: 11 }}>/plate</small>
+                        {v.vegPlate > 0 ? (
+                          <>
+                            <b>₹{v.vegPlate.toLocaleString("en-IN")}</b>
+                            <small style={{ marginLeft: 4, color: "var(--ink-mute)", fontSize: 11 }}>/plate</small>
+                          </>
+                        ) : <b>On request</b>}
                       </div>
                       <span className="chip">View details</span>
                     </div>

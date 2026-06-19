@@ -52,14 +52,16 @@ function VenueJsonLd({ v, locality }: { v: { name: string; address: string; loca
       "addressCountry": "IN",
     },
     "url": `https://venuees.in/venues/${v.citySlug}/${locality}/${v.slug}`,
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": v.rating.toFixed(1),
-      "reviewCount": v.reviews,
-      "bestRating": "5",
-      "worstRating": "1",
-    },
-    "priceRange": `₹${v.vegPlate.toLocaleString("en-IN")} per plate`,
+    ...(v.reviews > 0 ? {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": v.rating.toFixed(1),
+        "reviewCount": v.reviews,
+        "bestRating": "5",
+        "worstRating": "1",
+      },
+    } : {}),
+    ...(v.vegPlate > 0 ? { "priceRange": `₹${v.vegPlate.toLocaleString("en-IN")} per plate` } : {}),
     "currenciesAccepted": "INR",
     "telephone": "+917125550180",
     "sameAs": ["https://venuees.in"],
@@ -235,7 +237,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
               </div>
               <div>
                 <div className="lbl">Veg plate</div>
-                <div className="val">₹{v.vegPlate.toLocaleString("en-IN")}<small>/plate</small></div>
+                <div className="val">{v.vegPlate > 0 ? <>₹{v.vegPlate.toLocaleString("en-IN")}<small>/plate</small></> : "On request"}</div>
               </div>
             </div>
           </section>
@@ -511,13 +513,19 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <div className="vd-price-row">
               <div>
                 <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Veg plate</div>
-                <div className="plate">₹{v.vegPlate.toLocaleString("en-IN")}</div>
-                <small>Non-veg ₹{v.nvPlate.toLocaleString("en-IN")} · Hall rent ₹{(v.hallRent / 1000).toFixed(0)}k</small>
+                {v.vegPlate > 0 ? (
+                  <>
+                    <div className="plate">₹{v.vegPlate.toLocaleString("en-IN")}</div>
+                    <small>Non-veg ₹{v.nvPlate.toLocaleString("en-IN")} · Hall rent ₹{(v.hallRent / 1000).toFixed(0)}k</small>
+                  </>
+                ) : (
+                  <div className="plate" style={{ fontSize: 22 }}>Price on request</div>
+                )}
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Min spend</div>
                 <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink)" }}>
-                  ₹{(v.minGuarantee / 100000).toFixed(1)}L
+                  {v.minGuarantee > 0 ? `₹${(v.minGuarantee / 100000).toFixed(1)}L` : "—"}
                 </div>
               </div>
             </div>
