@@ -52,14 +52,16 @@ function VenueJsonLd({ v, locality }: { v: { name: string; address: string; loca
       "addressCountry": "IN",
     },
     "url": `https://venuees.in/venues/${v.citySlug}/${locality}/${v.slug}`,
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": v.rating.toFixed(1),
-      "reviewCount": v.reviews,
-      "bestRating": "5",
-      "worstRating": "1",
-    },
-    "priceRange": `₹${v.vegPlate.toLocaleString("en-IN")} per plate`,
+    ...(v.reviews > 0 ? {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": v.rating.toFixed(1),
+        "reviewCount": v.reviews,
+        "bestRating": "5",
+        "worstRating": "1",
+      },
+    } : {}),
+    ...(v.vegPlate > 0 ? { "priceRange": `₹${v.vegPlate.toLocaleString("en-IN")} per plate` } : {}),
     "currenciesAccepted": "INR",
     "telephone": "+917125550180",
     "sameAs": ["https://venuees.in"],
@@ -197,36 +199,6 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
                 </>
             }
           </div>
-
-          {/* Overview lives here (not a separate section below) so the header's
-              left column fills the height of the enquiry sidebar. */}
-          <div id="overview" style={{ marginTop: 28 }}>
-            <Ornament>OVERVIEW</Ornament>
-            <h2 style={{ fontSize: "clamp(24px, 2.4vw, 34px)", margin: "14px 0 14px", letterSpacing: "-0.02em", lineHeight: 1.15 }}>About {v.name}</h2>
-            <p style={{ color: "var(--ink-soft)", lineHeight: 1.7, maxWidth: 640 }}>{v.description}</p>
-            <div className="vd-quickspecs">
-              <div>
-                <div className="lbl">Guest capacity</div>
-                <div className="val">{v.capacity.min}–{v.capacity.max}<small>pax</small></div>
-              </div>
-              <div>
-                <div className="lbl">Event halls</div>
-                <div className="val">{halls.length || "—"}<small>indoor + open</small></div>
-              </div>
-              <div>
-                <div className="lbl">Parking</div>
-                <div className="val">{v.parking || "—"}<small>cars</small></div>
-              </div>
-              <div>
-                <div className="lbl">Rooms</div>
-                <div className="val">{v.rooms || "—"}<small>{v.rooms ? "on-site" : "off-site"}</small></div>
-              </div>
-              <div>
-                <div className="lbl">Veg plate</div>
-                <div className="val">₹{v.vegPlate.toLocaleString("en-IN")}<small>/plate</small></div>
-              </div>
-            </div>
-          </div>
         </div>
       </header>
 
@@ -265,7 +237,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
               </div>
               <div>
                 <div className="lbl">Veg plate</div>
-                <div className="val">₹{v.vegPlate.toLocaleString("en-IN")}<small>/plate</small></div>
+                <div className="val">{v.vegPlate > 0 ? <>₹{v.vegPlate.toLocaleString("en-IN")}<small>/plate</small></> : "On request"}</div>
               </div>
             </div>
           </section>
@@ -541,13 +513,19 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <div className="vd-price-row">
               <div>
                 <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Veg plate</div>
-                <div className="plate">₹{v.vegPlate.toLocaleString("en-IN")}</div>
-                <small>Non-veg ₹{v.nvPlate.toLocaleString("en-IN")} · Hall rent ₹{(v.hallRent / 1000).toFixed(0)}k</small>
+                {v.vegPlate > 0 ? (
+                  <>
+                    <div className="plate">₹{v.vegPlate.toLocaleString("en-IN")}</div>
+                    <small>Non-veg ₹{v.nvPlate.toLocaleString("en-IN")} · Hall rent ₹{(v.hallRent / 1000).toFixed(0)}k</small>
+                  </>
+                ) : (
+                  <div className="plate" style={{ fontSize: 22 }}>Price on request</div>
+                )}
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Min spend</div>
                 <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink)" }}>
-                  ₹{(v.minGuarantee / 100000).toFixed(1)}L
+                  {v.minGuarantee > 0 ? `₹${(v.minGuarantee / 100000).toFixed(1)}L` : "—"}
                 </div>
               </div>
             </div>
