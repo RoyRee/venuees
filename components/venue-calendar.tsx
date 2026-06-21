@@ -4,8 +4,15 @@ import { MUHURAT_DATES } from "@/lib/muhurat";
 
 type DayState = "avail" | "booked" | "muhurat" | "past";
 
-function buildMonth(year: number, month: number, blocked: Set<string>): {
-  label: string; firstDow: number; days: { n: number; state: DayState; iso: string }[];
+function buildMonth(
+  year: number,
+  month: number,
+  blocked: Set<string>,
+  showMuhurat: boolean
+): {
+  label: string;
+  firstDow: number;
+  days: { n: number; state: DayState; iso: string }[];
 } {
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -19,7 +26,7 @@ function buildMonth(year: number, month: number, blocked: Set<string>): {
     let state: DayState = "avail";
     if (iso < today) state = "past";
     else if (blocked.has(iso)) state = "booked";
-    else if (MUHURAT_DATES.has(iso)) state = "muhurat";
+    else if (showMuhurat && MUHURAT_DATES.has(iso)) state = "muhurat";
     return { n, state, iso };
   });
 
@@ -35,15 +42,27 @@ function scrollToForm(iso: string) {
   }
 }
 
-function CalMonth({ year, month, blocked }: { year: number; month: number; blocked: Set<string> }) {
-  const { label, firstDow, days } = buildMonth(year, month, blocked);
+function CalMonth({
+  year,
+  month,
+  blocked,
+  showMuhurat,
+}: {
+  year: number;
+  month: number;
+  blocked: Set<string>;
+  showMuhurat: boolean;
+}) {
+  const { label, firstDow, days } = buildMonth(year, month, blocked, showMuhurat);
   return (
     <div style={{ marginBottom: 28 }}>
       <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink)", marginBottom: 12 }}>
         {label}
       </div>
       <div className="cal-head">
-        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => <div key={d}>{d}</div>)}
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d}>{d}</div>
+        ))}
       </div>
       <div className="cal">
         {Array.from({ length: firstDow }, (_, i) => (
@@ -61,10 +80,18 @@ function CalMonth({ year, month, blocked }: { year: number; month: number; block
             }}
           >
             {d.state === "muhurat" && (
-              <span style={{
-                position: "absolute", top: 2, right: 3,
-                fontSize: 7, lineHeight: 1, color: "#b45309",
-              }}>✦</span>
+              <span
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  right: 3,
+                  fontSize: 7,
+                  lineHeight: 1,
+                  color: "#b45309",
+                }}
+              >
+                ✦
+              </span>
             )}
             {d.n}
           </div>
@@ -74,12 +101,19 @@ function CalMonth({ year, month, blocked }: { year: number; month: number; block
   );
 }
 
-export function VenueCalendar({ blockedDates }: { blockedDates: string[] }) {
+export function VenueCalendar({
+  blockedDates,
+  showMuhurat = true,
+}: {
+  blockedDates: string[];
+  showMuhurat?: boolean;
+}) {
   const blocked = new Set(blockedDates);
   const now = new Date();
 
   // Find the month offset of the first upcoming muhurat date
   function firstMuhuratOffset(): number {
+    if (!showMuhurat) return 0;
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const upcoming = [...MUHURAT_DATES].sort().find((d) => d >= today);
     if (!upcoming) return 0;
@@ -97,24 +131,49 @@ export function VenueCalendar({ blockedDates }: { blockedDates: string[] }) {
         <button
           onClick={() => setOffset((o) => Math.max(o - 1, 0))}
           disabled={offset === 0}
-          style={{ background: "none", border: "1px solid var(--line)", borderRadius: 8, padding: "6px 12px", cursor: offset === 0 ? "default" : "pointer", opacity: offset === 0 ? 0.3 : 1, fontSize: 14, color: "var(--ink)" }}
+          style={{
+            background: "none",
+            border: "1px solid var(--line)",
+            borderRadius: 8,
+            padding: "6px 12px",
+            cursor: offset === 0 ? "default" : "pointer",
+            opacity: offset === 0 ? 0.3 : 1,
+            fontSize: 14,
+            color: "var(--ink)",
+          }}
         >
           ← Earlier
         </button>
         <button
           onClick={() => setOffset((o) => o + 1)}
-          style={{ background: "none", border: "1px solid var(--line)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 14, color: "var(--ink)" }}
+          style={{
+            background: "none",
+            border: "1px solid var(--line)",
+            borderRadius: 8,
+            padding: "6px 12px",
+            cursor: "pointer",
+            fontSize: 14,
+            color: "var(--ink)",
+          }}
         >
           Later →
         </button>
       </div>
 
-      <CalMonth year={d.getFullYear()} month={d.getMonth()} blocked={blocked} />
+      <CalMonth year={d.getFullYear()} month={d.getMonth()} blocked={blocked} showMuhurat={showMuhurat} />
 
       <div className="cal-legend" style={{ marginTop: 4 }}>
-        <span><span className="dot" style={{ background: "var(--mehendi)" }} /> Available — tap to book</span>
-        <span><span className="dot" style={{ background: "#b45309" }} />✦ Muhurat</span>
-        <span><span className="dot" style={{ background: "var(--line)" }} /> Booked</span>
+        <span>
+          <span className="dot" style={{ background: "var(--mehendi)" }} /> Available — tap to book
+        </span>
+        {showMuhurat && (
+          <span>
+            <span className="dot" style={{ background: "#b45309" }} />✦ Muhurat
+          </span>
+        )}
+        <span>
+          <span className="dot" style={{ background: "var(--line)" }} /> Booked
+        </span>
       </div>
     </div>
   );

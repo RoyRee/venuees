@@ -42,6 +42,12 @@ interface FormState {
   // shared
   description: string;
   amenities: string[];
+  // new venue sub-sections
+  halls: Array<{ name: string; type: string; area: string; theatre: number; floating: number; dining: number; ph?: string }>;
+  packages: Array<{ name: string; pricePerPlate: number; features: string[] }>;
+  locationInfo: { airport?: string; railway?: string; hotelCluster?: string };
+  googleMapsUrl: string;
+  googlePlaceId: string;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -62,6 +68,11 @@ const EMPTY: FormState = {
   minGuarantee: "", parking: "", rooms: "",
   priceFrom: "", yearsExp: "", tagline: "", completed: "",
   description: "", amenities: [],
+  halls: [],
+  packages: [],
+  locationInfo: {},
+  googleMapsUrl: "",
+  googlePlaceId: "",
 };
 
 // ── Step indicator ─────────────────────────────────────────────────────────
@@ -98,8 +109,9 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
   const videoRef = useRef<HTMLInputElement>(null);
 
   const [customAmenityInput, setCustomAmenityInput] = useState("");
+  const [tempHallImage, setTempHallImage] = useState("");
 
-  const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: any, v: any) => setForm((f) => ({ ...f, [k]: v }));
   const toggleAmenity = (a: string) => setForm((f) => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a] }));
   const addCustomAmenity = () => {
     const val = customAmenityInput.trim();
@@ -136,18 +148,48 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
     setMedia((m) => { URL.revokeObjectURL(m[i].preview); return m.filter((_, j) => j !== i); });
   }
 
+  const stepsList = [
+    "Type",
+    "Basic Info",
+    "Details",
+    "Description",
+    ...(form.listingType === "venue" ? ["Halls", "Packages", "Location"] : []),
+    "Media",
+    "Review"
+  ];
+  const TOTAL_STEPS = stepsList.length;
+
+  let stepName = "";
+  if (step === 0) stepName = "type";
+  else if (step === 1) stepName = "basic";
+  else if (step === 2) stepName = "details";
+  else if (step === 3) stepName = "description";
+  else {
+    const isVenue = form.listingType === "venue";
+    if (isVenue) {
+      if (step === 4) stepName = "halls";
+      else if (step === 5) stepName = "packages";
+      else if (step === 6) stepName = "location";
+      else if (step === 7) stepName = "media";
+      else if (step === 8) stepName = "review";
+    } else {
+      if (step === 4) stepName = "media";
+      else if (step === 5) stepName = "review";
+    }
+  }
+
   // ── Validation ─────────────────────────────────────────────────────────
   function validate(): string {
-    if (step === 0 && !form.listingType) return "Please choose a listing type.";
-    if (step === 0 && !form.businessType) return "Please choose a category.";
-    if (step === 1) {
+    if (stepName === "type" && !form.listingType) return "Please choose a listing type.";
+    if (stepName === "type" && !form.businessType) return "Please choose a category.";
+    if (stepName === "basic") {
       if (!form.businessName.trim()) return "Business name is required.";
       if (!form.contactName.trim()) return "Contact name is required.";
       if (!form.phone.trim()) return "Phone is required.";
       if (!form.email.trim()) return "Email is required.";
       if (!form.city.trim()) return "City is required.";
     }
-    if (step === 4 && media.filter((m) => m.type === "image").length === 0) return "Please upload at least one photo.";
+    if (stepName === "media" && media.filter((m) => m.type === "image").length === 0) return "Please upload at least one photo.";
     return "";
   }
 
@@ -182,6 +224,12 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
           details.parking       = form.parking;
           details.rooms         = form.rooms;
           details.minGuarantee  = form.minGuarantee;
+          
+          details.halls         = form.halls;
+          details.packages      = form.packages;
+          details.locationInfo  = form.locationInfo;
+          details.googleMapsUrl = form.googleMapsUrl;
+          details.googlePlaceId = form.googlePlaceId;
         } else if (form.listingType === "vendor") {
           details.priceFrom  = form.priceFrom;
           details.yearsExp   = form.yearsExp;
@@ -258,8 +306,6 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
     });
   }
 
-  const TOTAL_STEPS = 6;
-
   // ── Success screen ─────────────────────────────────────────────────────
   if (submitted) {
     return (
@@ -278,7 +324,7 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
       <Steps current={step} total={TOTAL_STEPS} />
 
       {/* ── Step 0: Type ── */}
-      {step === 0 && (
+      {stepName === "type" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>What are you listing?</h2>
@@ -310,7 +356,7 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
       )}
 
       {/* ── Step 1: Basic info ── */}
-      {step === 1 && (
+      {stepName === "basic" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Basic details</h2>
@@ -336,7 +382,7 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
       )}
 
       {/* ── Step 2: Listing specifics ── */}
-      {step === 2 && (
+      {stepName === "details" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Listing details</h2>
@@ -392,7 +438,7 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
       )}
 
       {/* ── Step 3: Description + amenities ── */}
-      {step === 3 && (
+      {stepName === "description" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>About your business</h2>
@@ -436,8 +482,282 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
         </div>
       )}
 
-      {/* ── Step 4: Media ── */}
-      {step === 4 && (
+      {/* ── Step 4 (Venue): Halls ── */}
+      {stepName === "halls" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Halls & capacities</h2>
+            <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>Add banquets, lawns, or halls available at your venue.</p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {form.halls.map((hall, idx) => (
+              <div key={idx} style={{ padding: 16, border: "1px solid var(--line)", borderRadius: 10, background: "var(--surface)", position: "relative", display: "flex", gap: 16, alignItems: "center" }}>
+                {hall.ph && (hall.ph.startsWith("data:") || hall.ph.startsWith("http")) ? (
+                  <img src={hall.ph} alt="" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 80, height: 60, borderRadius: 6, background: "var(--line)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--ink-mute)" }}>No Image</div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <button type="button" onClick={() => {
+                    setForm(f => ({ ...f, halls: f.halls.filter((_, i) => i !== idx) }));
+                  }} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "#c00", cursor: "pointer", fontSize: 13 }}>Remove</button>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: "var(--ink)", marginBottom: 6 }}>{hall.name || `Hall #${idx + 1}`}</div>
+                  <div style={{ fontSize: 13, color: "var(--ink-soft)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 12px" }}>
+                    <div>Type: <span style={{ color: "var(--ink)" }}>{hall.type}</span></div>
+                    <div>Area: <span style={{ color: "var(--ink)" }}>{hall.area}</span></div>
+                    <div>Theatre: <span style={{ color: "var(--ink)" }}>{hall.theatre}</span></div>
+                    <div>Floating: <span style={{ color: "var(--ink)" }}>{hall.floating}</span></div>
+                    <div>Dining: <span style={{ color: "var(--ink)" }}>{hall.dining}</span></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ border: "1px dashed var(--line)", borderRadius: 10, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>Add new hall / area</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Hall name">
+                <input id="new-hall-name" style={inp} placeholder="e.g. Grand Ballroom" />
+              </Field>
+              <Field label="Type">
+                <select id="new-hall-type" style={inp}>
+                  <option value="Indoor Banquet">Indoor Banquet</option>
+                  <option value="Outdoor Lawn">Outdoor Lawn</option>
+                  <option value="Poolside">Poolside</option>
+                  <option value="Rooftop / Terrace">Rooftop / Terrace</option>
+                  <option value="Other">Other</option>
+                </select>
+              </Field>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
+              <div style={{ gridColumn: "span 2" }}>
+                <Field label="Area (e.g. 5,000 sq.ft.)">
+                  <input id="new-hall-area" style={inp} placeholder="5,000 sqft" />
+                </Field>
+              </div>
+              <Field label="Theatre">
+                <input id="new-hall-theatre" type="number" style={inp} placeholder="100" />
+              </Field>
+              <Field label="Floating">
+                <input id="new-hall-floating" type="number" style={inp} placeholder="250" />
+              </Field>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Dining capacity">
+                <input id="new-hall-dining" type="number" style={inp} placeholder="80" />
+              </Field>
+              <Field label="Hall Image (Optional)">
+                <input id="new-hall-image-file" type="file" accept="image/*" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const { data } = await compressImage(file, IMAGE_MAX_BYTES);
+                    setTempHallImage(`data:image/jpeg;base64,${data}`);
+                  } else {
+                    setTempHallImage("");
+                  }
+                }} style={{ ...inp, padding: "6px 12px" }} />
+              </Field>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button type="button" onClick={() => {
+                const nameEl = document.getElementById("new-hall-name") as HTMLInputElement;
+                const typeEl = document.getElementById("new-hall-type") as HTMLSelectElement;
+                const areaEl = document.getElementById("new-hall-area") as HTMLInputElement;
+                const theatreEl = document.getElementById("new-hall-theatre") as HTMLInputElement;
+                const floatingEl = document.getElementById("new-hall-floating") as HTMLInputElement;
+                const diningEl = document.getElementById("new-hall-dining") as HTMLInputElement;
+                const fileInput = document.getElementById("new-hall-image-file") as HTMLInputElement;
+                
+                if (!nameEl.value.trim()) return alert("Please enter hall name");
+                
+                const newHall = {
+                  name: nameEl.value.trim(),
+                  type: typeEl.value,
+                  area: areaEl.value.trim() || "N/A",
+                  theatre: Number(theatreEl.value) || 0,
+                  floating: Number(floatingEl.value) || 0,
+                  dining: Number(diningEl.value) || 0,
+                  ph: tempHallImage || "v2"
+                };
+                
+                setForm(f => ({ ...f, halls: [...f.halls, newHall] }));
+                setTempHallImage("");
+                nameEl.value = "";
+                areaEl.value = "";
+                theatreEl.value = "";
+                floatingEl.value = "";
+                diningEl.value = "";
+                if (fileInput) fileInput.value = "";
+              }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: "var(--brand)", color: "#fff", fontWeight: 600, cursor: "pointer" }}>
+                + Add Hall
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 5 (Venue): Packages ── */}
+      {stepName === "packages" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Pricing packages</h2>
+            <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>Add wedding/event packages you offer to clients.</p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {form.packages.map((pkg, idx) => (
+              <div key={idx} style={{ padding: 16, border: "1px solid var(--line)", borderRadius: 10, background: "var(--surface)", position: "relative" }}>
+                <button type="button" onClick={() => {
+                  setForm(f => ({ ...f, packages: f.packages.filter((_, i) => i !== idx) }));
+                }} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "#c00", cursor: "pointer", fontSize: 13 }}>Remove</button>
+                <div style={{ fontWeight: 600, fontSize: 15, color: "var(--ink)" }}>{pkg.name}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "var(--brand)", margin: "2px 0 6px" }}>₹{pkg.pricePerPlate} per plate</div>
+                {pkg.features.length > 0 && (
+                  <ul style={{ paddingLeft: 20, margin: 0, fontSize: 13, color: "var(--ink-soft)", display: "flex", flexDirection: "column", gap: 2 }}>
+                    {pkg.features.map((feat, fIdx) => (
+                      <li key={fIdx}>{feat}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ border: "1px dashed var(--line)", borderRadius: 10, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>Add new package</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Package name">
+                <input id="new-pkg-name" style={inp} placeholder="e.g. Gold Buffet Package" />
+              </Field>
+              <Field label="Price per plate (₹)">
+                <input id="new-pkg-price" type="number" style={inp} placeholder="1200" />
+              </Field>
+            </div>
+            
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", display: "block", marginBottom: 6 }}>Package features</label>
+              <div id="new-pkg-features-list" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}></div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input id="new-pkg-feature-input" style={{ ...inp, flex: 1 }} placeholder="e.g. 4 Welcome Drinks" onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const featInput = document.getElementById("new-pkg-feature-input") as HTMLInputElement;
+                    const featVal = featInput.value.trim();
+                    if (!featVal) return;
+                    
+                    const listEl = document.getElementById("new-pkg-features-list");
+                    if (listEl) {
+                      const tag = document.createElement("span");
+                      tag.className = "pkg-feat-tag";
+                      tag.setAttribute("style", "display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; background: var(--line); color: var(--ink); font-size: 12px; font-weight: 500;");
+                      tag.innerHTML = `${featVal} <button type="button" style="background: none; border: none; cursor: pointer; font-size: 12px; color: var(--ink-soft); padding: 0;" onclick="this.parentElement.remove()">×</button>`;
+                      listEl.appendChild(tag);
+                    }
+                    featInput.value = "";
+                  }
+                }} />
+                <button type="button" onClick={() => {
+                  const featInput = document.getElementById("new-pkg-feature-input") as HTMLInputElement;
+                  const featVal = featInput.value.trim();
+                  if (!featVal) return;
+                  
+                  const listEl = document.getElementById("new-pkg-features-list");
+                  if (listEl) {
+                    const tag = document.createElement("span");
+                    tag.className = "pkg-feat-tag";
+                    tag.setAttribute("style", "display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; background: var(--line); color: var(--ink); font-size: 12px; font-weight: 500;");
+                    tag.innerHTML = `${featVal} <button type="button" style="background: none; border: none; cursor: pointer; font-size: 12px; color: var(--ink-soft); padding: 0;" onclick="this.parentElement.remove()">×</button>`;
+                    listEl.appendChild(tag);
+                  }
+                  featInput.value = "";
+                }} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+                  Add feature
+                </button>
+              </div>
+              <div style={{ fontSize: 11, color: "var(--ink-mute)", marginTop: 4 }}>Press Enter or click Add feature to insert package features.</div>
+            </div>
+
+            <button type="button" onClick={() => {
+              const nameEl = document.getElementById("new-pkg-name") as HTMLInputElement;
+              const priceEl = document.getElementById("new-pkg-price") as HTMLInputElement;
+              const listEl = document.getElementById("new-pkg-features-list");
+              
+              if (!nameEl.value.trim()) return alert("Please enter package name");
+              if (!priceEl.value.trim()) return alert("Please enter package price");
+              
+              const features: string[] = [];
+              if (listEl) {
+                const tags = listEl.getElementsByClassName("pkg-feat-tag");
+                for (let i = 0; i < tags.length; i++) {
+                  const txt = (tags[i] as HTMLElement).innerText.slice(0, -2).trim();
+                  if (txt) features.push(txt);
+                }
+              }
+              
+              const newPkg = {
+                name: nameEl.value.trim(),
+                pricePerPlate: Number(priceEl.value) || 0,
+                features
+              };
+              
+              setForm(f => ({ ...f, packages: [...f.packages, newPkg] }));
+              nameEl.value = "";
+              priceEl.value = "";
+              if (listEl) listEl.innerHTML = "";
+            }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "var(--brand)", color: "#fff", fontWeight: 600, cursor: "pointer", marginTop: 8 }}>
+              + Add Package
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 6 (Venue): Location ── */}
+      {stepName === "location" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Location & proximities</h2>
+            <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>Map integration details and transit distances.</p>
+          </div>
+
+          <Field label="Google Maps URL">
+            <input style={inp} value={form.googleMapsUrl} onChange={(e) => set("googleMapsUrl", e.target.value)} placeholder="https://maps.app.goo.gl/..." />
+          </Field>
+          
+          <Field label="Google Place ID (Optional)">
+            <input style={inp} value={form.googlePlaceId} onChange={(e) => set("googlePlaceId", e.target.value)} placeholder="e.g. ChIJ..." />
+          </Field>
+
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-mute)", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 10 }}>Transit distances</div>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Distance to Airport (e.g. 15 km)">
+              <input style={inp} value={form.locationInfo.airport || ""} onChange={(e) => {
+                const val = e.target.value;
+                setForm(f => ({ ...f, locationInfo: { ...f.locationInfo, airport: val } }));
+              }} placeholder="15 km" />
+            </Field>
+            
+            <Field label="Distance to Railway Station">
+              <input style={inp} value={form.locationInfo.railway || ""} onChange={(e) => {
+                const val = e.target.value;
+                setForm(f => ({ ...f, locationInfo: { ...f.locationInfo, railway: val } }));
+              }} placeholder="8 km" />
+            </Field>
+          </div>
+          
+          <Field label="Nearby Hotel Clusters (e.g. 2 km from Wardha Road hotels)">
+            <input style={inp} value={form.locationInfo.hotelCluster || ""} onChange={(e) => {
+              const val = e.target.value;
+              setForm(f => ({ ...f, locationInfo: { ...f.locationInfo, hotelCluster: val } }));
+            }} placeholder="2 km" />
+          </Field>
+        </div>
+      )}
+
+      {/* ── Step: Media ── */}
+      {stepName === "media" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Photos & video</h2>
@@ -460,7 +780,6 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
                 </button>
               )}
             </div>
-            {/* accept="image/*" allows iPhone HEIC (auto-converted to JPEG by iOS) */}
             <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => { addFiles(e.target.files, "image"); e.target.value = ""; }} />
           </div>
 
@@ -483,8 +802,8 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
         </div>
       )}
 
-      {/* ── Step 5: Review ── */}
-      {step === 5 && (
+      {/* ── Step: Review ── */}
+      {stepName === "review" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Review & submit</h2>

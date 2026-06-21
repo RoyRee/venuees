@@ -134,7 +134,7 @@ export default async function VendorCategoryPage({
             <div className="vl-grid">
               {list.map((v) => (
                 <Link key={v.slug} href={`/vendors/${v.categorySlug}/${v.slug}`} className="vcard">
-                  <Photo src={vendorPhotos[v.slug]} variant={v.ph} label={v.scene} className="vcard-img" style={{ height: 240 }}>
+                  <Photo src={v.heroImage ?? vendorPhotos[v.slug]} variant={v.ph} label={v.scene} className="vcard-img" style={{ height: 240 }}>
                     <div className="badges-top">
                       <span className="badge-assured">{v.yearsExp} yr pro</span>
                     </div>

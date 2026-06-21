@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { db, venuesTable, venueHallsTable, venueImagesTable, vendorsTable, getawaysTable, destinationsTable, realWeddingsTable, enquiriesTable } from "@/lib/db";
+import { db, venuesTable, venueHallsTable, venueImagesTable, vendorsTable, vendorImagesTable, getawaysTable, destinationsTable, realWeddingsTable, enquiriesTable } from "@/lib/db";
 import { eq, and, or, ilike, gte, lte, sql, asc, desc, inArray, notInArray, SQL } from "drizzle-orm";
 import type { Venue, Vendor, Getaway, Destination, RealWedding, PhTheme, VenueMeta } from "@/lib/data";
 import { CATEGORY_SLUG_ALIASES } from "@/lib/vendor-categories";
@@ -225,7 +225,7 @@ export const getVenueBySlug = cache(async (slug: string): Promise<Venue | null> 
 
 // ─── Vendors ─────────────────────────────────────────────────────────────────
 
-function toVendor(r: typeof vendorsTable.$inferSelect): Vendor {
+function toVendor(r: typeof vendorsTable.$inferSelect, heroImage?: string): Vendor {
   return {
     slug: r.slug,
     category: r.category,
@@ -242,6 +242,7 @@ function toVendor(r: typeof vendorsTable.$inferSelect): Vendor {
     scene: r.scene,
     tagline: r.tagline,
     description: r.description,
+    heroImage: heroImage,
   };
 }
 
@@ -285,7 +286,21 @@ export async function getVendors(params?: VendorFiltersInput | string): Promise<
     .where(and(...conds))
     .orderBy(orderClause);
 
-  return rows.map(toVendor);
+  const vendorIds = rows.map((r) => r.id);
+  const allImages = vendorIds.length > 0
+    ? await db
+        .select({ vendorId: vendorImagesTable.vendorId, url: vendorImagesTable.url })
+        .from(vendorImagesTable)
+        .where(inArray(vendorImagesTable.vendorId, vendorIds))
+        .orderBy(vendorImagesTable.order)
+    : [];
+
+  const heroByVendor = new Map<number, string>();
+  for (const img of allImages) {
+    if (!heroByVendor.has(img.vendorId)) heroByVendor.set(img.vendorId, img.url);
+  }
+
+  return rows.map((r) => toVendor(r, heroByVendor.get(r.id)));
 }
 
 export async function getVendorBySlug(slug: string): Promise<Vendor | null> {

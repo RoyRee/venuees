@@ -6,7 +6,7 @@ import { I } from "@/components/icons";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type GalleryImage = {
+export type GalleryImage = {
   src: string;
   alt: string;
   label: string;
@@ -22,7 +22,7 @@ type Props = {
 
 // ── Lightbox ──────────────────────────────────────────────────────────────────
 
-function Lightbox({
+export function Lightbox({
   images,
   index,
   onClose,
@@ -169,41 +169,32 @@ export function VenueGallery({ images, venueName, heroVariant = "v2" }: Props) {
   const LABELS = ["ballroom · evening", "baraat entry", "mandap · detail", "bridal suite · vanity"];
   const VARIANTS = ["v2", "dusk", "garden", "rose"];
 
+  const displayedImages = images.slice(0, 5);
+  const count = displayedImages.length;
+
   return (
     <>
-      <div className="vd-gallery">
-        {/* Hero cell */}
-        <button
-          className={`vd-gallery-cell ph ${heroVariant}${images[0]?.src ? " has-img" : ""}`}
-          onClick={() => open(0)}
-          aria-label={`Open photo gallery — ${images[0]?.label || venueName}`}
-        >
-          {images[0]?.src && (
-            <img src={images[0].src} alt={images[0].alt} loading="eager" decoding="async" />
-          )}
-          {images[0]?.label && <span className="ph-label">{images[0].label}</span>}
-          <span className="vd-gallery-all">
-            <I.Camera width={14} height={14} />
-            {images.length > 5 ? `All ${images.length} photos` : "View all photos"}
-          </span>
-        </button>
-
-        {/* Thumbnail cells 1–4 */}
-        {[1, 2, 3, 4].map((n) => {
-          const im = images[n];
-          const variant = VARIANTS[n - 1];
-          const label = im?.label || LABELS[n - 1];
+      <div className={`vd-gallery grid-${count}`}>
+        {displayedImages.map((im, i) => {
+          const variant = i === 0 ? heroVariant : VARIANTS[i - 1];
+          const label = im?.label || (i === 0 ? venueName : LABELS[i - 1]);
           return (
             <button
-              key={n}
+              key={i}
               className={`vd-gallery-cell ph ${variant}${im?.src ? " has-img" : ""}`}
-              onClick={() => open(n)}
-              aria-label={`Open photo ${n + 1}`}
+              onClick={() => open(i)}
+              aria-label={`Open photo ${i + 1}`}
             >
               {im?.src && (
-                <img src={im.src} alt={im?.alt || label} loading="lazy" decoding="async" />
+                <img src={im.src} alt={im?.alt || label} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
               )}
               <span className="ph-label">{label}</span>
+              {i === 0 && (
+                <span className="vd-gallery-all">
+                  <I.Camera width={14} height={14} />
+                  {images.length > 5 ? `All ${images.length} photos` : "View all photos"}
+                </span>
+              )}
             </button>
           );
         })}

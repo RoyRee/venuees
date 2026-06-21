@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
-import { db, listingApplicationsTable, listingApplicationMediaTable } from "@/lib/db";
+import { db, listingApplicationsTable, listingApplicationMediaTable, venueImagesTable, vendorImagesTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { ApplicationActions } from "../actions";
 import { ApplicationGallery } from "./gallery";
@@ -35,12 +35,54 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
 
   const images = media.filter((m) => m.type === "image");
   const videos = media.filter((m) => m.type === "video");
-  const rawDetails = (app.details ?? {}) as Record<string, unknown>;
-  const details    = rawDetails as Record<string, string | number | null | undefined>;
+  const rawDetails = (app.details ?? {}) as any;
+  const details    = rawDetails as Record<string, any>;
   const st = STATUS_STYLE[app.status] ?? STATUS_STYLE.pending;
   const isEdit     = rawDetails._isEdit === true;
   const linkedType = isEdit ? String(rawDetails._linkedType ?? "") : "";
   const linkedId   = isEdit ? Number(rawDetails._linkedId ?? 0) : 0;
+
+  let existingImages: Array<{ id: number; url: string; alt: string; isPrimary: boolean; order: number; type: "image" | "video" }> = [];
+  if (isEdit && linkedId && linkedType) {
+    if (linkedType === "venue") {
+      const imgs = await db.select({ id: venueImagesTable.id, url: venueImagesTable.url, alt: venueImagesTable.alt, isPrimary: venueImagesTable.isPrimary, order: venueImagesTable.order })
+        .from(venueImagesTable).where(eq(venueImagesTable.venueId, linkedId)).orderBy(venueImagesTable.order);
+      existingImages = imgs.map((img) => ({
+        id: img.id,
+        url: img.url,
+        alt: img.alt,
+        isPrimary: img.isPrimary,
+        order: img.order,
+        type: img.url.startsWith("data:video/") ? "video" : "image",
+      }));
+    } else if (linkedType === "vendor") {
+      const imgs = await db.select({ id: vendorImagesTable.id, url: vendorImagesTable.url, alt: vendorImagesTable.alt, isPrimary: vendorImagesTable.isPrimary, order: vendorImagesTable.order })
+        .from(vendorImagesTable).where(eq(vendorImagesTable.vendorId, linkedId)).orderBy(vendorImagesTable.order);
+      existingImages = imgs.map((img) => ({
+        id: img.id,
+        url: img.url,
+        alt: img.alt,
+        isPrimary: img.isPrimary,
+        order: img.order,
+        type: img.url.startsWith("data:video/") ? "video" : "image",
+      }));
+    }
+  }
+
+  const keepImageIds = Array.isArray(details.keepImageIds) ? details.keepImageIds.map(Number) : null;
+  const keptImages = keepImageIds ? existingImages.filter(img => keepImageIds.includes(img.id)) : [];
+  const removedImages = keepImageIds ? existingImages.filter(img => !keepImageIds.includes(img.id)) : existingImages;
+
+  console.log("=== RENDERED APPLICATION DETAIL ===", {
+    id,
+    isEdit,
+    linkedId,
+    linkedType,
+    existingImagesCount: existingImages.length,
+    keepImageIds,
+    keptImagesCount: keptImages.length,
+    removedImagesCount: removedImages.length,
+  });
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -91,10 +133,76 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
 
           {/* Gallery */}
           <div style={{ border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden", padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>
-              Media · {images.length} photo{images.length !== 1 ? "s" : ""}{videos.length > 0 ? ` · ${videos.length} video` : ""}
-            </div>
-            <ApplicationGallery media={media} />
+            {isEdit && existingImages.length > 0 ? (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>
+                  Proposed Media Changes
+                </div>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
+                  {/* Kept existing images */}
+                  {keptImages.map((img) => (
+                    <div key={`kept-${img.id}`} style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: "1px solid #c8e6c9", background: "#f1f8e9" }}>
+                      <div style={{ aspectRatio: "4/3", position: "relative", background: "#000" }}>
+                        {img.type === "image" ? (
+                          <img src={img.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <video src={img.url} controls style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        )}
+                      </div>
+                      <div style={{ padding: "6px 8px", fontSize: 11, fontWeight: 600, color: "#2e7d32", textAlign: "center", background: "#e8f5e9" }}>
+                        Keep Existing ({img.type})
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Removed existing images */}
+                  {removedImages.map((img) => (
+                    <div key={`removed-${img.id}`} style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: "1px solid #ffcdd2", background: "#ffebee" }}>
+                      <div style={{ aspectRatio: "4/3", position: "relative", background: "#000" }}>
+                        {img.type === "image" ? (
+                          <img src={img.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />
+                        ) : (
+                          <video src={img.url} controls style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />
+                        )}
+                        <div style={{ position: "absolute", inset: 0, background: "rgba(244,67,54,0.15)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                          <span style={{ background: "#d32f2f", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, letterSpacing: "0.04em", textTransform: "uppercase" }}>Remove</span>
+                        </div>
+                      </div>
+                      <div style={{ padding: "6px 8px", fontSize: 11, fontWeight: 600, color: "#c62828", textAlign: "center", background: "#ffebee" }}>
+                        Delete Existing ({img.type})
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* New added media */}
+                  {media.map((m, i) => (
+                    <div key={`new-${i}`} style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: "1px solid #bbdefb", background: "#e3f2fd" }}>
+                      <div style={{ aspectRatio: "4/3", position: "relative", background: "#000" }}>
+                        {m.type === "image" ? (
+                          <img src={`data:${m.mimeType};base64,${m.data}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <video src={`data:${m.mimeType};base64,${m.data}`} controls style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        )}
+                        <div style={{ position: "absolute", top: 6, right: 6, pointerEvents: "none" }}>
+                          <span style={{ background: "#1976d2", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, textTransform: "uppercase" }}>New</span>
+                        </div>
+                      </div>
+                      <div style={{ padding: "6px 8px", fontSize: 11, fontWeight: 600, color: "#1565c0", textAlign: "center", background: "#e3f2fd" }}>
+                        Add New ({m.type})
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>
+                  Media · {images.length} photo{images.length !== 1 ? "s" : ""}{videos.length > 0 ? ` · ${videos.length} video` : ""}
+                </div>
+                <ApplicationGallery media={media} />
+              </div>
+            )}
           </div>
 
           {/* Listing preview */}
@@ -179,6 +287,94 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
               </div>
             </div>
           </div>
+
+          {/* Structured Halls, Packages, and Location Details previews */}
+          {app.listingType === "venue" && (
+            <>
+              {/* Halls Preview */}
+              {rawDetails.halls && Array.isArray(rawDetails.halls) && rawDetails.halls.length > 0 && (
+                <div style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>
+                    Submitted Halls ({rawDetails.halls.length})
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {rawDetails.halls.map((h: any, i: number) => (
+                      <div key={i} style={{ padding: 12, border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)" }}>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>{h.name} ({h.type})</div>
+                        <div style={{ fontSize: 12, color: "var(--ink-soft)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", marginTop: 4 }}>
+                          <div>Area: <strong>{h.area}</strong></div>
+                          <div>Theatre: <strong>{h.theatre}</strong></div>
+                          <div>Floating: <strong>{h.floating}</strong></div>
+                          <div>Dining: <strong>{h.dining}</strong></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Packages Preview */}
+              {rawDetails.packages && Array.isArray(rawDetails.packages) && rawDetails.packages.length > 0 && (
+                <div style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>
+                    Submitted Packages ({rawDetails.packages.length})
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {rawDetails.packages.map((pkg: any, i: number) => (
+                      <div key={i} style={{ padding: 12, border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>{pkg.name}</span>
+                          <span style={{ fontWeight: 600, fontSize: 13, color: "var(--brand)" }}>₹{pkg.pricePerPlate} / plate</span>
+                        </div>
+                        {pkg.features && pkg.features.length > 0 && (
+                          <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 12, color: "var(--ink-soft)", display: "flex", flexDirection: "column", gap: 2 }}>
+                            {pkg.features.map((f: string, idx: number) => (
+                              <li key={idx}>{f}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Location & Maps Preview */}
+              {((rawDetails.locationInfo && Object.keys(rawDetails.locationInfo).length > 0) || rawDetails.googleMapsUrl || rawDetails.googlePlaceId) && (
+                <div style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>
+                    Transit & Maps Info
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}>
+                    {rawDetails.googleMapsUrl && (
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ color: "var(--ink-soft)" }}>Google Maps URL:</span>
+                        <a href={String(rawDetails.googleMapsUrl)} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>View Map Link</a>
+                      </div>
+                    )}
+                    {rawDetails.googlePlaceId && (
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ color: "var(--ink-soft)" }}>Place ID:</span>
+                        <span style={{ fontFamily: "monospace", color: "var(--ink)" }}>{String(rawDetails.googlePlaceId)}</span>
+                      </div>
+                    )}
+                    {rawDetails.locationInfo && (
+                      <>
+                        {Object.entries(rawDetails.locationInfo as Record<string, any>).map(([key, val]) => (
+                          val && (
+                            <div key={key} style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "var(--ink-soft)", textTransform: "capitalize" }}>{key.replace(/([A-Z])/g, " $1")}:</span>
+                              <span style={{ fontWeight: 600, color: "var(--ink)" }}>{String(val)}</span>
+                            </div>
+                          )
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Right column — details sidebar */}
@@ -219,7 +415,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
             <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>Details</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {Object.entries(details).filter(([k, v]) => v && !["fullAddress","instagram","whatsapp"].includes(k) && !k.startsWith("_")).map(([k, v]) => (
+                {Object.entries(details).filter(([k, v]) => v && !["fullAddress","instagram","whatsapp","halls","packages","locationInfo","googleMapsUrl","googlePlaceId"].includes(k) && !k.startsWith("_")).map(([k, v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
                     <span style={{ color: "var(--ink-mute)", textTransform: "capitalize" }}>{k.replace(/([A-Z])/g, " $1")}</span>
                     <span style={{ fontWeight: 600, color: "var(--ink)", textAlign: "right", maxWidth: "55%" }}>{String(v)}</span>

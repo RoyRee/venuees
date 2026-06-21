@@ -358,6 +358,7 @@ export type Vendor = {
   scene: string;
   tagline: string;
   description?: string | null;
+  heroImage?: string;
 };
 
 export const vendors: Vendor[] = [
