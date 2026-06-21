@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
-import { db, venuesTable, vendorsTable } from "@/lib/db";
+import { db, venuesTable, vendorsTable, venueHallsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ export async function PATCH(
   const role = await getUserRole(user.id, user.email!);
 
   if (type === "venue") {
-    const [venue] = await db.select({ ownerUserId: venuesTable.ownerUserId })
+    const [venue] = await db.select({ ownerUserId: venuesTable.ownerUserId, meta: venuesTable.meta })
       .from(venuesTable).where(eq(venuesTable.id, id)).limit(1);
     if (!venue || (venue.ownerUserId !== user.id && role !== "admin"))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -42,6 +42,61 @@ export async function PATCH(
     if (body.rooms       !== undefined) updates.rooms         = body.rooms ? Number(body.rooms) : null;
     if (body.description !== undefined) updates.description   = body.description;
     if (body.amenities   !== undefined) updates.amenities     = body.amenities;
+
+    if (body.halls !== undefined) {
+      await db.delete(venueHallsTable).where(eq(venueHallsTable.venueId, id));
+      if (Array.isArray(body.halls) && body.halls.length > 0) {
+        await db.insert(venueHallsTable).values(
+          body.halls.map((h: any, idx: number) => ({
+            venueId: id,
+            name: String(h.name || ""),
+            type: String(h.type || ""),
+            area: String(h.area || ""),
+            theatre: Number(h.theatre) || 0,
+            floating: Number(h.floating) || 0,
+            dining: Number(h.dining) || 0,
+            order: Number(idx),
+            ph: String(h.ph || "v2"),
+          }))
+        );
+      }
+    }
+
+    const currentMeta = (venue.meta ?? {}) as Record<string, any>;
+    let metaUpdated = false;
+
+    if (body.packages !== undefined) {
+      currentMeta.packages = Array.isArray(body.packages) ? body.packages.map((pkg: any) => ({
+        name: String(pkg.name || ""),
+        pricePerPlate: Number(pkg.pricePerPlate) || 0,
+        features: Array.isArray(pkg.features) ? pkg.features.map(String) : [],
+      })) : [];
+      metaUpdated = true;
+    }
+
+    if (body.locationInfo !== undefined) {
+      const loc = body.locationInfo ?? {};
+      currentMeta.locationInfo = {
+        airport: loc.airport ? String(loc.airport) : undefined,
+        railway: loc.railway ? String(loc.railway) : undefined,
+        hotelCluster: loc.hotelCluster ? String(loc.hotelCluster) : undefined,
+      };
+      metaUpdated = true;
+    }
+
+    if (body.googleMapsUrl !== undefined) {
+      currentMeta.googleMapsUrl = body.googleMapsUrl ? String(body.googleMapsUrl) : null;
+      metaUpdated = true;
+    }
+
+    if (body.googlePlaceId !== undefined) {
+      currentMeta.googlePlaceId = body.googlePlaceId ? String(body.googlePlaceId) : null;
+      metaUpdated = true;
+    }
+
+    if (metaUpdated) {
+      updates.meta = currentMeta;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await db.update(venuesTable).set(updates as any).where(eq(venuesTable.id, id));

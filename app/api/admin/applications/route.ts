@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db } from "@/lib/db";
-import { listingApplicationsTable, listingApplicationMediaTable, venuesTable, vendorsTable, venueImagesTable, vendorImagesTable } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { listingApplicationsTable, listingApplicationMediaTable, venuesTable, vendorsTable, venueImagesTable, vendorImagesTable, venueHallsTable } from "@/lib/db/schema";
+import { eq, and, notInArray } from "drizzle-orm";
 import { vendorCategoryFor } from "@/lib/vendor-categories";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     const linkedId   = details._linkedId as number;
     const linkedType = details._linkedType as string;
     const imageMedia = media.filter((m) => m.type === "image");
+    const keepImageIds = Array.isArray(details.keepImageIds) ? details.keepImageIds.map(Number) : null;
 
     if (linkedType === "vendor") {
       await db.update(vendorsTable).set({
@@ -61,17 +62,47 @@ export async function POST(request: NextRequest) {
         whatsapp:     whatsappNum,
       }).where(eq(vendorsTable.id, linkedId));
 
-      if (imageMedia.length > 0) {
-        await db.delete(vendorImagesTable).where(eq(vendorImagesTable.vendorId, linkedId));
-        await db.insert(vendorImagesTable).values(
-          imageMedia.map((m, i) => ({
-            vendorId:  linkedId,
-            url:       `data:${m.mimeType};base64,${m.data}`,
-            alt:       app.businessName,
-            isPrimary: i === 0,
-            order:     i,
-          }))
-        );
+      if (keepImageIds) {
+        if (keepImageIds.length > 0) {
+          await db.delete(vendorImagesTable).where(
+            and(
+              eq(vendorImagesTable.vendorId, linkedId),
+              notInArray(vendorImagesTable.id, keepImageIds)
+            )
+          );
+        } else {
+          await db.delete(vendorImagesTable).where(eq(vendorImagesTable.vendorId, linkedId));
+        }
+
+        const remaining = await db.select({ id: vendorImagesTable.id, order: vendorImagesTable.order, isPrimary: vendorImagesTable.isPrimary })
+          .from(vendorImagesTable).where(eq(vendorImagesTable.vendorId, linkedId));
+        const maxOrder = remaining.reduce((max, img) => Math.max(max, img.order), -1);
+        const hasPrimary = remaining.some((img) => img.isPrimary);
+
+        if (media.length > 0) {
+          await db.insert(vendorImagesTable).values(
+            media.map((m, i) => ({
+              vendorId:  linkedId,
+              url:       `data:${m.mimeType};base64,${m.data}`,
+              alt:       app.businessName,
+              isPrimary: !hasPrimary && i === 0,
+              order:     maxOrder + 1 + i,
+            }))
+          );
+        }
+      } else {
+        if (imageMedia.length > 0) {
+          await db.delete(vendorImagesTable).where(eq(vendorImagesTable.vendorId, linkedId));
+          await db.insert(vendorImagesTable).values(
+            imageMedia.map((m, i) => ({
+              vendorId:  linkedId,
+              url:       `data:${m.mimeType};base64,${m.data}`,
+              alt:       app.businessName,
+              isPrimary: i === 0,
+              order:     i,
+            }))
+          );
+        }
       }
     } else {
       // venue or getaway
@@ -103,17 +134,47 @@ export async function POST(request: NextRequest) {
         whatsapp:     whatsappNum,
       }).where(eq(venuesTable.id, linkedId));
 
-      if (imageMedia.length > 0) {
-        await db.delete(venueImagesTable).where(eq(venueImagesTable.venueId, linkedId));
-        await db.insert(venueImagesTable).values(
-          imageMedia.map((m, i) => ({
-            venueId:   linkedId,
-            url:       `data:${m.mimeType};base64,${m.data}`,
-            alt:       app.businessName,
-            isPrimary: i === 0,
-            order:     i,
-          }))
-        );
+      if (keepImageIds) {
+        if (keepImageIds.length > 0) {
+          await db.delete(venueImagesTable).where(
+            and(
+              eq(venueImagesTable.venueId, linkedId),
+              notInArray(venueImagesTable.id, keepImageIds)
+            )
+          );
+        } else {
+          await db.delete(venueImagesTable).where(eq(venueImagesTable.venueId, linkedId));
+        }
+
+        const remaining = await db.select({ id: venueImagesTable.id, order: venueImagesTable.order, isPrimary: venueImagesTable.isPrimary })
+          .from(venueImagesTable).where(eq(venueImagesTable.venueId, linkedId));
+        const maxOrder = remaining.reduce((max, img) => Math.max(max, img.order), -1);
+        const hasPrimary = remaining.some((img) => img.isPrimary);
+
+        if (media.length > 0) {
+          await db.insert(venueImagesTable).values(
+            media.map((m, i) => ({
+              venueId:   linkedId,
+              url:       `data:${m.mimeType};base64,${m.data}`,
+              alt:       app.businessName,
+              isPrimary: !hasPrimary && i === 0,
+              order:     maxOrder + 1 + i,
+            }))
+          );
+        }
+      } else {
+        if (imageMedia.length > 0) {
+          await db.delete(venueImagesTable).where(eq(venueImagesTable.venueId, linkedId));
+          await db.insert(venueImagesTable).values(
+            imageMedia.map((m, i) => ({
+              venueId:   linkedId,
+              url:       `data:${m.mimeType};base64,${m.data}`,
+              alt:       app.businessName,
+              isPrimary: i === 0,
+              order:     i,
+            }))
+          );
+        }
       }
     }
 
@@ -195,7 +256,37 @@ export async function POST(request: NextRequest) {
       whatsapp:     whatsappNum,
       ownerUserId:  app.userId ?? null,
       isActive:     true,
+      meta: {
+        packages: Array.isArray(details.packages) ? details.packages.map((pkg: any) => ({
+          name: String(pkg.name || ""),
+          pricePerPlate: Number(pkg.pricePerPlate) || 0,
+          features: Array.isArray(pkg.features) ? pkg.features.map(String) : [],
+        })) : [],
+        locationInfo: details.locationInfo ? {
+          airport: (details.locationInfo as any).airport ? String((details.locationInfo as any).airport) : undefined,
+          railway: (details.locationInfo as any).railway ? String((details.locationInfo as any).railway) : undefined,
+          hotelCluster: (details.locationInfo as any).hotelCluster ? String((details.locationInfo as any).hotelCluster) : undefined,
+        } : undefined,
+        googleMapsUrl: details.googleMapsUrl ? String(details.googleMapsUrl) : undefined,
+        googlePlaceId: details.googlePlaceId ? String(details.googlePlaceId) : undefined,
+      } as any,
     }).returning({ id: venuesTable.id });
+
+    if (venue && Array.isArray(details.halls) && details.halls.length > 0) {
+      await db.insert(venueHallsTable).values(
+        details.halls.map((h: any, idx: number) => ({
+          venueId: venue.id,
+          name: String(h.name || ""),
+          type: String(h.type || ""),
+          area: String(h.area || ""),
+          theatre: Number(h.theatre) || 0,
+          floating: Number(h.floating) || 0,
+          dining: Number(h.dining) || 0,
+          order: Number(idx),
+          ph: String(h.ph || "v2"),
+        }))
+      );
+    }
 
     if (media.length > 0) {
       await db.insert(venueImagesTable).values(

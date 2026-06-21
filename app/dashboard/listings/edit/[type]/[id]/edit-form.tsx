@@ -31,6 +31,12 @@ export interface EditListingData {
   description: string;
   amenities: string[];
   blockedDates: string[];
+  // venue sub-sections
+  halls: Array<{ name: string; type: string; area: string; theatre: number; floating: number; dining: number; ph?: string }>;
+  packages: Array<{ name: string; pricePerPlate: number; features: string[] }>;
+  locationInfo: { airport?: string; railway?: string; hotelCluster?: string };
+  googleMapsUrl: string;
+  googlePlaceId: string;
 }
 
 interface MediaFile {
@@ -50,9 +56,6 @@ const IMAGE_LIMIT = 5;
 const VIDEO_LIMIT = 1;
 const IMAGE_MAX_BYTES = 600 * 1024;
 const VIDEO_MAX_MB = 3;
-
-const TABS = ["Quick updates", "Request changes", "Blocked dates", "Photos & video"] as const;
-type Tab = typeof TABS[number];
 
 const inp: React.CSSProperties = {
   width: "100%", padding: "10px 14px", fontSize: 14,
@@ -83,14 +86,20 @@ function SectionHead({ title, sub }: { title: string; sub: string }) {
 
 export function EditListingForm({
   listing,
-  existingImageCount,
+  existingImages = [],
 }: {
   listing: EditListingData;
-  existingImageCount: number;
+  existingImages?: Array<{ id: number; url: string; alt: string; isPrimary: boolean; order: number; type: "image" | "video" }>;
 }) {
-  const [tab, setTab] = useState<Tab>("Quick updates");
+  const [keepImageIds, setKeepImageIds] = useState<number[]>(
+    existingImages.map((img) => img.id)
+  );
+  const [tab, setTab] = useState<string>("Quick updates");
   const [form, setForm] = useState<EditListingData>({ ...listing });
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [hallsSaving, setHallsSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [packagesSaving, setPackagesSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [locationSaving, setLocationSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   // Request-changes state
   const [reqName, setReqName] = useState(listing.name);
@@ -116,8 +125,9 @@ export function EditListingForm({
   const videoRef = useRef<HTMLInputElement>(null);
 
   const [customAmenityInput, setCustomAmenityInput] = useState("");
+  const [tempHallImage, setTempHallImage] = useState("");
 
-  const set = (k: keyof EditListingData, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: any, v: any) => setForm((f) => ({ ...f, [k]: v }));
   const toggleAmenity = (a: string) =>
     setForm((f) => ({
       ...f,
@@ -167,6 +177,68 @@ export function EditListingForm({
     } catch {
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 4000);
+    }
+  }
+
+  async function saveHalls() {
+    setHallsSaving("saving");
+    try {
+      const res = await fetch(`/api/listings/${form.id}/quick-update`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: form.linkedType,
+          halls: form.halls,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setHallsSaving("saved");
+      setTimeout(() => setHallsSaving("idle"), 3000);
+    } catch {
+      setHallsSaving("error");
+      setTimeout(() => setHallsSaving("idle"), 4000);
+    }
+  }
+
+  async function savePackages() {
+    setPackagesSaving("saving");
+    try {
+      const res = await fetch(`/api/listings/${form.id}/quick-update`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: form.linkedType,
+          packages: form.packages,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setPackagesSaving("saved");
+      setTimeout(() => setPackagesSaving("idle"), 3000);
+    } catch {
+      setPackagesSaving("error");
+      setTimeout(() => setPackagesSaving("idle"), 4000);
+    }
+  }
+
+  async function saveLocation() {
+    setLocationSaving("saving");
+    try {
+      const res = await fetch(`/api/listings/${form.id}/quick-update`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: form.linkedType,
+          locationInfo: form.locationInfo,
+          googleMapsUrl: form.googleMapsUrl,
+          googlePlaceId: form.googlePlaceId,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setLocationSaving("saved");
+      setTimeout(() => setLocationSaving("idle"), 3000);
+    } catch {
+      setLocationSaving("error");
+      setTimeout(() => setLocationSaving("idle"), 4000);
     }
   }
 
@@ -238,7 +310,13 @@ export function EditListingForm({
   }
 
   function submitPhotos() {
-    if (media.length === 0) { setPhotoError("Add at least one photo."); return; }
+    const isSameAsExisting = keepImageIds.length === existingImages.length &&
+      keepImageIds.every(id => existingImages.some(img => img.id === id));
+
+    if (media.length === 0 && isSameAsExisting) {
+      setPhotoError("No changes made. Add new photos/video or remove existing ones.");
+      return;
+    }
     setPhotoError("");
     startPhotoTransition(async () => {
       try {
@@ -250,7 +328,7 @@ export function EditListingForm({
             businessName: form.name, businessType: form.businessType,
             contactName: form.contactName, phone: form.phone, email: form.email,
             city: form.city, locality: form.locality,
-            details: { _isEdit: true, _linkedId: form.id, _linkedType: form.linkedType, _photosOnly: true },
+            details: { _isEdit: true, _linkedId: form.id, _linkedType: form.linkedType, _photosOnly: true, keepImageIds },
           }),
         });
         if (!res1.ok) throw new Error();
@@ -278,8 +356,9 @@ export function EditListingForm({
   async function addFiles(files: FileList | null, type: "image" | "video") {
     if (!files) return;
     const currentCount = media.filter((m) => m.type === type).length;
+    const existingCount = existingImages.filter(img => keepImageIds.includes(img.id) && img.type === type).length;
     const limit = type === "image" ? IMAGE_LIMIT : VIDEO_LIMIT;
-    const toAdd = Array.from(files).slice(0, limit - currentCount);
+    const toAdd = Array.from(files).slice(0, limit - (currentCount + existingCount));
     for (const file of toAdd) {
       if (type === "video" && file.size > VIDEO_MAX_MB * 1024 * 1024) {
         setPhotoError(`Video must be under ${VIDEO_MAX_MB}MB.`); continue;
@@ -299,11 +378,19 @@ export function EditListingForm({
   const minDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const isVenue = form.listingType === "venue" || form.listingType === "getaway";
 
+  const tabsList = [
+    "Quick updates",
+    ...(form.listingType === "venue" ? ["Halls", "Packages", "Location details"] : []),
+    "Request changes",
+    "Blocked dates",
+    "Photos & video"
+  ];
+
   return (
     <div>
       {/* Tab bar */}
       <div style={{ display: "flex", gap: 2, marginBottom: 28, borderBottom: "1px solid var(--line)", overflowX: "auto" }}>
-        {TABS.map((t) => (
+        {tabsList.map((t) => (
           <button
             key={t}
             type="button"
@@ -467,6 +554,328 @@ export function EditListingForm({
         </div>
       )}
 
+      {/* ── Tab: Halls ── */}
+      {tab === "Halls" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ padding: "10px 14px", background: "#f0fff4", borderRadius: 8, border: "1px solid #a6e6b4", fontSize: 13, color: "#1a6630" }}>
+            Changes here go <strong>live immediately</strong>.
+          </div>
+
+          <div>
+            <SectionHead title="Manage Halls & capacities" sub="Configure halls, banquet areas, and lawns at your venue." />
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+              {form.halls.map((hall, idx) => (
+                <div key={idx} style={{ padding: 16, border: "1px solid var(--line)", borderRadius: 10, background: "var(--surface)", position: "relative", display: "flex", gap: 16, alignItems: "center" }}>
+                  {hall.ph && (hall.ph.startsWith("data:") || hall.ph.startsWith("http") || hall.ph.startsWith("/")) ? (
+                    <img src={hall.ph} alt="" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 80, height: 60, borderRadius: 6, background: "var(--line)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--ink-mute)" }}>No Image</div>
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <button type="button" onClick={() => {
+                      setForm(f => ({ ...f, halls: f.halls.filter((_, i) => i !== idx) }));
+                    }} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "#c00", cursor: "pointer", fontSize: 13 }}>Remove</button>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: "var(--ink)", marginBottom: 6 }}>{hall.name || `Hall #${idx + 1}`}</div>
+                    <div style={{ fontSize: 13, color: "var(--ink-soft)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px" }}>
+                      <div>Type: <span style={{ color: "var(--ink)" }}>{hall.type}</span></div>
+                      <div>Area: <span style={{ color: "var(--ink)" }}>{hall.area}</span></div>
+                      <div>Theatre: <span style={{ color: "var(--ink)" }}>{hall.theatre}</span></div>
+                      <div>Floating: <span style={{ color: "var(--ink)" }}>{hall.floating}</span></div>
+                      <div>Dining: <span style={{ color: "var(--ink)" }}>{hall.dining}</span></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {form.halls.length === 0 && (
+                <div style={{ padding: "24px", textAlign: "center", border: "1px dashed var(--line)", borderRadius: 8, fontSize: 13, color: "var(--ink-mute)" }}>
+                  No halls added yet. Add at least one hall or area below.
+                </div>
+              )}
+            </div>
+
+            <div style={{ border: "1px dashed var(--line)", borderRadius: 10, padding: 16, display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>Add new hall / area</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Field label="Hall name">
+                  <input id="edit-hall-name" style={inp} placeholder="e.g. Imperial Ballroom" />
+                </Field>
+                <Field label="Type">
+                  <select id="edit-hall-type" style={inp}>
+                    <option value="Indoor Banquet">Indoor Banquet</option>
+                    <option value="Outdoor Lawn">Outdoor Lawn</option>
+                    <option value="Poolside">Poolside</option>
+                    <option value="Rooftop / Terrace">Rooftop / Terrace</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </Field>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
+                <div style={{ gridColumn: "span 2" }}>
+                  <Field label="Area (e.g. 5,000 sq.ft.)">
+                    <input id="edit-hall-area" style={inp} placeholder="5,000 sqft" />
+                  </Field>
+                </div>
+                <Field label="Theatre">
+                  <input id="edit-hall-theatre" type="number" style={inp} placeholder="150" />
+                </Field>
+                <Field label="Floating">
+                  <input id="edit-hall-floating" type="number" style={inp} placeholder="300" />
+                </Field>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Field label="Dining capacity">
+                  <input id="edit-hall-dining" type="number" style={inp} placeholder="100" />
+                </Field>
+                <Field label="Hall Image (Optional)">
+                  <input id="edit-hall-image-file" type="file" accept="image/*" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const { data } = await compressImage(file, IMAGE_MAX_BYTES);
+                      setTempHallImage(`data:image/jpeg;base64,${data}`);
+                    } else {
+                      setTempHallImage("");
+                    }
+                  }} style={{ ...inp, padding: "6px 12px" }} />
+                </Field>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button type="button" onClick={() => {
+                  const nameEl = document.getElementById("edit-hall-name") as HTMLInputElement;
+                  const typeEl = document.getElementById("edit-hall-type") as HTMLSelectElement;
+                  const areaEl = document.getElementById("edit-hall-area") as HTMLInputElement;
+                  const theatreEl = document.getElementById("edit-hall-theatre") as HTMLInputElement;
+                  const floatingEl = document.getElementById("edit-hall-floating") as HTMLInputElement;
+                  const diningEl = document.getElementById("edit-hall-dining") as HTMLInputElement;
+                  const fileInput = document.getElementById("edit-hall-image-file") as HTMLInputElement;
+                  
+                  if (!nameEl.value.trim()) return alert("Please enter hall name");
+                  
+                  const newHall = {
+                    name: nameEl.value.trim(),
+                    type: typeEl.value,
+                    area: areaEl.value.trim() || "N/A",
+                    theatre: Number(theatreEl.value) || 0,
+                    floating: Number(floatingEl.value) || 0,
+                    dining: Number(diningEl.value) || 0,
+                    ph: tempHallImage || "v2"
+                  };
+                  
+                  setForm(f => ({ ...f, halls: [...f.halls, newHall] }));
+                  setTempHallImage("");
+                  nameEl.value = "";
+                  areaEl.value = "";
+                  theatreEl.value = "";
+                  floatingEl.value = "";
+                  diningEl.value = "";
+                  if (fileInput) fileInput.value = "";
+                }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: "var(--brand)", color: "#fff", fontWeight: 600, cursor: "pointer" }}>
+                  + Add to list
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+              <button type="button" onClick={saveHalls} disabled={hallsSaving === "saving"}
+                style={{ flex: 1, padding: "13px", borderRadius: 8, border: "none", background: hallsSaving === "error" ? "#c00" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: hallsSaving === "saving" ? "not-allowed" : "pointer", opacity: hallsSaving === "saving" ? 0.7 : 1 }}>
+                {hallsSaving === "saving" ? "Saving…" : hallsSaving === "saved" ? "✓ Halls saved!" : hallsSaving === "error" ? "Error — retry" : "Save halls"}
+              </button>
+              {hallsSaving === "saved" && (
+                <span style={{ fontSize: 13, color: "#1a6630" }}>Halls updated successfully.</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tab: Packages ── */}
+      {tab === "Packages" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ padding: "10px 14px", background: "#f0fff4", borderRadius: 8, border: "1px solid #a6e6b4", fontSize: 13, color: "#1a6630" }}>
+            Changes here go <strong>live immediately</strong>.
+          </div>
+
+          <div>
+            <SectionHead title="Manage packages & pricing" sub="Configure custom catering or booking packages." />
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+              {form.packages.map((pkg, idx) => (
+                <div key={idx} style={{ padding: 16, border: "1px solid var(--line)", borderRadius: 10, background: "var(--surface)", position: "relative" }}>
+                  <button type="button" onClick={() => {
+                    setForm(f => ({ ...f, packages: f.packages.filter((_, i) => i !== idx) }));
+                  }} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "#c00", cursor: "pointer", fontSize: 13 }}>Remove</button>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: "var(--ink)" }}>{pkg.name}</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--brand)", margin: "2px 0 6px" }}>₹{pkg.pricePerPlate} per plate</div>
+                  {pkg.features.length > 0 && (
+                    <ul style={{ paddingLeft: 20, margin: 0, fontSize: 13, color: "var(--ink-soft)", display: "flex", flexDirection: "column", gap: 2 }}>
+                      {pkg.features.map((feat, fIdx) => (
+                        <li key={fIdx}>{feat}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+              {form.packages.length === 0 && (
+                <div style={{ padding: "24px", textAlign: "center", border: "1px dashed var(--line)", borderRadius: 8, fontSize: 13, color: "var(--ink-mute)" }}>
+                  No packages added yet. Define packages below.
+                </div>
+              )}
+            </div>
+
+            <div style={{ border: "1px dashed var(--line)", borderRadius: 10, padding: 16, display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>Add new package</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Field label="Package name">
+                  <input id="edit-pkg-name" style={inp} placeholder="e.g. Premium Gold Buffet" />
+                </Field>
+                <Field label="Price per plate (₹)">
+                  <input id="edit-pkg-price" type="number" style={inp} placeholder="1500" />
+                </Field>
+              </div>
+              
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", display: "block", marginBottom: 6 }}>Package features</label>
+                <div id="edit-pkg-features-list" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}></div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input id="edit-pkg-feature-input" style={{ ...inp, flex: 1 }} placeholder="e.g. 5 Welcome Drinks" onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const featInput = document.getElementById("edit-pkg-feature-input") as HTMLInputElement;
+                      const featVal = featInput.value.trim();
+                      if (!featVal) return;
+                      
+                      const listEl = document.getElementById("edit-pkg-features-list");
+                      if (listEl) {
+                        const tag = document.createElement("span");
+                        tag.className = "edit-pkg-feat-tag";
+                        tag.setAttribute("style", "display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; background: var(--line); color: var(--ink); font-size: 12px; font-weight: 500;");
+                        tag.innerHTML = `${featVal} <button type="button" style="background: none; border: none; cursor: pointer; font-size: 12px; color: var(--ink-soft); padding: 0;" onclick="this.parentElement.remove()">×</button>`;
+                        listEl.appendChild(tag);
+                      }
+                      featInput.value = "";
+                    }
+                  }} />
+                  <button type="button" onClick={() => {
+                    const featInput = document.getElementById("edit-pkg-feature-input") as HTMLInputElement;
+                    const featVal = featInput.value.trim();
+                    if (!featVal) return;
+                    
+                    const listEl = document.getElementById("edit-pkg-features-list");
+                    if (listEl) {
+                      const tag = document.createElement("span");
+                      tag.className = "edit-pkg-feat-tag";
+                      tag.setAttribute("style", "display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; background: var(--line); color: var(--ink); font-size: 12px; font-weight: 500;");
+                      tag.innerHTML = `${featVal} <button type="button" style="background: none; border: none; cursor: pointer; font-size: 12px; color: var(--ink-soft); padding: 0;" onclick="this.parentElement.remove()">×</button>`;
+                      listEl.appendChild(tag);
+                    }
+                    featInput.value = "";
+                  }} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+                    Add feature
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" onClick={() => {
+                const nameEl = document.getElementById("edit-pkg-name") as HTMLInputElement;
+                const priceEl = document.getElementById("edit-pkg-price") as HTMLInputElement;
+                const listEl = document.getElementById("edit-pkg-features-list");
+                
+                if (!nameEl.value.trim()) return alert("Please enter package name");
+                if (!priceEl.value.trim()) return alert("Please enter package price");
+                
+                const features: string[] = [];
+                if (listEl) {
+                  const tags = listEl.getElementsByClassName("edit-pkg-feat-tag");
+                  for (let i = 0; i < tags.length; i++) {
+                    const txt = (tags[i] as HTMLElement).innerText.slice(0, -2).trim();
+                    if (txt) features.push(txt);
+                  }
+                }
+                
+                const newPkg = {
+                  name: nameEl.value.trim(),
+                  pricePerPlate: Number(priceEl.value) || 0,
+                  features
+                };
+                
+                setForm(f => ({ ...f, packages: [...f.packages, newPkg] }));
+                nameEl.value = "";
+                priceEl.value = "";
+                if (listEl) listEl.innerHTML = "";
+              }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "var(--brand)", color: "#fff", fontWeight: 600, cursor: "pointer", marginTop: 8 }}>
+                + Add Package to list
+              </button>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+              <button type="button" onClick={savePackages} disabled={packagesSaving === "saving"}
+                style={{ flex: 1, padding: "13px", borderRadius: 8, border: "none", background: packagesSaving === "error" ? "#c00" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: packagesSaving === "saving" ? "not-allowed" : "pointer", opacity: packagesSaving === "saving" ? 0.7 : 1 }}>
+                {packagesSaving === "saving" ? "Saving…" : packagesSaving === "saved" ? "✓ Packages saved!" : packagesSaving === "error" ? "Error — retry" : "Save packages"}
+              </button>
+              {packagesSaving === "saved" && (
+                <span style={{ fontSize: 13, color: "#1a6630" }}>Packages updated successfully.</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tab: Location details ── */}
+      {tab === "Location details" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ padding: "10px 14px", background: "#f0fff4", borderRadius: 8, border: "1px solid #a6e6b4", fontSize: 13, color: "#1a6630" }}>
+            Changes here go <strong>live immediately</strong>.
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <SectionHead title="Maps & transit proximities" sub="Maps links and transit details shown on your page." />
+            
+            <Field label="Google Maps URL">
+              <input style={inp} value={form.googleMapsUrl} onChange={(e) => set("googleMapsUrl", e.target.value)} placeholder="https://maps.app.goo.gl/..." />
+            </Field>
+            
+            <Field label="Google Place ID">
+              <input style={inp} value={form.googlePlaceId} onChange={(e) => set("googlePlaceId", e.target.value)} placeholder="e.g. ChIJ..." />
+            </Field>
+
+            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", marginTop: 10 }}>Transit distances</div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Distance to Airport">
+                <input style={inp} value={form.locationInfo.airport || ""} onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(f => ({ ...f, locationInfo: { ...f.locationInfo, airport: val } }));
+                }} placeholder="e.g. 12 km" />
+              </Field>
+              
+              <Field label="Distance to Railway Station">
+                <input style={inp} value={form.locationInfo.railway || ""} onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(f => ({ ...f, locationInfo: { ...f.locationInfo, railway: val } }));
+                }} placeholder="e.g. 5 km" />
+              </Field>
+            </div>
+            
+            <Field label="Nearby Hotel Clusters">
+              <input style={inp} value={form.locationInfo.hotelCluster || ""} onChange={(e) => {
+                const val = e.target.value;
+                setForm(f => ({ ...f, locationInfo: { ...f.locationInfo, hotelCluster: val } }));
+              }} placeholder="e.g. 3 km from airport hotels" />
+            </Field>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 16, borderTop: "1px solid var(--line)", marginTop: 8 }}>
+              <button type="button" onClick={saveLocation} disabled={locationSaving === "saving"}
+                style={{ flex: 1, padding: "13px", borderRadius: 8, border: "none", background: locationSaving === "error" ? "#c00" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: locationSaving === "saving" ? "not-allowed" : "pointer", opacity: locationSaving === "saving" ? 0.7 : 1 }}>
+                {locationSaving === "saving" ? "Saving…" : locationSaving === "saved" ? "✓ Location saved!" : locationSaving === "error" ? "Error — retry" : "Save location details"}
+              </button>
+              {locationSaving === "saved" && (
+                <span style={{ fontSize: 13, color: "#1a6630" }}>Location details updated successfully.</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Tab: Request changes ── */}
       {tab === "Request changes" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -569,23 +978,112 @@ export function EditListingForm({
       {tab === "Photos & video" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ padding: "10px 14px", background: "#fff8e8", borderRadius: 8, border: "1px solid #f5d87a", fontSize: 13, color: "#7a5a00" }}>
-            New photos replace your existing gallery after <strong>admin approval</strong>.
+            New media will be added or removed from your listing after <strong>admin approval</strong>.
           </div>
 
           {photoSubmitted ? (
             <div style={{ textAlign: "center", padding: "32px 0" }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>✓</div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, marginBottom: 6 }}>Photos submitted</div>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, marginBottom: 6 }}>Changes submitted</div>
               <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>We&apos;ll update your gallery once reviewed.</p>
             </div>
           ) : (
             <>
-              {existingImageCount > 0 && media.filter((m) => m.type === "image").length === 0 && (
-                <div style={{ padding: "12px 16px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--line)", fontSize: 13, color: "var(--ink-soft)" }}>
-                  You currently have <strong>{existingImageCount} photo{existingImageCount !== 1 ? "s" : ""}</strong>. Upload new photos to replace them.
+              {/* Existing Media Gallery */}
+              {existingImages.length > 0 && (
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", display: "block", marginBottom: 8 }}>
+                    Existing media
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
+                    {existingImages.map((img) => {
+                      const isKept = keepImageIds.includes(img.id);
+                      return (
+                        <div
+                          key={img.id}
+                          style={{
+                            position: "relative",
+                            aspectRatio: "4/3",
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            border: `1px solid ${isKept ? "var(--line)" : "transparent"}`,
+                            opacity: isKept ? 1 : 0.45,
+                            transition: "all 0.2s ease",
+                            background: isKept ? "transparent" : "#ffebee",
+                          }}
+                        >
+                          {img.type === "image" ? (
+                            <img src={img.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <video src={img.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          )}
+                          
+                          {isKept ? (
+                            <button
+                              type="button"
+                              onClick={() => setKeepImageIds((prev) => prev.filter((id) => id !== img.id))}
+                              style={{
+                                position: "absolute",
+                                top: 4,
+                                right: 4,
+                                width: 22,
+                                height: 22,
+                                borderRadius: "50%",
+                                background: "rgba(192, 0, 0, 0.8)",
+                                border: "none",
+                                color: "#fff",
+                                cursor: "pointer",
+                                fontSize: 14,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setKeepImageIds((prev) => [...prev, img.id])}
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                background: "rgba(0,0,0,0.55)",
+                                border: "none",
+                                color: "#fff",
+                                cursor: "pointer",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 11,
+                                fontWeight: 600,
+                                gap: 2,
+                              }}
+                            >
+                              <span>Remove requested</span>
+                              <span style={{ textDecoration: "underline", fontSize: 10 }}>Restore</span>
+                            </button>
+                          )}
+                          
+                          {img.type === "video" && isKept && (
+                            <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, padding: "2px 6px", borderRadius: 4 }}>
+                              🎬 Video
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
+
+              {/* Uploading new photos */}
               <div>
+                <label style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", display: "block", marginBottom: 8 }}>
+                  Upload new photos (max {IMAGE_LIMIT} total)
+                </label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 10 }}>
                   {media.filter((m) => m.type === "image").map((m, i) => (
                     <div key={i} style={{ position: "relative", aspectRatio: "4/3", borderRadius: 8, overflow: "hidden", border: "1px solid var(--line)" }}>
@@ -594,7 +1092,7 @@ export function EditListingForm({
                         style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
                     </div>
                   ))}
-                  {media.filter((m) => m.type === "image").length < IMAGE_LIMIT && (
+                  {media.filter((m) => m.type === "image").length + existingImages.filter(img => keepImageIds.includes(img.id) && img.type === "image").length < IMAGE_LIMIT && (
                     <button type="button" onClick={() => fileRef.current?.click()}
                       style={{ aspectRatio: "4/3", borderRadius: 8, border: "2px dashed var(--line)", background: "var(--surface)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, color: "var(--ink-mute)", fontSize: 12 }}>
                       <span style={{ fontSize: 22 }}>+</span>Add photo
@@ -604,20 +1102,30 @@ export function EditListingForm({
                 <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => { addFiles(e.target.files, "image"); e.target.value = ""; }} />
               </div>
 
+              {/* Uploading new video */}
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-mute)", display: "block", marginBottom: 8 }}>
-                  Intro video (optional, max {VIDEO_MAX_MB}MB)
+                  Upload new video (optional, max {VIDEO_LIMIT} total, max {VIDEO_MAX_MB}MB)
                 </label>
-                {media.filter((m) => m.type === "video").length === 0 ? (
+                {media.filter((m) => m.type === "video").length + existingImages.filter(img => keepImageIds.includes(img.id) && img.type === "video").length === 0 ? (
                   <button type="button" onClick={() => videoRef.current?.click()}
                     style={{ width: "100%", padding: "16px", borderRadius: 8, border: "2px dashed var(--line)", background: "var(--surface)", cursor: "pointer", color: "var(--ink-mute)", fontSize: 13 }}>
                     + Add short video
                   </button>
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid var(--line)", borderRadius: 8 }}>
-                    <span style={{ fontSize: 20 }}>🎬</span>
-                    <span style={{ flex: 1, fontSize: 13, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{media.find((m) => m.type === "video")?.fileName}</span>
-                    <button type="button" onClick={() => setMedia((prev) => prev.filter((m) => m.type !== "video"))} style={{ fontSize: 13, color: "#c00", background: "none", border: "none", cursor: "pointer" }}>Remove</button>
+                  <div>
+                    {media.filter((m) => m.type === "video").length > 0 ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid var(--line)", borderRadius: 8 }}>
+                        <span style={{ fontSize: 20 }}>🎬</span>
+                        <span style={{ flex: 1, fontSize: 13, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{media.find((m) => m.type === "video")?.fileName}</span>
+                        <button type="button" onClick={() => setMedia((prev) => prev.filter((m) => m.type !== "video"))} style={{ fontSize: 13, color: "#c00", background: "none", border: "none", cursor: "pointer" }}>Remove</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid var(--line)", borderRadius: 8, background: "#f9f9f9" }}>
+                        <span style={{ fontSize: 20 }}>🎬</span>
+                        <span style={{ flex: 1, fontSize: 13, color: "var(--ink-soft)" }}>Existing video kept. Remove it from &quot;Existing media&quot; above to replace.</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <input ref={videoRef} type="file" accept="video/*" style={{ display: "none" }} onChange={(e) => { addFiles(e.target.files, "video"); e.target.value = ""; }} />
@@ -628,8 +1136,20 @@ export function EditListingForm({
                   {photoError}
                 </div>
               )}
-              <button type="button" onClick={submitPhotos} disabled={isPhotoSubmitting || media.length === 0}
-                style={{ padding: "13px", borderRadius: 8, border: "none", background: "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: (isPhotoSubmitting || media.length === 0) ? "not-allowed" : "pointer", opacity: (isPhotoSubmitting || media.length === 0) ? 0.6 : 1 }}>
+              
+              <button type="button" onClick={submitPhotos}
+                disabled={isPhotoSubmitting || (media.length === 0 && keepImageIds.length === existingImages.length && keepImageIds.every(id => existingImages.some(img => img.id === id)))}
+                style={{
+                  padding: "13px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "var(--brand)",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: (isPhotoSubmitting || (media.length === 0 && keepImageIds.length === existingImages.length && keepImageIds.every(id => existingImages.some(img => img.id === id)))) ? "not-allowed" : "pointer",
+                  opacity: (isPhotoSubmitting || (media.length === 0 && keepImageIds.length === existingImages.length && keepImageIds.every(id => existingImages.some(img => img.id === id)))) ? 0.6 : 1
+                }}>
                 {isPhotoSubmitting ? photoSubmitLabel : "Submit photos for review"}
               </button>
             </>

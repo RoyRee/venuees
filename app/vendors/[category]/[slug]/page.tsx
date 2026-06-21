@@ -14,12 +14,47 @@ import { requireSection } from "@/lib/section-guard";
 import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
 import { RecordView } from "@/components/record-view";
 import { VendorTabs } from "@/components/vendor-tabs";
+import { DynamicGallery } from "@/components/dynamic-gallery";
+import { StickyLeadBar } from "@/components/sticky-lead-bar";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const v = await getVendorBySlug(slug);
   if (!v) return {};
   return { title: `${v.name} · ${v.category} — Venuees.in`, description: v.tagline };
+}
+
+function VendorJsonLd({ v }: { v: { name: string; description?: string | null; locality: string; city: string; slug: string; categorySlug: string; rating: number; reviews: number; priceFrom: number } }) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": v.name,
+    "description": v.description || v.name,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": v.locality,
+      "addressRegion": v.city,
+      "addressCountry": "IN",
+    },
+    "url": `https://venuees.in/vendors/${v.categorySlug}/${v.slug}`,
+    ...(v.reviews > 0 ? {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": v.rating.toFixed(1),
+        "reviewCount": v.reviews,
+        "bestRating": "5",
+        "worstRating": "1",
+      },
+    } : {}),
+    "priceRange": `₹${v.priceFrom.toLocaleString("en-IN")}+`,
+    "currenciesAccepted": "INR",
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
 }
 
 export default async function VendorDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -57,6 +92,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
 
   return (
     <div className="venue-detail">
+      <VendorJsonLd v={v} />
       <MobileNav />
       <TopNav />
 
@@ -70,29 +106,27 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
         <span style={{ color: "var(--ink)" }}>{v.name}</span>
       </nav>
 
-      <div className="vd-gallery" style={dbImages.length > 0 ? galleryGridStyle(Math.min(dbImages.length, 5)) : {}}>
-        {dbImages.length > 0 ? (
-          // Show uploaded photos from listing application
-          dbImages.slice(0, 5).map((img, i) => (
-            <Photo key={i} src={img.url} alt={img.alt || v.name} variant={v.ph} label={i === 0 ? v.locality : ""}>
-              {i === 0 && <button className="vd-gallery-all"><I.Camera width={14} height={14} /> {dbImages.length} photos</button>}
-            </Photo>
-          ))
-        ) : (
-          // Fall back to static photography library
-          <>
-            <Photo src={vendorPhotos[v.slug]} variant={v.ph} label={v.scene}>
-              <button className="vd-gallery-all"><I.Camera width={14} height={14} /> Portfolio · 240 photos</button>
-            </Photo>
-            <Photo src={venuePhotos["the-centre-point-grand"]?.gallery[1]} variant="v2" label="haldi · sunlight" />
-            <Photo src={venuePhotos["mahalaxmi-lawns"]?.gallery[2]} variant="dusk" label="sangeet · stage" />
-            <Photo src={vendorPhotos["rhea-bridal-makeup"]} variant="rose" label="bridal portrait" />
-            <Photo src={venuePhotos["signature-resorts-nagpur"]?.gallery[3]} variant="garden" label="mandap · detail" />
-          </>
-        )}
-      </div>
+      {dbImages.length > 0 ? (
+        <DynamicGallery 
+          images={dbImages.map(img => ({ src: img.url, alt: img.alt || v.name, label: v.locality, variant: v.ph }))} 
+          gridStyle={galleryGridStyle(Math.min(dbImages.length, 5))}
+          totalPhotos={dbImages.length}
+        />
+      ) : (
+        <DynamicGallery 
+          images={[
+            { src: vendorPhotos[v.slug], alt: v.name, label: v.scene, variant: v.ph },
+            { src: venuePhotos["the-centre-point-grand"]?.gallery[1], alt: "haldi", label: "haldi · sunlight", variant: "v2" },
+            { src: venuePhotos["mahalaxmi-lawns"]?.gallery[2], alt: "sangeet", label: "sangeet · stage", variant: "dusk" },
+            { src: vendorPhotos["rhea-bridal-makeup"], alt: "bridal", label: "bridal portrait", variant: "rose" },
+            { src: venuePhotos["signature-resorts-nagpur"]?.gallery[3], alt: "mandap", label: "mandap · detail", variant: "garden" },
+          ]}
+          gridStyle={galleryGridStyle(5)}
+          totalPhotos={240}
+        />
+      )}
 
-      <header className="vd-header">
+      <header className="vd-header" style={{ gridTemplateColumns: "1fr" }}>
         <div>
           <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
             <span className="chip" style={{ background: "var(--brand)", color: "#fff" }}>{v.category}</span>
@@ -108,7 +142,25 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
             &ldquo;{v.tagline}&rdquo;
           </p>
         </div>
-        <aside className="vd-sidebar" id="enquire">
+      </header>
+
+      <VendorTabs
+        vendor={{
+          name: v.name,
+          category: v.category,
+          yearsExp: v.yearsExp,
+          completed: v.completed,
+          rating: v.rating,
+          reviews: v.reviews,
+          priceFrom: v.priceFrom,
+          locality: v.locality,
+          city: v.city,
+          description: v.description,
+          ph: v.ph,
+        }}
+        images={dbImages}
+      >
+        <aside className="vd-sidebar" id="enquire" style={{ position: "sticky", top: 70 }}>
           <div className="vd-price-row">
             <div>
               <div style={{ fontSize: 11, color: "var(--ink-mute)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Package starts at</div>
@@ -131,26 +183,16 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
             </p>
           )}
         </aside>
-      </header>
+      </VendorTabs>
 
-      <VendorTabs
-        vendor={{
-          name: v.name,
-          category: v.category,
-          yearsExp: v.yearsExp,
-          completed: v.completed,
-          rating: v.rating,
-          reviews: v.reviews,
-          priceFrom: v.priceFrom,
-          locality: v.locality,
-          city: v.city,
-          description: v.description,
-          ph: v.ph,
-        }}
-        images={dbImages}
-      />
-
+      <div className="mobile-sticky-cta">
+        <a href={`tel:${(contact?.contactPhone ?? "+919922151527").replace(/\s/g, "")}`} className="btn btn-ghost">
+          <I.Phone width={14} height={14} /> Call
+        </a>
+        <a href="#enquire" className="btn btn-primary">Request pricing</a>
+      </div>
       <RecordView slug={v.slug} name={v.name} locality={`${v.locality}, ${v.city}`} vegPlate={v.priceFrom} ph={v.ph} heroImage={vendorPhotos[v.slug]} type="vendor" categorySlug={v.categorySlug} />
+      <StickyLeadBar slug={v.slug} name={v.name} type="vendor" />
       <Footer />
       <MobileTabbar />
     </div>

@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
-import { db, venuesTable, vendorsTable, venueImagesTable, vendorImagesTable, listingApplicationsTable } from "@/lib/db";
+import { db, venuesTable, vendorsTable, venueImagesTable, vendorImagesTable, listingApplicationsTable, venueHallsTable } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { EditListingForm, type EditListingData } from "./edit-form";
 
@@ -27,15 +27,33 @@ export default async function EditListingPage({
   if (role === "customer") redirect("/dashboard");
 
   let listing: EditListingData | null = null;
-  let existingImageCount = 0;
+  let existingImages: Array<{ id: number; url: string; alt: string; isPrimary: boolean; order: number; type: "image" | "video" }> = [];
 
   if (type === "venue") {
     const [venue] = await db.select().from(venuesTable).where(eq(venuesTable.id, id));
     if (!venue || (venue.ownerUserId !== user.id && role !== "admin")) return notFound();
 
-    const imgs = await db.select({ id: venueImagesTable.id })
-      .from(venueImagesTable).where(eq(venueImagesTable.venueId, id));
-    existingImageCount = imgs.length;
+    const imgs = await db.select({ id: venueImagesTable.id, url: venueImagesTable.url, alt: venueImagesTable.alt, isPrimary: venueImagesTable.isPrimary, order: venueImagesTable.order })
+      .from(venueImagesTable).where(eq(venueImagesTable.venueId, id)).orderBy(venueImagesTable.order);
+    existingImages = imgs.map((img) => ({
+      id: img.id,
+      url: img.url,
+      alt: img.alt,
+      isPrimary: img.isPrimary,
+      order: img.order,
+      type: img.url.startsWith("data:video/") ? "video" : "image",
+    }));
+
+    const halls = await db.select()
+      .from(venueHallsTable)
+      .where(eq(venueHallsTable.venueId, id))
+      .orderBy(venueHallsTable.order);
+
+    const meta = (venue.meta ?? {}) as Record<string, any>;
+    const packages = meta.packages ?? [];
+    const locationInfo = meta.locationInfo ?? {};
+    const googleMapsUrl = meta.googleMapsUrl ?? "";
+    const googlePlaceId = meta.googlePlaceId ?? "";
 
     const listingType = GETAWAY_TYPES.has(venue.type) ? "getaway" : "venue";
 
@@ -69,14 +87,34 @@ export default async function EditListingPage({
       description: venue.description,
       amenities: (venue.amenities ?? []) as string[],
       blockedDates: ((venue.meta as Record<string, unknown> | null)?.blockedDates ?? []) as string[],
+      halls: halls.map((h) => ({
+        name: h.name,
+        type: h.type,
+        area: h.area,
+        theatre: h.theatre,
+        floating: h.floating,
+        dining: h.dining,
+        ph: h.ph,
+      })),
+      packages,
+      locationInfo,
+      googleMapsUrl,
+      googlePlaceId,
     };
   } else {
     const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, id));
     if (!vendor || (vendor.ownerUserId !== user.id && role !== "admin")) return notFound();
 
-    const imgs = await db.select({ id: vendorImagesTable.id })
-      .from(vendorImagesTable).where(eq(vendorImagesTable.vendorId, id));
-    existingImageCount = imgs.length;
+    const imgs = await db.select({ id: vendorImagesTable.id, url: vendorImagesTable.url, alt: vendorImagesTable.alt, isPrimary: vendorImagesTable.isPrimary, order: vendorImagesTable.order })
+      .from(vendorImagesTable).where(eq(vendorImagesTable.vendorId, id)).orderBy(vendorImagesTable.order);
+    existingImages = imgs.map((img) => ({
+      id: img.id,
+      url: img.url,
+      alt: img.alt,
+      isPrimary: img.isPrimary,
+      order: img.order,
+      type: img.url.startsWith("data:video/") ? "video" : "image",
+    }));
 
     listing = {
       id: vendor.id,
@@ -108,6 +146,11 @@ export default async function EditListingPage({
       description: vendor.description ?? "",
       amenities: [],
       blockedDates: [],
+      halls: [],
+      packages: [],
+      locationInfo: {},
+      googleMapsUrl: "",
+      googlePlaceId: "",
     };
   }
 
@@ -150,7 +193,7 @@ export default async function EditListingPage({
         </div>
       )}
 
-      <EditListingForm listing={listing} existingImageCount={existingImageCount} />
+      <EditListingForm listing={listing} existingImages={existingImages} />
     </div>
   );
 }

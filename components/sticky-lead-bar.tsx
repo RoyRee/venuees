@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react";
 
 interface Props {
-  venueSlug?: string;
-  venueName?: string;
+  slug?: string;
+  name?: string;
+  type?: "venue" | "vendor" | "getaway";
 }
 
 // Appears after the visitor scrolls 60% of the page — they've shown interest.
 // One tap opens a 2-field bottom sheet. Dismissal is remembered per session.
-export function StickyLeadBar({ venueSlug, venueName }: Props) {
+export function StickyLeadBar({ slug, name, type = "venue" }: Props) {
   const [visible, setVisible]   = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [name, setName]         = useState("");
+  const [nameState, setNameState]         = useState("");
   const [phone, setPhone]       = useState("");
   const [done, setDone]         = useState(false);
   const [loading, setLoading]   = useState(false);
@@ -35,17 +36,17 @@ export function StickyLeadBar({ venueSlug, venueName }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || phone.trim().length < 6) return;
+    if (!nameState.trim() || phone.trim().length < 6) return;
     setLoading(true);
     await fetch("/api/enquiries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        kind: "price_request",
-        venue_slug: venueSlug ?? null,
-        name: name.trim(),
+        kind: type === "vendor" ? "vendor_enquiry" : type === "getaway" ? "getaway_enquiry" : "price_request",
+        slug: slug ?? null,
+        name: nameState.trim(),
         phone: phone.trim(),
-        message: venueName ? `Exact pricing request for ${venueName}` : "Exact pricing request from listing page",
+        message: name ? `Exact pricing request for ${name}` : `Exact pricing request from ${type} listing`,
       }),
     }).catch(() => {});
     setLoading(false);
@@ -68,7 +69,7 @@ export function StickyLeadBar({ venueSlug, venueName }: Props) {
           boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
         }}>
           <span style={{ fontSize: 13.5, flex: 1, lineHeight: 1.35 }}>
-            Liked {venueName ? <strong>{venueName}</strong> : "a venue"}? Get exact pricing &amp; availability.
+            Liked {name ? <strong>{name}</strong> : `this ${type}`}? Get exact pricing &amp; availability.
           </span>
           <button
             onClick={() => setSheetOpen(true)}
@@ -98,16 +99,10 @@ export function StickyLeadBar({ venueSlug, venueName }: Props) {
                   Exact pricing &amp; availability
                 </div>
                 <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 16 }}>
-                  {venueName ? `For ${venueName} — ` : ""}We&rsquo;ll reply on WhatsApp within 2 hours.
+                  {name ? `For ${name} — ` : ""}We&rsquo;ll reply on WhatsApp within 2 hours.
                 </p>
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
-                    required
-                    style={{ padding: "11px 14px", fontSize: 15, border: "1px solid var(--line)", borderRadius: 10, outline: "none" }}
-                  />
+                  <input type="text" placeholder="Your name" value={nameState} onChange={(e) => setNameState(e.target.value)} style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 8, padding: "12px 14px", fontSize: 15 }} required />
                   <input
                     type="tel"
                     value={phone}

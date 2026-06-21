@@ -21,7 +21,7 @@ type VendorInfo = {
 
 type Image = { url: string; alt: string };
 
-export function VendorTabs({ vendor: v, images }: { vendor: VendorInfo; images: Image[] }) {
+export function VendorTabs({ vendor: v, images, children }: { vendor: VendorInfo; images: Image[]; children?: React.ReactNode }) {
   const [tab, setTab] = useState<TabId>("about");
 
   const tabs: { id: TabId; label: string }[] = [
@@ -155,19 +155,7 @@ export function VendorTabs({ vendor: v, images }: { vendor: VendorInfo; images: 
           )}
         </main>
 
-        <aside>
-          <div className="vd-sidebar" style={{ position: "sticky", top: 70 }}>
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, lineHeight: 1.1, marginBottom: 12 }}>
-              Book {v.name.split(" ")[0]}
-            </div>
-            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 16 }}>
-              Send an enquiry to check availability and get a personalised quote.
-            </p>
-            <a href="#enquire" className="btn btn-primary btn-lg" style={{ width: "100%", display: "block", textAlign: "center" }}>
-              Check availability
-            </a>
-          </div>
-        </aside>
+        {children && <aside>{children}</aside>}
       </div>
     </>
   );
