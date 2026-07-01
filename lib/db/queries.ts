@@ -55,7 +55,7 @@ type VenueRow = typeof VENUE_COLS extends Record<string, unknown>
   ? { [K in keyof typeof VENUE_COLS]: K extends "rating" ? string : K extends "amenities" ? unknown : K extends "rooms" ? number | null : K extends "isSignature" | "isActive" ? boolean : K extends "id" | "capacityMin" | "capacityMax" | "vegPlate" | "nvPlate" | "hallRent" | "minGuarantee" | "reviews" | "bookingsMonth" | "parking" ? number : string }
   : never;
 
-function toVenue(r: { id: number; slug: string; name: string; citySlug: string; locality: string; address: string; type: string; typeSlug: string; capacityMin: number; capacityMax: number; vegPlate: number; nvPlate: number; hallRent: number; minGuarantee: number; rating: string; reviews: number; bookingsMonth: number; tag: string; description: string; ph: string; scene: string; amenities: unknown; isSignature: boolean; parking: number; rooms: number | null; isActive: boolean }, halls: HallRow[], meta?: VenueMeta | null, heroImage?: string | null): Venue {
+function toVenue(r: { id: number; slug: string; name: string; citySlug: string; locality: string; address: string; type: string; typeSlug: string; capacityMin: number; capacityMax: number; vegPlate: number; nvPlate: number; hallRent: number; minGuarantee: number; rating: string; reviews: number; bookingsMonth: number; tag: string; description: string; ph: string; scene: string; amenities: unknown; isSignature: boolean; parking: number; rooms: number | null; isActive: boolean }, halls: HallRow[], meta?: VenueMeta | null, heroImage?: string | null, imageCount?: number): Venue {
   return {
     slug: r.slug,
     name: r.name,
@@ -83,6 +83,7 @@ function toVenue(r: { id: number; slug: string; name: string; citySlug: string; 
     halls: halls.map(toHall),
     meta: meta ?? undefined,
     heroImage: heroImage ?? undefined,
+    imageCount: imageCount,
   };
 }
 
@@ -185,7 +186,7 @@ export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
       .select({ venueId: venueImagesTable.venueId, url: venueImagesTable.url })
       .from(venueImagesTable)
       .where(inArray(venueImagesTable.venueId, venueIds))
-      .orderBy(venueImagesTable.order, venueImagesTable.id)
+      .orderBy(desc(venueImagesTable.isPrimary), venueImagesTable.order, venueImagesTable.id)
       .catch(() => [] as { venueId: number; url: string }[]),
   ]);
 
@@ -197,11 +198,13 @@ export async function getVenues(params?: VenueFiltersInput): Promise<Venue[]> {
 
   // First uploaded image per venue (already ordered by order ASC)
   const heroByVenue = new Map<number, string>();
+  const imageCountByVenue = new Map<number, number>();
   for (const img of allHeroImages) {
     if (!heroByVenue.has(img.venueId)) heroByVenue.set(img.venueId, img.url);
+    imageCountByVenue.set(img.venueId, (imageCountByVenue.get(img.venueId) ?? 0) + 1);
   }
 
-  return rows.map((r) => toVenue(r, byVenue.get(r.id) ?? [], undefined, heroByVenue.get(r.id)));
+  return rows.map((r) => toVenue(r, byVenue.get(r.id) ?? [], undefined, heroByVenue.get(r.id), imageCountByVenue.get(r.id)));
 }
 
 // Wrapped in React cache() so generateMetadata + page render share one result per request.
@@ -292,7 +295,7 @@ export async function getVendors(params?: VendorFiltersInput | string): Promise<
         .select({ vendorId: vendorImagesTable.vendorId, url: vendorImagesTable.url })
         .from(vendorImagesTable)
         .where(inArray(vendorImagesTable.vendorId, vendorIds))
-        .orderBy(vendorImagesTable.order)
+        .orderBy(desc(vendorImagesTable.isPrimary), vendorImagesTable.order, vendorImagesTable.id)
     : [];
 
   const heroByVendor = new Map<number, string>();
@@ -303,11 +306,12 @@ export async function getVendors(params?: VendorFiltersInput | string): Promise<
   return rows.map((r) => toVendor(r, heroByVendor.get(r.id)));
 }
 
-export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
+// Wrapped in React cache() so generateMetadata + page render share one result per request.
+export const getVendorBySlug = cache(async (slug: string): Promise<Vendor | null> => {
   const rows = await db.select().from(vendorsTable).where(eq(vendorsTable.slug, slug)).limit(1);
   if (!rows.length) return null;
   return toVendor(rows[0]);
-}
+});
 
 // ─── Getaways ────────────────────────────────────────────────────────────────
 

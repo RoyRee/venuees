@@ -86,14 +86,40 @@ function SectionHead({ title, sub }: { title: string; sub: string }) {
 
 export function EditListingForm({
   listing,
-  existingImages = [],
+  existingImages: initialExistingImages = [],
 }: {
   listing: EditListingData;
   existingImages?: Array<{ id: number; url: string; alt: string; isPrimary: boolean; order: number; type: "image" | "video" }>;
 }) {
+  const [existingImages, setExistingImages] = useState(initialExistingImages);
   const [keepImageIds, setKeepImageIds] = useState<number[]>(
-    existingImages.map((img) => img.id)
+    initialExistingImages.map((img) => img.id)
   );
+
+  async function reorderExistingImages(direction: -1 | 1, index: number) {
+    if (index + direction < 0 || index + direction >= existingImages.length) return;
+    
+    // Swap locally
+    const newImages = [...existingImages];
+    const temp = newImages[index];
+    newImages[index] = newImages[index + direction];
+    newImages[index + direction] = temp;
+    
+    // Reassign order
+    const orderedItems = newImages.map((img, i) => ({ id: img.id, order: i }));
+    setExistingImages(newImages);
+
+    // Call API
+    fetch("/api/vendor/media/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        listingType: listing.linkedType,
+        listingId: listing.id,
+        items: orderedItems,
+      }),
+    }).catch(e => console.error("Failed to reorder live media", e));
+  }
   const [tab, setTab] = useState<string>("Quick updates");
   const [form, setForm] = useState<EditListingData>({ ...listing });
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -996,7 +1022,7 @@ export function EditListingForm({
                     Existing media
                   </label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
-                    {existingImages.map((img) => {
+                    {existingImages.map((img, i) => {
                       const isKept = keepImageIds.includes(img.id);
                       return (
                         <div
@@ -1016,6 +1042,26 @@ export function EditListingForm({
                             <img src={img.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           ) : (
                             <video src={img.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          )}
+                          
+                          {/* Order Badges and Reorder Controls */}
+                          {isKept && (
+                            <div style={{ position: "absolute", top: 4, left: 4, display: "flex", gap: 4 }}>
+                              <span style={{ background: i === 0 ? "var(--brand)" : "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>
+                                {i === 0 ? "Display Image" : `#${i + 1}`}
+                              </span>
+                            </div>
+                          )}
+
+                          {isKept && (
+                            <div style={{ position: "absolute", bottom: 4, right: 4, display: "flex", gap: 4 }}>
+                              {i > 0 && (
+                                <button type="button" onClick={() => reorderExistingImages(-1, i)} style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>←</button>
+                              )}
+                              {i < existingImages.length - 1 && (
+                                <button type="button" onClick={() => reorderExistingImages(1, i)} style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>→</button>
+                              )}
+                            </div>
                           )}
                           
                           {isKept ? (

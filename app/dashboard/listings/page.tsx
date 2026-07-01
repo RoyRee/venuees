@@ -89,7 +89,7 @@ function AdminListings({ venues, vendors, pendingEdits, pendingNew }: {
   pendingNew: number;
 }) {
   return (
-    <div>
+    <div className="dash-page">
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 32 }}>
         <div>
           <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>All Listings</h1>

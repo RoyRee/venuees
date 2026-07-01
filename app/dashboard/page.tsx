@@ -72,7 +72,7 @@ function AdminOverview({ name, totalEnquiries, newLeads, totalApps, pendingApps 
       <div className="dash-stats">
         <StatCard label="Total enquiries" value={totalEnquiries} sub={`${newLeads} new`} />
         <StatCard label="Pending applications" value={pendingApps} sub={`${totalApps} total`} />
-        <StatCard label="Platform" value="Live" sub="venuees.vercel.app" />
+        <StatCard label="Platform" value="Live" sub="venuees.in" />
       </div>
       {pendingApps > 0 && (
         <section style={{ padding: "20px 20px", background: "#fff8e8", borderRadius: "var(--radius-md)", border: "1px solid #f5d87a", marginBottom: 24 }}>

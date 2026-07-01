@@ -31,7 +31,7 @@ export default async function ProfilePage() {
   ];
 
   return (
-    <div>
+    <div className="dash-page">
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>Profile</h1>
         <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>Update your name and phone number.</p>

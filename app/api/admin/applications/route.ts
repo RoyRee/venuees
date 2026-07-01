@@ -3,8 +3,9 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db } from "@/lib/db";
 import { listingApplicationsTable, listingApplicationMediaTable, venuesTable, vendorsTable, venueImagesTable, vendorImagesTable, venueHallsTable } from "@/lib/db/schema";
-import { eq, and, notInArray } from "drizzle-orm";
+import { eq, and, notInArray, asc } from "drizzle-orm";
 import { vendorCategoryFor } from "@/lib/vendor-categories";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
       .set({ status: "rejected", rejectionNote: note ?? null })
       .where(eq(listingApplicationsTable.id, id));
     if (app) sendStatusEmail({ ...app, action: "rejected", note }).catch(() => {});
+    revalidatePath("/", "layout");
     return NextResponse.json({ ok: true });
   }
 
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
   const [app] = await db.select().from(listingApplicationsTable).where(eq(listingApplicationsTable.id, id));
   if (!app) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const media = await db.select().from(listingApplicationMediaTable).where(eq(listingApplicationMediaTable.applicationId, id));
+  const media = await db.select().from(listingApplicationMediaTable).where(eq(listingApplicationMediaTable.applicationId, id)).orderBy(asc(listingApplicationMediaTable.order));
   const details = (app.details ?? {}) as Record<string, unknown>;
   const whatsappNum = details.whatsapp ? String(details.whatsapp) : app.phone;
 
@@ -182,6 +184,7 @@ export async function POST(request: NextRequest) {
       .set({ status: "approved" })
       .where(eq(listingApplicationsTable.id, id));
 
+    revalidatePath("/", "layout");
     return NextResponse.json({ ok: true });
   }
 
@@ -307,6 +310,83 @@ export async function POST(request: NextRequest) {
 
   sendStatusEmail({ contactName: app.contactName, email: app.email, businessName: app.businessName, action: "approved" }).catch(() => {});
 
+  revalidatePath("/", "layout");
+  return NextResponse.json({ ok: true });
+}
+
+// ── DELETE: remove a rejected application ──────────────────────────────────
+export async function DELETE(request: NextRequest) {
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase!.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const role = await getUserRole(user.id, user.email!);
+  if (role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { id } = await request.json();
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  // Delete media first (FK constraint)
+  await db.delete(listingApplicationMediaTable).where(eq(listingApplicationMediaTable.applicationId, id));
+  await db.delete(listingApplicationsTable).where(eq(listingApplicationsTable.id, id));
+
+  return NextResponse.json({ ok: true });
+}
+
+// ── PATCH: admin edits application fields ──────────────────────────────────
+export async function PATCH(request: NextRequest) {
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase!.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const role = await getUserRole(user.id, user.email!);
+  if (role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await request.json();
+  const { id, fields } = body as {
+    id: number;
+    fields: {
+      businessName?: string;
+      businessType?: string;
+      contactName?: string;
+      phone?: string;
+      email?: string;
+      city?: string;
+      locality?: string;
+      website?: string;
+      message?: string;
+      amenities?: string[];
+      details?: Record<string, unknown>;
+    };
+  };
+  if (!id || !fields) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+
+  // Fetch current details to merge
+  const [current] = await db.select({ details: listingApplicationsTable.details })
+    .from(listingApplicationsTable).where(eq(listingApplicationsTable.id, id));
+  if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const mergedDetails = fields.details
+    ? { ...(current.details as Record<string, unknown> ?? {}), ...fields.details }
+    : current.details;
+
+  const updatePayload: Record<string, unknown> = { details: mergedDetails };
+  if (fields.businessName !== undefined) updatePayload.businessName = fields.businessName;
+  if (fields.businessType  !== undefined) updatePayload.businessType  = fields.businessType;
+  if (fields.contactName   !== undefined) updatePayload.contactName   = fields.contactName;
+  if (fields.phone         !== undefined) updatePayload.phone         = fields.phone;
+  if (fields.email         !== undefined) updatePayload.email         = fields.email;
+  if (fields.city          !== undefined) updatePayload.city          = fields.city;
+  if (fields.locality      !== undefined) updatePayload.locality      = fields.locality;
+  if (fields.website       !== undefined) updatePayload.website       = fields.website;
+  if (fields.message       !== undefined) updatePayload.message       = fields.message;
+  if (fields.amenities     !== undefined) updatePayload.amenities     = fields.amenities;
+
+  await db.update(listingApplicationsTable)
+    .set(updatePayload as any)
+    .where(eq(listingApplicationsTable.id, id));
+
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true });
 }
 

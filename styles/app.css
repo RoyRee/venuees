@@ -308,11 +308,12 @@
 /* Application detail page grid */
 .app-detail-grid {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 28px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
   align-items: start;
+  width: 100%;
 }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .app-detail-grid { grid-template-columns: 1fr; }
   .app-detail-grid > :last-child { position: static !important; }
 }
@@ -338,19 +339,32 @@
 
 /* ——— Dashboard shell ——— */
 .dash-shell {
-  display: flex; min-height: 100vh; background: var(--surface);
+  display: flex; height: 100vh; overflow: hidden; background: var(--surface);
 }
 .dash-sidebar {
   width: 240px; flex-shrink: 0;
   border-right: 1px solid var(--line);
-  position: sticky; top: 0; height: 100vh; overflow: auto;
+  height: 100vh; overflow-y: auto;
   padding: 24px 0;
 }
 .dash-sidebar-mobile { display: none; }
 .dash-overlay { display: none; }
-.dash-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.dash-main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 .dash-mobile-header { display: none; }
-.dash-content { flex: 1; padding: 40px 48px; }
+.dash-content {
+  flex: 1;
+  padding: 40px 48px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+/* Centering wrapper for dashboard pages */
+.dash-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
 .dash-bottom-nav { display: none; }
 
 @media (max-width: 900px) {
@@ -385,7 +399,11 @@
   }
 
   .dash-content {
-    padding: 24px 20px 100px;
+    padding: 20px 16px 90px;
+  }
+
+  .dash-page {
+    max-width: 100%;
   }
 
   .dash-bottom-nav {
@@ -396,6 +414,9 @@
     z-index: 40;
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  .app-detail-grid { grid-template-columns: 1fr; }
+  .app-detail-grid > :last-child { position: static !important; }
 }
 
 /* ── Compare button (venue cards) ── */

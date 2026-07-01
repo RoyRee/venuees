@@ -44,7 +44,7 @@ export default async function EnquiriesPage() {
   }
 
   return (
-    <div>
+    <div className="dash-page">
       <div style={{ marginBottom: 32, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
           <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>Enquiries</h1>

@@ -5,8 +5,7 @@ import { redirect } from "next/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { getSiteConfig, getSiteContent, CONFIG_META } from "@/lib/site-config";
-import { ConfigForm } from "./config-form";
-import { ContentForm } from "./content-form";
+import { SettingsShell } from "./settings-shell";
 
 export default async function SiteConfigPage() {
   const supabase = await getServerSupabase();
@@ -19,18 +18,21 @@ export default async function SiteConfigPage() {
   const [config, content] = await Promise.all([getSiteConfig(), getSiteContent()]);
 
   return (
-    <div>
+    <div className="dash-page">
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>
           Site Settings
         </h1>
         <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>
-          Enable or disable sections and features across the entire website. Changes take effect immediately.
+          Enable or disable sections, features, and homepage content. Click <strong>Save all settings</strong> once when you&apos;re done — changes take effect immediately.
         </p>
       </div>
 
-      <ConfigForm initialConfig={config} meta={CONFIG_META} />
-      <ContentForm initialContent={content} />
+      <SettingsShell
+        initialConfig={config}
+        initialContent={content}
+        meta={CONFIG_META}
+      />
     </div>
   );
 }

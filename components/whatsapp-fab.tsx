@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 interface Props {
   phone: string;
@@ -9,8 +10,12 @@ interface Props {
 }
 
 export function WhatsAppFAB({ phone, venueSlug, prefillText }: Props) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [userPhone, setUserPhone] = useState("");
+
+  // Hide on dashboard and auth pages
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/login")) return null;
 
   function logAndOpen(capturedPhone?: string) {
     navigator.sendBeacon?.(

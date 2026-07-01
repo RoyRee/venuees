@@ -8,7 +8,7 @@ import { SaveButton } from "@/components/save-button";
 import { Photo } from "@/components/photo";
 import { VenueFilters } from "@/components/venue-filters";
 import { SortSelect } from "@/components/sort-select";
-import { venueHero } from "@/lib/images";
+import { venueHero, venueGallery } from "@/lib/images";
 import { getVenues, getRecentEnquiryCounts } from "@/lib/db/queries";
 import { CompareButton } from "@/components/compare-button";
 import { CompareBar } from "@/components/compare-bar";
@@ -174,7 +174,7 @@ export default async function VenuesListPage({
                       {v.isSignature && <span className="badge-assured" style={{ background: "var(--brand)", color: "#fff" }}>Signature</span>}
                     </div>
                     <SaveButton type="venue" slug={v.slug} size={16} />
-                    <div className="badges-bot"><I.Camera width={11} height={11} /> 48</div>
+                    <div className="badges-bot"><I.Camera width={11} height={11} /> {v.imageCount ?? venueGallery(v.slug).length}</div>
                   </Photo>
                   <div className="vcard-body">
                     <div className="vcard-row1">
