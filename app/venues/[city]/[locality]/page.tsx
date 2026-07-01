@@ -127,7 +127,7 @@ export default async function LocalityVenuesPage({ params }: { params: Promise<{
               {localVenues.map((v) => (
                 <Link key={v.slug} href={`/venues/${city}/${locality}/${v.slug}`} className="vcard">
                   <Photo
-                    src={venueHero(v.slug)}
+                    src={venueHero(v.slug, v.heroImage)}
                     alt={`${v.name} — ${v.scene}`}
                     variant={v.ph}
                     label={v.scene}

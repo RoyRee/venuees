@@ -61,7 +61,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
   await requireSection("section_vendors");
   const { slug } = await params;
   const [v, cfg] = await Promise.all([
-    getVendorBySlug(slug),
+    getVendorBySlug(slug).catch(() => null),
     getSiteConfig().catch(() => ({ ...CONFIG_DEFAULTS })),
   ]);
   if (!v) return notFound();
@@ -82,11 +82,13 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
       .from(vendorImagesTable)
       .innerJoin(vendorsTable, eq(vendorImagesTable.vendorId, vendorsTable.id))
       .where(eq(vendorsTable.slug, slug))
-      .orderBy(vendorImagesTable.order),
+      .orderBy(vendorImagesTable.order)
+      .catch(() => [] as { url: string; alt: string; order: number }[]),
     db.select({ contactName: vendorsTable.contactName, contactPhone: vendorsTable.contactPhone, contactEmail: vendorsTable.contactEmail, whatsapp: vendorsTable.whatsapp })
       .from(vendorsTable)
       .where(eq(vendorsTable.slug, slug))
-      .limit(1),
+      .limit(1)
+      .catch(() => [] as { contactName: string | null; contactPhone: string | null; contactEmail: string | null; whatsapp: string | null }[]),
   ]);
   const contact = contactRows[0] ?? null;
 

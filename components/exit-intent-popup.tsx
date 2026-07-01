@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const BUDGETS = ["Under ₹5L", "₹5L – ₹10L", "₹10L – ₹20L", "₹20L+"];
 
@@ -8,6 +9,7 @@ const BUDGETS = ["Under ₹5L", "₹5L – ₹10L", "₹10L – ₹20L", "₹20L
 // Mobile users get the sticky lead bar instead; an exit popup on touch devices
 // is unreliable and annoying. Shown at most once per session.
 export function ExitIntentPopup() {
+  const pathname = usePathname();
   const [show, setShow]       = useState(false);
   const [name, setName]       = useState("");
   const [phone, setPhone]     = useState("");
@@ -15,7 +17,10 @@ export function ExitIntentPopup() {
   const [done, setDone]       = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Never show on dashboard / admin pages
+  const isDashboard = pathname?.startsWith("/dashboard") || pathname?.startsWith("/login");
   useEffect(() => {
+    if (isDashboard) return;
     if (sessionStorage.getItem("exitIntentShown")) return;
     // Touch devices: skip entirely
     if (window.matchMedia("(pointer: coarse)").matches) return;
@@ -31,7 +36,7 @@ export function ExitIntentPopup() {
     return () => { clearTimeout(timer); document.removeEventListener("mouseleave", onMouseLeave); };
   }, []);
 
-  if (!show) return null;
+  if (!show || isDashboard) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

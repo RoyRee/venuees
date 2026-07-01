@@ -55,7 +55,7 @@ const VENUE_TYPES = ["Hotel / Banquet", "Lawn / Farmhouse", "Heritage / Palace",
 const VENDOR_TYPES = ["Photography", "Videography", "Décor & Florals", "Catering", "Makeup & Beauty", "Music / DJ", "Event Management", "Invitation & Stationery", "Other"];
 const GETAWAY_TYPES = ["Resort / Hotel", "Farmstay", "Heritage Property", "Villa / Bungalow"];
 const VENUE_AMENITIES = ["AC Halls", "Outdoor Lawn", "Parking", "In-house Catering", "Outside Catering Allowed", "DJ Allowed", "Valet Parking", "Bridal Suite", "Swimming Pool", "Accommodation", "Generator Backup", "Décor Allowed"];
-const IMAGE_LIMIT = 5;
+const IMAGE_LIMIT = 80;
 const VIDEO_LIMIT = 1;
 const IMAGE_MAX_BYTES = 600 * 1024;   // compress images to ≤600 KB
 const VIDEO_MAX_MB = 3;               // 3 MB base64 ≈ 4 MB, fits under Vercel 4.5 MB limit
@@ -97,7 +97,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inp: React.CSSProperties = { width: "100%", padding: "10px 14px", fontSize: 14, border: "1px solid var(--line)", borderRadius: 8, background: "#fff", color: "var(--ink)", boxSizing: "border-box" };
 
 // ── Main component ─────────────────────────────────────────────────────────
-export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string; prefillName?: string }) {
+export function ApplyForm({
+  prefillEmail,
+  prefillName,
+  enabledTypes,
+}: {
+  prefillEmail?: string;
+  prefillName?: string;
+  /** Which listing types to show — driven by site_config feature flags */
+  enabledTypes?: ListingType[];
+}) {
+  const availableTypes: ListingType[] = enabledTypes ?? ["venue", "vendor", "getaway"];
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>({ ...EMPTY, email: prefillEmail ?? "", contactName: prefillName ?? "" });
   const [media, setMedia] = useState<MediaFile[]>([]);
@@ -110,6 +120,63 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
 
   const [customAmenityInput, setCustomAmenityInput] = useState("");
   const [tempHallImage, setTempHallImage] = useState("");
+  // null = adding new hall; number = index of hall being edited
+  const [editingHallIdx, setEditingHallIdx] = useState<number | null>(null);
+
+  // hall form refs
+  const hallNameRef   = useRef<HTMLInputElement>(null);
+  const hallTypeRef   = useRef<HTMLSelectElement>(null);
+  const hallAreaRef   = useRef<HTMLInputElement>(null);
+  const hallTheatreRef= useRef<HTMLInputElement>(null);
+  const hallFloatingRef=useRef<HTMLInputElement>(null);
+  const hallDiningRef = useRef<HTMLInputElement>(null);
+  const hallFileRef   = useRef<HTMLInputElement>(null);
+
+  function startEditHall(idx: number) {
+    const h = form.halls[idx];
+    setEditingHallIdx(idx);
+    setTempHallImage(h.ph?.startsWith("data:") || h.ph?.startsWith("http") ? h.ph : "");
+    // Wait a tick for refs to be available in the DOM
+    setTimeout(() => {
+      if (hallNameRef.current)    hallNameRef.current.value    = h.name;
+      if (hallTypeRef.current)    hallTypeRef.current.value    = h.type;
+      if (hallAreaRef.current)    hallAreaRef.current.value    = h.area;
+      if (hallTheatreRef.current) hallTheatreRef.current.value = String(h.theatre);
+      if (hallFloatingRef.current)hallFloatingRef.current.value= String(h.floating);
+      if (hallDiningRef.current)  hallDiningRef.current.value  = String(h.dining);
+    }, 0);
+  }
+
+  function cancelEditHall() {
+    setEditingHallIdx(null);
+    setTempHallImage("");
+    if (hallNameRef.current)    hallNameRef.current.value    = "";
+    if (hallTypeRef.current)    hallTypeRef.current.value    = "Indoor Banquet";
+    if (hallAreaRef.current)    hallAreaRef.current.value    = "";
+    if (hallTheatreRef.current) hallTheatreRef.current.value = "";
+    if (hallFloatingRef.current)hallFloatingRef.current.value= "";
+    if (hallDiningRef.current)  hallDiningRef.current.value  = "";
+    if (hallFileRef.current)    hallFileRef.current.value    = "";
+  }
+
+  function saveHall() {
+    if (!hallNameRef.current?.value.trim()) { alert("Please enter hall name"); return; }
+    const updated = {
+      name:     hallNameRef.current!.value.trim(),
+      type:     hallTypeRef.current?.value ?? "Indoor Banquet",
+      area:     hallAreaRef.current?.value.trim() || "N/A",
+      theatre:  Number(hallTheatreRef.current?.value) || 0,
+      floating: Number(hallFloatingRef.current?.value) || 0,
+      dining:   Number(hallDiningRef.current?.value) || 0,
+      ph:       tempHallImage || "v2",
+    };
+    if (editingHallIdx !== null) {
+      setForm(f => ({ ...f, halls: f.halls.map((h, i) => i === editingHallIdx ? updated : h) }));
+    } else {
+      setForm(f => ({ ...f, halls: [...f.halls, updated] }));
+    }
+    cancelEditHall();
+  }
 
   const set = (k: any, v: any) => setForm((f) => ({ ...f, [k]: v }));
   const toggleAmenity = (a: string) => setForm((f) => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a] }));
@@ -330,8 +397,8 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>What are you listing?</h2>
             <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>Choose the type that best describes your business.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {(["venue", "vendor", "getaway"] as ListingType[]).map((t) => (
+          <div style={{ display: "grid", gridTemplateColumns: availableTypes.length === 1 ? "1fr" : "1fr 1fr", gap: 10 }}>
+            {availableTypes.map((t) => (
               <button key={t} type="button" onClick={() => { set("listingType", t); set("businessType", ""); }}
                 style={{ padding: "18px 16px", border: `2px solid ${form.listingType === t ? "var(--brand)" : "var(--line)"}`, borderRadius: 10, background: form.listingType === t ? "color-mix(in srgb,var(--brand) 6%,#fff)" : "#fff", cursor: "pointer", textAlign: "left", fontSize: 15, fontWeight: 600, color: form.listingType === t ? "var(--brand)" : "var(--ink)", textTransform: "capitalize" }}>
                 {t === "venue" ? "🏛 Venue" : t === "vendor" ? "🎯 Vendor" : "🌿 Getaway"}
@@ -490,18 +557,20 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
             <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>Add banquets, lawns, or halls available at your venue.</p>
           </div>
 
+          {/* Existing halls */}
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {form.halls.map((hall, idx) => (
-              <div key={idx} style={{ padding: 16, border: "1px solid var(--line)", borderRadius: 10, background: "var(--surface)", position: "relative", display: "flex", gap: 16, alignItems: "center" }}>
+              <div key={idx} style={{
+                padding: 16, border: `2px solid ${editingHallIdx === idx ? "var(--brand)" : "var(--line)"}`,
+                borderRadius: 10, background: editingHallIdx === idx ? "color-mix(in srgb,var(--brand) 4%,#fff)" : "var(--surface)",
+                position: "relative", display: "flex", gap: 16, alignItems: "center",
+              }}>
                 {hall.ph && (hall.ph.startsWith("data:") || hall.ph.startsWith("http")) ? (
                   <img src={hall.ph} alt="" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 80, height: 60, borderRadius: 6, background: "var(--line)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--ink-mute)" }}>No Image</div>
                 )}
                 <div style={{ flex: 1 }}>
-                  <button type="button" onClick={() => {
-                    setForm(f => ({ ...f, halls: f.halls.filter((_, i) => i !== idx) }));
-                  }} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "#c00", cursor: "pointer", fontSize: 13 }}>Remove</button>
                   <div style={{ fontWeight: 600, fontSize: 15, color: "var(--ink)", marginBottom: 6 }}>{hall.name || `Hall #${idx + 1}`}</div>
                   <div style={{ fontSize: 13, color: "var(--ink-soft)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 12px" }}>
                     <div>Type: <span style={{ color: "var(--ink)" }}>{hall.type}</span></div>
@@ -511,18 +580,39 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
                     <div>Dining: <span style={{ color: "var(--ink)" }}>{hall.dining}</span></div>
                   </div>
                 </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                  <button type="button" onClick={() => startEditHall(idx)}
+                    style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--brand)", background: "transparent", color: "var(--brand)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+                    Edit
+                  </button>
+                  <button type="button" onClick={() => { setForm(f => ({ ...f, halls: f.halls.filter((_, i) => i !== idx) })); if (editingHallIdx === idx) cancelEditHall(); }}
+                    style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #fcc", background: "transparent", color: "#c00", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+                    Remove
+                  </button>
+                </div>
               </div>
             ))}
           </div>
 
-          <div style={{ border: "1px dashed var(--line)", borderRadius: 10, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>Add new hall / area</div>
+          {/* Add / Edit hall form */}
+          <div style={{ border: `1px dashed ${editingHallIdx !== null ? "var(--brand)" : "var(--line)"}`, borderRadius: 10, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: editingHallIdx !== null ? "var(--brand)" : "var(--ink)" }}>
+                {editingHallIdx !== null ? `Editing: ${form.halls[editingHallIdx]?.name || `Hall #${editingHallIdx + 1}`}` : "Add new hall / area"}
+              </div>
+              {editingHallIdx !== null && (
+                <button type="button" onClick={cancelEditHall}
+                  style={{ fontSize: 12, color: "var(--ink-mute)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                  Cancel edit
+                </button>
+              )}
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <Field label="Hall name">
-                <input id="new-hall-name" style={inp} placeholder="e.g. Grand Ballroom" />
+                <input ref={hallNameRef} style={inp} placeholder="e.g. Grand Ballroom" />
               </Field>
               <Field label="Type">
-                <select id="new-hall-type" style={inp}>
+                <select ref={hallTypeRef} style={inp}>
                   <option value="Indoor Banquet">Indoor Banquet</option>
                   <option value="Outdoor Lawn">Outdoor Lawn</option>
                   <option value="Poolside">Poolside</option>
@@ -534,22 +624,22 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
               <div style={{ gridColumn: "span 2" }}>
                 <Field label="Area (e.g. 5,000 sq.ft.)">
-                  <input id="new-hall-area" style={inp} placeholder="5,000 sqft" />
+                  <input ref={hallAreaRef} style={inp} placeholder="5,000 sqft" />
                 </Field>
               </div>
               <Field label="Theatre">
-                <input id="new-hall-theatre" type="number" style={inp} placeholder="100" />
+                <input ref={hallTheatreRef} type="number" style={inp} placeholder="100" />
               </Field>
               <Field label="Floating">
-                <input id="new-hall-floating" type="number" style={inp} placeholder="250" />
+                <input ref={hallFloatingRef} type="number" style={inp} placeholder="250" />
               </Field>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <Field label="Dining capacity">
-                <input id="new-hall-dining" type="number" style={inp} placeholder="80" />
+                <input ref={hallDiningRef} type="number" style={inp} placeholder="80" />
               </Field>
               <Field label="Hall Image (Optional)">
-                <input id="new-hall-image-file" type="file" accept="image/*" onChange={async (e) => {
+                <input ref={hallFileRef} type="file" accept="image/*" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
                     const { data } = await compressImage(file, IMAGE_MAX_BYTES);
@@ -560,43 +650,14 @@ export function ApplyForm({ prefillEmail, prefillName }: { prefillEmail?: string
                 }} style={{ ...inp, padding: "6px 12px" }} />
               </Field>
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button type="button" onClick={() => {
-                const nameEl = document.getElementById("new-hall-name") as HTMLInputElement;
-                const typeEl = document.getElementById("new-hall-type") as HTMLSelectElement;
-                const areaEl = document.getElementById("new-hall-area") as HTMLInputElement;
-                const theatreEl = document.getElementById("new-hall-theatre") as HTMLInputElement;
-                const floatingEl = document.getElementById("new-hall-floating") as HTMLInputElement;
-                const diningEl = document.getElementById("new-hall-dining") as HTMLInputElement;
-                const fileInput = document.getElementById("new-hall-image-file") as HTMLInputElement;
-                
-                if (!nameEl.value.trim()) return alert("Please enter hall name");
-                
-                const newHall = {
-                  name: nameEl.value.trim(),
-                  type: typeEl.value,
-                  area: areaEl.value.trim() || "N/A",
-                  theatre: Number(theatreEl.value) || 0,
-                  floating: Number(floatingEl.value) || 0,
-                  dining: Number(diningEl.value) || 0,
-                  ph: tempHallImage || "v2"
-                };
-                
-                setForm(f => ({ ...f, halls: [...f.halls, newHall] }));
-                setTempHallImage("");
-                nameEl.value = "";
-                areaEl.value = "";
-                theatreEl.value = "";
-                floatingEl.value = "";
-                diningEl.value = "";
-                if (fileInput) fileInput.value = "";
-              }} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: "var(--brand)", color: "#fff", fontWeight: 600, cursor: "pointer" }}>
-                + Add Hall
-              </button>
-            </div>
+            <button type="button" onClick={saveHall}
+              style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: "var(--brand)", color: "#fff", fontWeight: 600, cursor: "pointer" }}>
+              {editingHallIdx !== null ? "✓ Save changes" : "+ Add Hall"}
+            </button>
           </div>
         </div>
       )}
+
 
       {/* ── Step 5 (Venue): Packages ── */}
       {stepName === "packages" && (

@@ -5,7 +5,7 @@ import { Footer } from "@/components/footer";
 import { I, Ornament } from "@/components/icons";
 import { Photo } from "@/components/photo";
 import { SITE } from "@/lib/data";
-import { venueHero, getawayPhotos, destinationPhotos, realWeddingPhotos } from "@/lib/images";
+import { venueHero, venueGallery, getawayPhotos, destinationPhotos, realWeddingPhotos } from "@/lib/images";
 import { HeroSearch } from "@/components/hero-search";
 import { CityName } from "@/components/city-name";
 import { CarouselWrap } from "@/components/carousel-wrap";
@@ -93,12 +93,12 @@ export default async function HomePage() {
         <div className="vgrid">
           {featured.map((v) => (
             <Link key={v.slug} href={`/venues/nagpur/${v.locality.split(",")[0].toLowerCase().replace(/\s+/g, "-")}/${v.slug}`} className="vcard">
-              <Photo src={venueHero(v.slug)} variant={v.ph} label={v.scene} className="vcard-img" style={{ height: 220 }}>
+              <Photo src={venueHero(v.slug, v.heroImage)} variant={v.ph} label={v.scene} className="vcard-img" style={{ height: 220 }}>
                 <div className="badges-top">
                   <span className="badge-assured">{v.tag}</span>
                 </div>
                 <button className="save" aria-label="Save"><I.Heart width={16} height={16} /></button>
-                <div className="badges-bot"><I.Camera width={11} height={11} /> 48</div>
+                <div className="badges-bot"><I.Camera width={11} height={11} /> {v.imageCount ?? venueGallery(v.slug).length}</div>
               </Photo>
               <div className="vcard-body">
                 <div className="vcard-row1">

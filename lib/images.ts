@@ -179,7 +179,8 @@ export const vendorPhotos: Record<string, string> = {
 };
 
 // --- Helper: resolve a venue's hero photo, preferring owner-dropped files. ---
-export function venueHero(slug: string): string {
+export function venueHero(slug: string, dbHeroImage?: string): string {
+  if (dbHeroImage) return dbHeroImage;
   const p = venuePhotos[slug];
   if (!p) return U("1519741497674-611481863552");
   if (p.ownerPhotos && p.ownerPhotos > 0) return `/images/${slug}/1.jpg`;

@@ -23,7 +23,7 @@ export default async function SavedPage() {
   ]);
 
   return (
-    <div>
+    <div className="dash-page">
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>Saved</h1>
         <p style={{ fontSize: 15, color: "var(--ink-soft)" }}>{saved.length} saved listing{saved.length !== 1 ? "s" : ""}</p>

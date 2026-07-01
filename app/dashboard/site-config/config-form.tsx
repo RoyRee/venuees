@@ -1,6 +1,5 @@
 "use client";
-import { useState } from "react";
-import type { SiteConfig, CONFIG_META } from "@/lib/site-config";
+import type { SiteConfig } from "@/lib/site-config";
 
 type MetaItem = { key: string; label: string; description: string };
 type Meta = { sections: readonly MetaItem[]; features: readonly MetaItem[] };
@@ -79,31 +78,20 @@ function ConfigGroup({ title, items, config, onChange }: {
   );
 }
 
-export function ConfigForm({ initialConfig, meta }: { initialConfig: SiteConfig; meta: Meta }) {
-  const [config, setConfig] = useState<SiteConfig>(initialConfig);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
+// Props: controlled mode (used by SettingsShell — no own save button)
+type ControlledProps = {
+  initialConfig: SiteConfig;
+  meta: Meta;
+  onConfigChange: (cfg: SiteConfig) => void;
+};
+
+export function ConfigForm({ initialConfig, meta, onConfigChange }: ControlledProps) {
+  const [config, setConfig] = React.useState<SiteConfig>(initialConfig);
 
   function handleChange(key: string, val: boolean) {
-    setConfig((prev) => ({ ...prev, [key]: val }));
-    setStatus("idle");
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    setStatus("idle");
-    try {
-      const res = await fetch("/api/admin/site-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
-      setStatus(res.ok ? "saved" : "error");
-    } catch {
-      setStatus("error");
-    } finally {
-      setSaving(false);
-    }
+    const next = { ...config, [key]: val };
+    setConfig(next);
+    onConfigChange(next);
   }
 
   const disabledCount = Object.values(config).filter((v) => !v).length;
@@ -126,23 +114,9 @@ export function ConfigForm({ initialConfig, meta }: { initialConfig: SiteConfig;
 
       <ConfigGroup title="Sections" items={meta.sections} config={config} onChange={handleChange} />
       <ConfigGroup title="Features" items={meta.features} config={config} onChange={handleChange} />
-
-      <div style={{ display: "flex", alignItems: "center", gap: 16, paddingTop: 8 }}>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="btn btn-primary btn-lg"
-          style={{ minWidth: 140 }}
-        >
-          {saving ? "Saving…" : "Save changes"}
-        </button>
-        {status === "saved" && (
-          <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 500 }}>✓ Changes saved</span>
-        )}
-        {status === "error" && (
-          <span style={{ fontSize: 13, color: "#dc2626", fontWeight: 500 }}>Failed to save — try again</span>
-        )}
-      </div>
     </div>
   );
 }
+
+// Need React in scope for useState
+import React from "react";

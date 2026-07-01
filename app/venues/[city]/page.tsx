@@ -117,7 +117,7 @@ export default async function CityVenuesPage({ params }: { params: Promise<{ cit
               return (
                 <Link key={v.slug} href={`/venues/${city}/${localitySlug}/${v.slug}`} className="vcard">
                   <Photo
-                    src={venueHero(v.slug)}
+                    src={venueHero(v.slug, v.heroImage)}
                     alt={`${v.name} — ${v.scene}`}
                     variant={v.ph}
                     label={v.scene}

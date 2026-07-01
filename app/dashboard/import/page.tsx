@@ -30,7 +30,7 @@ export default async function ImportPage() {
   const hasKey = !!process.env.GOOGLE_PLACES_API_KEY;
 
   return (
-    <div>
+    <div className="dash-page">
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>
           Import Venues

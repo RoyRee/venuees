@@ -18,12 +18,15 @@ export async function PATCH(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Update phone in profiles table
+  // Upsert phone — handles both new Google sign-ups (no row yet) and existing users
   if (phone !== undefined) {
     await db
-      .update(profilesTable)
-      .set({ phone: phone || null, updatedAt: new Date() })
-      .where(eq(profilesTable.userId, user.id));
+      .insert(profilesTable)
+      .values({ userId: user.id, phone: phone || null })
+      .onConflictDoUpdate({
+        target: profilesTable.userId,
+        set: { phone: phone || null, updatedAt: new Date() },
+      });
   }
 
   return NextResponse.json({ ok: true });

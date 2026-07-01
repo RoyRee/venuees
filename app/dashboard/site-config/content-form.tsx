@@ -2,7 +2,10 @@
 import { useState, useRef } from "react";
 import type { SiteContent } from "@/lib/site-config";
 
-type Props = { initialContent: SiteContent };
+type Props = {
+  initialContent: SiteContent;
+  onContentChange: (content: SiteContent) => void;
+};
 
 const SPEED_OPTIONS = [
   { label: "3 seconds", value: 3000 },
@@ -174,44 +177,33 @@ function ImageManager({
 }
 
 // ── Main form ─────────────────────────────────────────────────────────────────
-export function ContentForm({ initialContent }: Props) {
+export function ContentForm({ initialContent, onContentChange }: Props) {
   const [heroImages, setHeroImages]     = useState<string[]>(
     Array.isArray(initialContent.hero_images) ? initialContent.hero_images : []
   );
   const [heroInterval, setHeroInterval]   = useState(initialContent.hero_carousel_interval ?? 5000);
   const [stats, setStats]                 = useState(initialContent.hero_stats ?? []);
   const [flagshipInterval, setFlagshipInterval] = useState(initialContent.flagship_carousel_interval ?? 6000);
-  const [saving, setSaving]               = useState(false);
-  const [saved, setSaved]                 = useState(false);
-  const [error, setError]                 = useState("");
 
-  function updateStat(i: number, field: "num" | "label", val: string) {
-    setStats((s) => s.map((r, idx) => idx === i ? { ...r, [field]: val } : r));
+  // Notify parent of any change so SettingsShell can save everything together
+  function notify(patch: Partial<SiteContent>) {
+    onContentChange({
+      hero_images:                heroImages,
+      hero_carousel_interval:     heroInterval,
+      hero_stats:                 stats,
+      flagship_carousel_interval: flagshipInterval,
+      ...patch,
+    });
   }
 
-  async function handleSave() {
-    setSaving(true);
-    setError("");
-    setSaved(false);
-    try {
-      const res = await fetch("/api/admin/site-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hero_images:                JSON.stringify(heroImages),
-          hero_carousel_interval:     heroInterval,
-          hero_stats:                 JSON.stringify(stats),
-          flagship_carousel_interval: flagshipInterval,
-        }),
-      });
-      const json = await res.json();
-      if (json.ok) setSaved(true);
-      else setError("Failed to save. Please try again.");
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+  function handleHeroImages(imgs: string[]) { setHeroImages(imgs); notify({ hero_images: imgs }); }
+  function handleHeroInterval(v: number)    { setHeroInterval(v);  notify({ hero_carousel_interval: v }); }
+  function handleFlagshipInterval(v: number){ setFlagshipInterval(v); notify({ flagship_carousel_interval: v }); }
+
+  function updateStat(i: number, field: "num" | "label", val: string) {
+    const next = stats.map((r, idx) => idx === i ? { ...r, [field]: val } : r);
+    setStats(next);
+    notify({ hero_stats: next });
   }
 
   return (
@@ -229,10 +221,10 @@ export function ContentForm({ initialContent }: Props) {
         <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 16 }}>
           Upload photos or add URLs. Images rotate automatically in the hero carousel.
         </p>
-        <ImageManager images={heroImages} onChange={setHeroImages} />
+        <ImageManager images={heroImages} onChange={handleHeroImages} />
         <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 12 }}>
           <label style={{ fontSize: 13, color: "var(--ink-soft)", whiteSpace: "nowrap" }}>Carousel speed</label>
-          <select value={heroInterval} onChange={(e) => setHeroInterval(Number(e.target.value))}
+          <select value={heroInterval} onChange={(e) => handleHeroInterval(Number(e.target.value))}
             style={{ ...inputStyle, width: "auto" }}>
             {SPEED_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -263,26 +255,11 @@ export function ContentForm({ initialContent }: Props) {
         <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 14 }}>
           How quickly the flagship strip cycles when multiple venues are flagged as signature.
         </p>
-        <select value={flagshipInterval} onChange={(e) => setFlagshipInterval(Number(e.target.value))}
+        <select value={flagshipInterval} onChange={(e) => handleFlagshipInterval(Number(e.target.value))}
           style={{ ...inputStyle, width: "auto" }}>
           {FLAGSHIP_SPEED_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
-
-      {error && (
-        <div style={{ fontSize: 13, color: "#c00", padding: "10px 14px", background: "#fff0f0", borderRadius: 8, marginBottom: 14 }}>
-          {error}
-        </div>
-      )}
-      {saved && (
-        <div style={{ fontSize: 13, color: "#166534", padding: "10px 14px", background: "#f0fdf4", borderRadius: 8, marginBottom: 14 }}>
-          Saved — changes will appear on the homepage after the next page load.
-        </div>
-      )}
-
-      <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ opacity: saving ? 0.7 : 1 }}>
-        {saving ? "Saving…" : "Save content"}
-      </button>
     </div>
   );
 }
