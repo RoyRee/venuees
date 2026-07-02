@@ -15,7 +15,6 @@ import { VenueTabs, type VenueTabsData } from "@/components/venue-tabs";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { requireSection } from "@/lib/section-guard";
 import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
-import { VenueJsonLd } from "@/components/schema-org";
 import { SaveButton } from "@/components/save-button";
 import { getGooglePlaceInfo } from "@/lib/google-places";
 import { SiteVisitButton } from "@/components/site-visit-button";
