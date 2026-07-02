@@ -16,6 +16,18 @@ import { RecentlyViewed } from "@/components/recently-viewed";
 import { SaveButton } from "@/components/save-button";
 import { getSiteConfig, getSiteContent, CONFIG_DEFAULTS, CONTENT_DEFAULTS } from "@/lib/site-config";
 
+function mergeTypes(admin: { slug: string; label: string }[], db: { slug: string; label: string }[]) {
+  const map = new Map<string, string>();
+  for (const t of admin) map.set(t.slug, t.label);
+  for (const t of db) if (!map.has(t.slug)) map.set(t.slug, t.label);
+  return Array.from(map.entries()).map(([slug, label]) => ({ slug, label }));
+}
+
+function mergeLocalities(admin: string[], db: string[]): string[] {
+  const set = new Set([...admin.map((l) => l), ...db]);
+  return Array.from(set);
+}
+
 export default async function HomePage() {
   const [[venues, getaways, destinations, realWeddings], cfg, siteContent] = await Promise.all([
     Promise.all([getVenues(), getGetaways(), getDestinations(), getRealWeddings()]).catch(() => [[], [], [], []] as const),
@@ -24,6 +36,22 @@ export default async function HomePage() {
   ]).catch(() => [[[], [], [], []], CONFIG_DEFAULTS, CONTENT_DEFAULTS] as const);
   const signatures = venues.filter((v) => v.isSignature);
   const featured = venues.slice(0, 4);
+
+  // Build hybrid filter lists for the search bar
+  const dbTypeMap = new Map<string, string>();
+  const dbLocalitySet = new Set<string>();
+  for (const v of venues) {
+    if (v.typeSlug && v.type) dbTypeMap.set(v.typeSlug, v.type);
+    if (v.locality) dbLocalitySet.add(v.locality.split(",")[0].trim());
+  }
+  const filterVenueTypes = mergeTypes(
+    siteContent.filter_venue_types ?? CONTENT_DEFAULTS.filter_venue_types,
+    Array.from(dbTypeMap.entries()).map(([slug, label]) => ({ slug, label }))
+  );
+  const filterLocalities = mergeLocalities(
+    siteContent.filter_localities ?? CONTENT_DEFAULTS.filter_localities,
+    Array.from(dbLocalitySet)
+  );
 
   return (
     <div className="home">
@@ -49,7 +77,7 @@ export default async function HomePage() {
           </div>
 
           <div className="hero-search-wrap" style={!cfg.section_trust_banner ? { marginTop: "auto" } : { marginTop: 40 }}>
-            <HeroSearch cfg={cfg as Record<string, boolean>} />
+            <HeroSearch cfg={cfg as Record<string, boolean>} localities={filterLocalities} venueTypes={filterVenueTypes} />
 
             {cfg.section_venues && (
             <div className="hero-chips">

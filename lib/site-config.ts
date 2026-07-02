@@ -87,12 +87,15 @@ export const getSiteConfig = cache(async (): Promise<SiteConfig> => {
 // ── Site content (JSON-valued, separate from boolean toggles) ─────────────────
 
 export type HeroStat = { num: string; label: string };
+export type FilterVenueType = { slug: string; label: string };
 
 export type SiteContent = {
   hero_images: string[];
   hero_carousel_interval: number;
   hero_stats: HeroStat[];
   flagship_carousel_interval: number;
+  filter_venue_types: FilterVenueType[];
+  filter_localities: string[];
 };
 
 export const CONTENT_DEFAULTS: SiteContent = {
@@ -106,10 +109,23 @@ export const CONTENT_DEFAULTS: SiteContent = {
     { num: "18yr",   label: "Nagpur operators" },
   ],
   flagship_carousel_interval: 6000,
+  filter_venue_types: [
+    { slug: "hotel",     label: "Hotels & ballrooms" },
+    { slug: "lawn",      label: "Lawns & banquets" },
+    { slug: "resort",    label: "Resorts" },
+    { slug: "heritage",  label: "Heritage venues" },
+    { slug: "farmhouse", label: "Farmhouses" },
+    { slug: "banquet",   label: "Banquet halls" },
+  ],
+  filter_localities: [
+    "Wardha Road", "Ramdaspeth", "Civil Lines",
+    "Koradi Road", "Katol Road", "MIHAN",
+  ],
 };
 
 const CONTENT_KEYS = new Set([
   "hero_images", "hero_carousel_interval", "hero_stats", "flagship_carousel_interval",
+  "filter_venue_types", "filter_localities",
 ]);
 
 export const getSiteContent = cache(async (): Promise<SiteContent> => {

@@ -33,6 +33,8 @@ export function SettingsShell({ initialConfig, initialContent, meta }: Props) {
         hero_carousel_interval:     content.hero_carousel_interval ?? 5000,
         hero_stats:                 JSON.stringify(content.hero_stats ?? []),
         flagship_carousel_interval: content.flagship_carousel_interval ?? 6000,
+        filter_venue_types:         JSON.stringify(content.filter_venue_types ?? []),
+        filter_localities:          JSON.stringify(content.filter_localities ?? []),
       };
 
       const res = await fetch("/api/admin/site-config", {
