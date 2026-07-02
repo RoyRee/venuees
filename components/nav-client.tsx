@@ -85,6 +85,7 @@ export function TopNavClient({ cfg }: { cfg: SiteConfig }) {
           })}
         </ul>
         <div className="nav-right">
+          <Link href="/list-your-business" style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", marginRight: 16, textDecoration: "none" }}>List your business</Link>
           {cfg.feature_search !== false && (
             <button aria-label="Search" onClick={() => setSearchOpen(true)}
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", display: "flex", alignItems: "center" }}>
@@ -137,6 +138,7 @@ export function MobileNavClient({ cfg }: { cfg: SiteConfig }) {
               <li><Link href="/about" onClick={() => setOpen(false)}>About us <I.Arrow width={14} height={14} /></Link></li>
               <li><Link href="/contact" onClick={() => setOpen(false)}>Contact <I.Arrow width={14} height={14} /></Link></li>
               <li><Link href="/dashboard" onClick={() => setOpen(false)}>My account <I.Arrow width={14} height={14} /></Link></li>
+              <li><Link href="/list-your-business" onClick={() => setOpen(false)}>List your business <I.Arrow width={14} height={14} /></Link></li>
             </ul>
           </nav>
           <div style={{ marginTop: "auto", paddingTop: 30 }}>

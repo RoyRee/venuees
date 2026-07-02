@@ -8,10 +8,14 @@ export function SaveButton({
   type,
   slug,
   size = 18,
+  className,
+  style,
 }: {
   type: "venue" | "vendor" | "getaway";
   slug: string;
   size?: number;
+  className?: string;
+  style?: React.CSSProperties;
 }) {
   const router = useRouter();
   const [saved, setSaved] = useState(false);
@@ -49,8 +53,8 @@ export function SaveButton({
       onClick={toggle}
       disabled={loading}
       aria-label={saved ? "Unsave" : "Save"}
-      className="save"
-      style={{ opacity: loading ? 0.6 : 1 }}
+      className={className || "save"}
+      style={{ opacity: loading ? 0.6 : 1, ...style }}
     >
       <I.Heart
         width={size}

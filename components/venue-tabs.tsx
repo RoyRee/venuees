@@ -228,7 +228,7 @@ export function VenueTabs({
                   <Ornament>PACKAGES</Ornament>
                   <h2>Pricing packages</h2>
                   <p style={{ marginBottom: 28 }}>All-inclusive pricing per plate. Upgrade any layer separately.</p>
-                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${packages.length}, 1fr)`, gap: 16 }}>
+                  <div className="pricing-grid" style={{ "--pkg-count": packages.length } as React.CSSProperties}>
                     {packages.map((pkg, i) => (
                       <div key={i} style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
                         <div style={{ padding: "16px 20px", background: i === Math.floor(packages.length / 2) ? "var(--brand)" : "var(--surface)", color: i === Math.floor(packages.length / 2) ? "#fff" : "var(--ink)" }}>

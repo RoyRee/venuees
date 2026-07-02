@@ -12,6 +12,7 @@ import { vendorPhotos, venuePhotos } from "@/lib/images";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { requireSection } from "@/lib/section-guard";
 import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
+import { SaveButton } from "@/components/save-button";
 import { RecordView } from "@/components/record-view";
 import { VendorTabs } from "@/components/vendor-tabs";
 import { DynamicGallery } from "@/components/dynamic-gallery";
@@ -135,7 +136,10 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ s
             <span className="chip outline">{v.yearsExp} years experience</span>
             <span className="chip outline">{v.completed} weddings completed</span>
           </div>
-          <h1>{v.name}</h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+            <h1>{v.name}</h1>
+            <SaveButton type="vendor" slug={v.slug} size={22} className="btn-save-detail" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)" }} />
+          </div>
           <div className="vd-meta">
             <span><I.Pin width={13} height={13} /> {v.locality}, {v.city}</span>
             <span><Stars value={v.rating} size={13} /> {v.rating} · {v.reviews} reviews</span>

@@ -15,6 +15,8 @@ import { VenueTabs, type VenueTabsData } from "@/components/venue-tabs";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { requireSection } from "@/lib/section-guard";
 import { getSiteConfig, CONFIG_DEFAULTS } from "@/lib/site-config";
+import { VenueJsonLd } from "@/components/schema-org";
+import { SaveButton } from "@/components/save-button";
 import { getGooglePlaceInfo } from "@/lib/google-places";
 import { SiteVisitButton } from "@/components/site-visit-button";
 import { StickyLeadBar } from "@/components/sticky-lead-bar";
@@ -155,10 +157,10 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
       }))
     : [
         { src: gallery[0], alt: `${v.name} — ${v.scene}`, label: v.scene },
-        { src: gallery[1], alt: `${v.name} ballroom`, label: "ballroom · evening", variant: v.halls[1]?.ph || "v2" },
-        { src: gallery[2], alt: `${v.name} baraat entry`, label: "baraat entry", variant: v.halls[2]?.ph || "dusk" },
-        { src: gallery[3], alt: `${v.name} mandap detail`, label: "mandap · detail", variant: v.halls[0]?.ph || "garden" },
-        { src: gallery[4], alt: `${v.name} bridal suite`, label: "bridal suite · vanity", variant: "rose" },
+        { src: gallery[1], alt: `${v.name} ballroom`, label: "", variant: v.halls[1]?.ph || "v2" },
+        { src: gallery[2], alt: `${v.name} baraat entry`, label: "", variant: v.halls[2]?.ph || "dusk" },
+        { src: gallery[3], alt: `${v.name} mandap detail`, label: "", variant: v.halls[0]?.ph || "garden" },
+        { src: gallery[4], alt: `${v.name} bridal suite`, label: "", variant: "rose" },
         ...gallery.slice(5).map((src, i) => ({ src, alt: `${v.name} photo ${i + 6}`, label: "" })),
       ];
 
@@ -193,7 +195,10 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             {v.isSignature && <span className="chip" style={{ background: "var(--accent)", color: "#fff" }}>Our flagship</span>}
             <span className="chip outline">{v.type}</span>
           </div>
-          <h1>{v.name}</h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+            <h1>{v.name}</h1>
+            <SaveButton type="venue" slug={v.slug} size={22} className="btn-save-detail" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)" }} />
+          </div>
           <div className="vd-meta">
             <span><I.Pin width={13} height={13} /> {v.address}</span>
             <span><Stars value={v.rating} size={13} /> {v.rating} · {v.reviews} reviews</span>

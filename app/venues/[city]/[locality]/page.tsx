@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer";
 import { I, Stars } from "@/components/icons";
 import { Photo } from "@/components/photo";
 import { venueHero } from "@/lib/images";
+import { SaveButton } from "@/components/save-button";
 import { getVenues } from "@/lib/db/queries";
 import { requireSection } from "@/lib/section-guard";
 
@@ -137,7 +138,7 @@ export default async function LocalityVenuesPage({ params }: { params: Promise<{
                     <div className="badges-top">
                       <span className="badge-assured">{v.tag}</span>
                     </div>
-                    <button className="save" aria-label="Save"><I.Heart width={16} height={16} /></button>
+                    <SaveButton type="venue" slug={v.slug} size={16} />
                   </Photo>
                   <div className="vcard-body">
                     <div className="vcard-row1">

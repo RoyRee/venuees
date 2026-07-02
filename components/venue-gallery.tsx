@@ -166,7 +166,6 @@ export function VenueGallery({ images, venueName, heroVariant = "v2" }: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const LABELS = ["ballroom · evening", "baraat entry", "mandap · detail", "bridal suite · vanity"];
   const VARIANTS = ["v2", "dusk", "garden", "rose"];
 
   const displayedImages = images.slice(0, 5);
@@ -177,7 +176,7 @@ export function VenueGallery({ images, venueName, heroVariant = "v2" }: Props) {
       <div className={`vd-gallery grid-${count}`}>
         {displayedImages.map((im, i) => {
           const variant = i === 0 ? heroVariant : VARIANTS[i - 1];
-          const label = im?.label || (i === 0 ? venueName : LABELS[i - 1]);
+          const label = im?.label;
           return (
             <button
               key={i}
@@ -188,7 +187,7 @@ export function VenueGallery({ images, venueName, heroVariant = "v2" }: Props) {
               {im?.src && (
                 <img src={im.src} alt={im?.alt || label} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
               )}
-              <span className="ph-label">{label}</span>
+              {label && <span className="ph-label">{label}</span>}
               {i === 0 && (
                 <span className="vd-gallery-all">
                   <I.Camera width={14} height={14} />
