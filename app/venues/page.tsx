@@ -12,7 +12,7 @@ import { venueHero, venueGallery } from "@/lib/images";
 import { getVenues, getRecentEnquiryCounts } from "@/lib/db/queries";
 import { CompareButton } from "@/components/compare-button";
 import { CompareBar } from "@/components/compare-bar";
-import { getSiteConfig } from "@/lib/site-config";
+import { getSiteConfig, getSiteContent } from "@/lib/site-config";
 import { SectionDisabled } from "@/components/section-disabled";
 import { requireSection } from "@/lib/section-guard";
 import { StickyLeadBar } from "@/components/sticky-lead-bar";
@@ -31,6 +31,18 @@ const TYPES = [
   { slug: "banquet", label: "Banquet halls" },
 ];
 
+function mergeTypes(admin: { slug: string, label: string }[], db: { slug: string, label: string }[]) {
+  const map = new Map<string, string>();
+  for (const t of admin) map.set(t.slug, t.label);
+  for (const t of db) if (!map.has(t.slug)) map.set(t.slug, t.label);
+  return Array.from(map.entries()).map(([slug, label]) => ({ slug, label }));
+}
+
+function mergeLocalities(admin: string[], db: string[]) {
+  const set = new Set([...admin, ...db]);
+  return Array.from(set);
+}
+
 type SP = {
   q?: string; sort?: string;
   type?: string | string[]; locality?: string | string[];
@@ -45,7 +57,7 @@ export default async function VenuesListPage({
   searchParams: Promise<SP>;
 }) {
   await requireSection("section_venues");
-  const [sp, siteConfig] = await Promise.all([searchParams, getSiteConfig()]);
+  const [sp, siteConfig, siteContent] = await Promise.all([searchParams, getSiteConfig(), getSiteContent()]);
   if (!siteConfig.section_venues) return <SectionDisabled label="Venues" />;
 
   // Normalise: params can be string or string[] (when repeated)
@@ -79,6 +91,21 @@ export default async function VenuesListPage({
   const rest = venues.filter((v) => !v.isSignature);
   const ordered = signature ? [signature, ...rest] : venues;
 
+  // ── Build hybrid filter lists ──────────────────────────────────────────────
+  // Dynamic: unique type slugs & localities actually in DB
+  const dbTypeMap = new Map<string, string>();
+  const dbLocalities = new Set<string>();
+  for (const v of venues) {
+    if (v.typeSlug && v.type) dbTypeMap.set(v.typeSlug, v.type);
+    if (v.locality) dbLocalities.add(v.locality.split(",")[0].trim());
+  }
+  const dynamicTypes = Array.from(dbTypeMap.entries()).map(([slug, label]) => ({ slug, label }));
+  const dynamicLocalities = Array.from(dbLocalities);
+
+  // Merged: admin-pinned first, then extras from DB
+  const filterTypes = mergeTypes(siteContent.filter_venue_types ?? [], dynamicTypes);
+  const filterLocalities = mergeLocalities(siteContent.filter_localities ?? [], dynamicLocalities);
+
   return (
     <div>
       <MobileNav />
@@ -110,7 +137,7 @@ export default async function VenuesListPage({
           )}
 
           <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
-            {TYPES.map((t) => (
+            {filterTypes.map((t) => (
               <Link key={t.slug} href={`/venues?type=${t.slug}`} className="chip outline">{t.label}</Link>
             ))}
           </div>
@@ -120,7 +147,7 @@ export default async function VenuesListPage({
       <div className="vl-body">
         {/* Filter sidebar — useSearchParams requires Suspense in Next.js 15 */}
         <Suspense fallback={<aside className="vl-filters" style={{ opacity: 0.4 }} />}>
-          <VenueFilters />
+          <VenueFilters types={filterTypes} localities={filterLocalities} />
         </Suspense>
 
         <main>

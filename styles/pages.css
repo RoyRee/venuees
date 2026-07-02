@@ -8,6 +8,8 @@
   position: relative;
   padding: 0 40px 40px;
   min-height: 680px;
+  display: flex;
+  flex-direction: column;
 }
 @media (max-width: 900px) { .hero { padding: 0 0 20px; min-height: 580px; } }
 
@@ -42,6 +44,9 @@
   padding: 64px 60px 36px;
   max-width: 960px;
   color: #FFF8EA;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 @media (max-width: 900px) { .hero-content { padding: 40px 24px 30px; } }
 .hero-title {
@@ -963,7 +968,18 @@
 .vd-quickspecs .val { font-family: var(--font-serif); font-size: 24px; color: var(--ink); letter-spacing: -0.01em; }
 .vd-quickspecs .val small { font-family: var(--font-sans); font-size: 12px; color: var(--ink-soft); margin-left: 4px; font-weight: 400; }
 
-/* Package table */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--pkg-count, 3), 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Compare packages grid */
 .pkgs {
   display: grid;
   grid-template-columns: 200px repeat(3, 1fr);

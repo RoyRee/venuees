@@ -184,6 +184,15 @@ export function ContentForm({ initialContent, onContentChange }: Props) {
   const [heroInterval, setHeroInterval]   = useState(initialContent.hero_carousel_interval ?? 5000);
   const [stats, setStats]                 = useState(initialContent.hero_stats ?? []);
   const [flagshipInterval, setFlagshipInterval] = useState(initialContent.flagship_carousel_interval ?? 6000);
+  const [filterTypes, setFilterTypes]     = useState<{ slug: string; label: string }[]>(
+    initialContent.filter_venue_types ?? []
+  );
+  const [filterLocalities, setFilterLocalities] = useState<string[]>(
+    initialContent.filter_localities ?? []
+  );
+  const [newTypeSlug, setNewTypeSlug]     = useState("");
+  const [newTypeLabel, setNewTypeLabel]   = useState("");
+  const [newLocality, setNewLocality]     = useState("");
 
   // Notify parent of any change so SettingsShell can save everything together
   function notify(patch: Partial<SiteContent>) {
@@ -192,6 +201,8 @@ export function ContentForm({ initialContent, onContentChange }: Props) {
       hero_carousel_interval:     heroInterval,
       hero_stats:                 stats,
       flagship_carousel_interval: flagshipInterval,
+      filter_venue_types:         filterTypes,
+      filter_localities:          filterLocalities,
       ...patch,
     });
   }
@@ -259,6 +270,75 @@ export function ContentForm({ initialContent, onContentChange }: Props) {
           style={{ ...inputStyle, width: "auto" }}>
           {FLAGSHIP_SPEED_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+      </div>
+
+      {/* Filter Options */}
+      <div style={card}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Filter Options</h3>
+        <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 20 }}>
+          Control what appears in the venue filter sidebar and hero search bar. Admin-pinned options appear first; unlisted DB options are appended automatically.
+        </p>
+
+        {/* Venue Types */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>Venue Types</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            {filterTypes.map((t, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "120px 1fr auto", gap: 8, alignItems: "center" }}>
+                <input value={t.slug} onChange={(e) => {
+                  const next = filterTypes.map((x, j) => j === i ? { ...x, slug: e.target.value } : x);
+                  setFilterTypes(next); notify({ filter_venue_types: next });
+                }} placeholder="slug" style={inputStyle} />
+                <input value={t.label} onChange={(e) => {
+                  const next = filterTypes.map((x, j) => j === i ? { ...x, label: e.target.value } : x);
+                  setFilterTypes(next); notify({ filter_venue_types: next });
+                }} placeholder="Label" style={inputStyle} />
+                <button type="button" onClick={() => {
+                  const next = filterTypes.filter((_, j) => j !== i);
+                  setFilterTypes(next); notify({ filter_venue_types: next });
+                }} style={{ background: "none", border: "none", color: "var(--ink-mute)", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>✕</button>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "120px 1fr auto", gap: 8 }}>
+            <input value={newTypeSlug} onChange={(e) => setNewTypeSlug(e.target.value)} placeholder="slug" style={{ ...inputStyle, opacity: 0.7 }} />
+            <input value={newTypeLabel} onChange={(e) => setNewTypeLabel(e.target.value)} placeholder="Label" style={{ ...inputStyle, opacity: 0.7 }} />
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+              if (!newTypeSlug.trim() || !newTypeLabel.trim()) return;
+              const next = [...filterTypes, { slug: newTypeSlug.trim(), label: newTypeLabel.trim() }];
+              setFilterTypes(next); notify({ filter_venue_types: next });
+              setNewTypeSlug(""); setNewTypeLabel("");
+            }}>+ Add</button>
+          </div>
+        </div>
+
+        {/* Localities */}
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>Localities</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            {filterLocalities.map((l, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, alignItems: "center" }}>
+                <input value={l} onChange={(e) => {
+                  const next = filterLocalities.map((x, j) => j === i ? e.target.value : x);
+                  setFilterLocalities(next); notify({ filter_localities: next });
+                }} style={inputStyle} />
+                <button type="button" onClick={() => {
+                  const next = filterLocalities.filter((_, j) => j !== i);
+                  setFilterLocalities(next); notify({ filter_localities: next });
+                }} style={{ background: "none", border: "none", color: "var(--ink-mute)", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>✕</button>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+            <input value={newLocality} onChange={(e) => setNewLocality(e.target.value)} placeholder="e.g. Wardha Road" style={{ ...inputStyle, opacity: 0.7 }} />
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+              if (!newLocality.trim()) return;
+              const next = [...filterLocalities, newLocality.trim()];
+              setFilterLocalities(next); notify({ filter_localities: next });
+              setNewLocality("");
+            }}>+ Add</button>
+          </div>
+        </div>
       </div>
     </div>
   );

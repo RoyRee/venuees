@@ -118,7 +118,15 @@ function SelectField({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
+export function HeroSearch({
+  cfg = {},
+  localities = [],
+  venueTypes = [],
+}: {
+  cfg?: Record<string, boolean>;
+  localities?: string[];
+  venueTypes?: { slug: string; label: string }[];
+}) {
   const router = useRouter();
   const { city } = useCity();
   const tabBarRef = useRef<HTMLDivElement>(null);
@@ -129,6 +137,8 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
   // Venues
   const [venueDate, setVenueDate] = useState(MONTHS[7]);
   const [venueGuests, setVenueGuests] = useState("200-400");
+  const [venueLocality, setVenueLocality] = useState("");
+  const [venueType, setVenueType] = useState("");
 
   // Getaways
   const [getawayDate, setGetawayDate] = useState(MONTHS[2]);
@@ -146,6 +156,8 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
   function handleSearch() {
     if (tab === "venues") {
       const p = new URLSearchParams({ date: venueDate, guests: venueGuests });
+      if (venueLocality) p.set("locality", venueLocality);
+      if (venueType) p.set("type", venueType);
       router.push(`/venues?${p}`);
     } else if (tab === "getaways") {
       const p = new URLSearchParams({ date: getawayDate });
@@ -193,8 +205,32 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
         {tab === "venues" && (
           <>
             <Field icon={<I.Pin width={17} height={17} />} label="WHERE">
-              <span className="hs-fixed">{city.name}</span>
+              {localities.length > 0 ? (
+                <SelectField
+                  value={venueLocality}
+                  onChange={setVenueLocality}
+                  options={[
+                    { label: "Any locality", value: "" },
+                    ...localities.map((l) => ({ label: l, value: l })),
+                  ]}
+                />
+              ) : (
+                <span className="hs-fixed">{city.name}</span>
+              )}
             </Field>
+
+            {venueTypes.length > 0 && (
+              <Field icon={<I.Tag width={17} height={17} />} label="VENUE TYPE">
+                <SelectField
+                  value={venueType}
+                  onChange={setVenueType}
+                  options={[
+                    { label: "Any type", value: "" },
+                    ...venueTypes.map((t) => ({ label: t.label, value: t.slug })),
+                  ]}
+                />
+              </Field>
+            )}
 
             <Field icon={<I.Cal width={17} height={17} />} label="WHEN">
               <SelectField
@@ -204,7 +240,7 @@ export function HeroSearch({ cfg = {} }: { cfg?: Record<string, boolean> }) {
               />
             </Field>
 
-            <Field icon={<I.Users width={17} height={17} />} label="GUESTS">
+            <Field icon={<I.Users width={17} height={17} />} label="GUESTS" last>
               <SelectField
                 value={venueGuests}
                 onChange={setVenueGuests}

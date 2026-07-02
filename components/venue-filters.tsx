@@ -3,20 +3,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useTransition } from "react";
 import { I } from "./icons";
 
-const TYPES = [
-  { slug: "hotel",    label: "Hotels & ballrooms" },
-  { slug: "lawn",     label: "Lawns & banquets" },
-  { slug: "resort",   label: "Resorts" },
-  { slug: "heritage", label: "Heritage venues" },
-  { slug: "farmhouse",label: "Farmhouses" },
-  { slug: "banquet",  label: "Banquet halls" },
-];
-
-const LOCALITIES = [
-  "Wardha Road", "Ramdaspeth", "Civil Lines",
-  "Koradi Road", "Katol Road", "MIHAN",
-];
-
 const AMENITIES = [
   { key: "rooms",    label: "Rooms on-site" },
   { key: "parking",  label: "Parking 100+" },
@@ -47,7 +33,15 @@ const PLATE_OPTIONS = [
   { value: "2000", label: "Under ₹2,000" },
 ];
 
-export function VenueFilters() {
+type VenueType = { slug: string; label: string };
+
+export function VenueFilters({
+  types = [],
+  localities = [],
+}: {
+  types?: VenueType[];
+  localities?: string[];
+}) {
   const router = useRouter();
   const sp = useSearchParams();
   const [pending, startTransition] = useTransition();
@@ -137,7 +131,7 @@ export function VenueFilters() {
         {/* Venue type */}
         <div className="f-group">
           <h6>Venue type</h6>
-          {TYPES.map(t => (
+          {types.map(t => (
             <label key={t.slug} className={isType(t.slug) ? "f-active" : ""}>
               <input
                 type="checkbox"
@@ -152,7 +146,7 @@ export function VenueFilters() {
         {/* Locality */}
         <div className="f-group">
           <h6>Locality</h6>
-          {LOCALITIES.map(l => (
+          {localities.map(l => (
             <label key={l} className={isLocality(l) ? "f-active" : ""}>
               <input
                 type="checkbox"

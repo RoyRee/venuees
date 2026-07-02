@@ -15,6 +15,7 @@ export const CONFIG_META = {
     { key: "section_event_management", label: "Event Management",      description: "Event management guides and service pages" },
     { key: "section_how_it_works",     label: "How It Works",          description: "Four-step process section on the homepage" },
     { key: "section_testimonial",      label: "Testimonial",           description: "Couple's quote section on the homepage" },
+    { key: "section_trust_banner",     label: "Trust Banner Stats",    description: "The five statistics shown below the hero search box" },
   ],
   features: [
     { key: "feature_reviews",      label: "Ratings & Reviews",    description: "Star ratings and review counts on all listings" },
@@ -32,7 +33,7 @@ type SectionKey =
   | "section_venues" | "section_vendors" | "section_getaways"
   | "section_destinations" | "section_real_weddings"
   | "section_blog" | "section_event_management"
-  | "section_how_it_works" | "section_testimonial";
+  | "section_how_it_works" | "section_testimonial" | "section_trust_banner";
 
 type FeatureKey =
   | "feature_reviews" | "feature_enquiries" | "feature_newsletter"
@@ -51,6 +52,7 @@ export const CONFIG_DEFAULTS: SiteConfig = {
   section_event_management: true,
   section_how_it_works:     true,
   section_testimonial:      true,
+  section_trust_banner:     true,
   feature_reviews:          true,
   feature_enquiries:        true,
   feature_newsletter:       true,
@@ -85,12 +87,15 @@ export const getSiteConfig = cache(async (): Promise<SiteConfig> => {
 // ── Site content (JSON-valued, separate from boolean toggles) ─────────────────
 
 export type HeroStat = { num: string; label: string };
+export type FilterVenueType = { slug: string; label: string };
 
 export type SiteContent = {
   hero_images: string[];
   hero_carousel_interval: number;
   hero_stats: HeroStat[];
   flagship_carousel_interval: number;
+  filter_venue_types: FilterVenueType[];
+  filter_localities: string[];
 };
 
 export const CONTENT_DEFAULTS: SiteContent = {
@@ -104,10 +109,23 @@ export const CONTENT_DEFAULTS: SiteContent = {
     { num: "18yr",   label: "Nagpur operators" },
   ],
   flagship_carousel_interval: 6000,
+  filter_venue_types: [
+    { slug: "hotel",     label: "Hotels & ballrooms" },
+    { slug: "lawn",      label: "Lawns & banquets" },
+    { slug: "resort",    label: "Resorts" },
+    { slug: "heritage",  label: "Heritage venues" },
+    { slug: "farmhouse", label: "Farmhouses" },
+    { slug: "banquet",   label: "Banquet halls" },
+  ],
+  filter_localities: [
+    "Wardha Road", "Ramdaspeth", "Civil Lines",
+    "Koradi Road", "Katol Road", "MIHAN",
+  ],
 };
 
 const CONTENT_KEYS = new Set([
   "hero_images", "hero_carousel_interval", "hero_stats", "flagship_carousel_interval",
+  "filter_venue_types", "filter_localities",
 ]);
 
 export const getSiteContent = cache(async (): Promise<SiteContent> => {

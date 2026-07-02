@@ -13,7 +13,20 @@ import { HeroCarousel } from "@/components/hero-carousel";
 import { SignatureCarousel } from "@/components/signature-carousel";
 import { getVenues, getGetaways, getDestinations, getRealWeddings } from "@/lib/db/queries";
 import { RecentlyViewed } from "@/components/recently-viewed";
+import { SaveButton } from "@/components/save-button";
 import { getSiteConfig, getSiteContent, CONFIG_DEFAULTS, CONTENT_DEFAULTS } from "@/lib/site-config";
+
+function mergeTypes(admin: { slug: string; label: string }[], db: { slug: string; label: string }[]) {
+  const map = new Map<string, string>();
+  for (const t of admin) map.set(t.slug, t.label);
+  for (const t of db) if (!map.has(t.slug)) map.set(t.slug, t.label);
+  return Array.from(map.entries()).map(([slug, label]) => ({ slug, label }));
+}
+
+function mergeLocalities(admin: string[], db: string[]): string[] {
+  const set = new Set([...admin.map((l) => l), ...db]);
+  return Array.from(set);
+}
 
 export default async function HomePage() {
   const [[venues, getaways, destinations, realWeddings], cfg, siteContent] = await Promise.all([
@@ -22,7 +35,23 @@ export default async function HomePage() {
     getSiteContent(),
   ]).catch(() => [[[], [], [], []], CONFIG_DEFAULTS, CONTENT_DEFAULTS] as const);
   const signatures = venues.filter((v) => v.isSignature);
-  const featured = venues.filter((v) => !v.isSignature).slice(0, 4);
+  const featured = venues.slice(0, 4);
+
+  // Build hybrid filter lists for the search bar
+  const dbTypeMap = new Map<string, string>();
+  const dbLocalitySet = new Set<string>();
+  for (const v of venues) {
+    if (v.typeSlug && v.type) dbTypeMap.set(v.typeSlug, v.type);
+    if (v.locality) dbLocalitySet.add(v.locality.split(",")[0].trim());
+  }
+  const filterVenueTypes = mergeTypes(
+    siteContent.filter_venue_types ?? CONTENT_DEFAULTS.filter_venue_types,
+    Array.from(dbTypeMap.entries()).map(([slug, label]) => ({ slug, label }))
+  );
+  const filterLocalities = mergeLocalities(
+    siteContent.filter_localities ?? CONTENT_DEFAULTS.filter_localities,
+    Array.from(dbLocalitySet)
+  );
 
   return (
     <div className="home">
@@ -35,28 +64,33 @@ export default async function HomePage() {
           <HeroCarousel images={siteContent.hero_images} interval={siteContent.hero_carousel_interval} />
         </div>
         <div className="hero-content">
-          <div className="eyebrow" style={{ color: "#F0D7B0", letterSpacing: "0.28em" }}>
-            <CityName /> · est. {SITE.established}
+          <div className="hero-text-wrap">
+            <div className="eyebrow" style={{ color: "#F0D7B0", letterSpacing: "0.28em" }}>
+              <CityName /> · est. {SITE.established}
+            </div>
+            <h1 className="hero-title">
+              Crafted for <span className="italic-serif">celebrations.</span>
+            </h1>
+            <p className="hero-sub">
+              Owner-operated venues and vetted vendors across <CityName />. No middlemen, no &ldquo;starting from&rdquo; pricing — the quote is the quote.
+            </p>
           </div>
-          <h1 className="hero-title">
-            Crafted for <span className="italic-serif">celebrations.</span>
-          </h1>
-          <p className="hero-sub">
-            Owner-operated venues and vetted vendors across <CityName />. No middlemen, no &ldquo;starting from&rdquo; pricing — the quote is the quote.
-          </p>
 
-          <HeroSearch cfg={cfg as Record<string, boolean>} />
+          <div className="hero-search-wrap" style={!cfg.section_trust_banner ? { marginTop: "auto" } : { marginTop: 40 }}>
+            <HeroSearch cfg={cfg as Record<string, boolean>} localities={filterLocalities} venueTypes={filterVenueTypes} />
 
-          {cfg.section_venues && (
-          <div className="hero-chips">
-            <Link href="/venues?type=lawn" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Lawns & farmhouses</Link>
-            <Link href="/venues?type=hotel" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Hotels & ballrooms</Link>
-            <Link href="/venues?type=heritage" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Heritage havelis</Link>
-            <Link href="/venues?type=resort" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Resorts</Link>
+            {cfg.section_venues && (
+            <div className="hero-chips">
+              <Link href="/venues?type=lawn" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Lawns & farmhouses</Link>
+              <Link href="/venues?type=hotel" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Hotels & ballrooms</Link>
+              <Link href="/venues?type=heritage" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Heritage havelis</Link>
+              <Link href="/venues?type=resort" className="chip outline" style={{ color: "#FFF8EA", borderColor: "rgba(255,248,234,0.4)" }}>Resorts</Link>
+            </div>
+            )}
           </div>
-          )}
         </div>
 
+        {cfg.section_trust_banner && (
         <div className="container">
           <div className="hero-trust">
             {(Array.isArray(siteContent.hero_stats) ? siteContent.hero_stats : []).map((s, i) => (
@@ -64,6 +98,7 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+        )}
       </section>
 
       {/* SIGNATURE STRIP */}
@@ -97,7 +132,7 @@ export default async function HomePage() {
                 <div className="badges-top">
                   <span className="badge-assured">{v.tag}</span>
                 </div>
-                <button className="save" aria-label="Save"><I.Heart width={16} height={16} /></button>
+                <SaveButton type="venue" slug={v.slug} size={16} />
                 <div className="badges-bot"><I.Camera width={11} height={11} /> {v.imageCount ?? venueGallery(v.slug).length}</div>
               </Photo>
               <div className="vcard-body">
