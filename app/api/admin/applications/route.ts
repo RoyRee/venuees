@@ -239,6 +239,7 @@ export async function POST(request: NextRequest) {
       name:         app.businessName,
       type:         app.businessType,
       typeSlug:     slugify(app.businessType),
+      citySlug:     slugify(app.city),
       locality:     app.locality ?? "",
       address,
       capacityMin:  num(details.capacityMin),

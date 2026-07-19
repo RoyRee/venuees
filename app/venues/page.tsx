@@ -88,7 +88,7 @@ export default async function VenuesListPage({
 
   // Keep Signature pinned first only when no filters/search active
   const signature = !hasFilters ? venues.find((v) => v.isSignature) : undefined;
-  const rest = venues.filter((v) => !v.isSignature);
+  const rest = signature ? venues.filter(v => v.slug !== signature.slug) : venues;
   const ordered = signature ? [signature, ...rest] : venues;
 
   // ── Build hybrid filter lists ──────────────────────────────────────────────
