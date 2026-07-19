@@ -96,6 +96,195 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 const inp: React.CSSProperties = { width: "100%", padding: "10px 14px", fontSize: 14, border: "1px solid var(--line)", borderRadius: 8, background: "#fff", color: "var(--ink)", boxSizing: "border-box" };
 
+
+const SCRAPING_PROMPT = `Please act as an expert data extraction assistant. I am going to provide you with a source (a website link, text, or a document) about a wedding or event business. I need you to carefully extract the following details to fill out my listing form. 
+
+Please analyze the provided source and output the data in the exact JSON-like structure below. If any information is missing or you cannot find it, please use "N/A" or leave the array empty. Do not invent information.
+
+**Target Business Source:** [Insert Link / Text / PDF Here]
+
+### General Information
+- "listingType": "Is this a 'venue', 'vendor', or 'getaway'?"
+- "businessType": "Category (e.g., Hotel / Banquet, Resort, Photography, Décor, Makeup, etc.)"
+- "businessName": "Name of the business"
+- "contactName": "Name of the owner or manager"
+- "phone": "Phone number"
+- "whatsapp": "WhatsApp number (if available and different)"
+- "email": "Contact email address"
+- "city": "City where it is located"
+- "locality": "Locality or specific neighborhood area"
+- "fullAddress": "Complete address"
+- "website": "Website URL"
+- "instagram": "Instagram handle or URL"
+- "description": "A well-written 2-3 paragraph description of the business, its style, and what makes it unique."
+- "amenities": ["List of amenities, e.g., AC Halls, Parking, In-house Catering, Bridal Suite, Swimming Pool, Generator Backup..."]
+
+### Venue-Specific Details (Only if it's a Venue)
+- "capacityMin": "Minimum guest capacity"
+- "capacityMax": "Maximum guest capacity"
+- "vegPlate": "Price for a vegetarian plate (₹)"
+- "nvPlate": "Price for a non-vegetarian plate (₹)"
+- "hallRent": "Stand-alone hall rental price (₹)"
+- "minGuarantee": "Minimum booking guarantee amount (₹)"
+- "parking": "Number of car parking spaces available"
+- "rooms": "Number of accommodation rooms on-site"
+- "halls": [
+    {
+      "name": "Name of the hall/lawn (e.g., Grand Ballroom)",
+      "type": "Type (Indoor Banquet, Outdoor Lawn, Poolside, Rooftop, etc.)",
+      "area": "Size/Area (e.g., 5,000 sq.ft.)",
+      "theatre": "Theatre seating capacity",
+      "floating": "Floating/Standing capacity",
+      "dining": "Dining seating capacity"
+    }
+  ]
+- "packages": [
+    {
+      "name": "Name of the package (e.g., Gold Buffet Package)",
+      "pricePerPlate": "Price per plate for this package",
+      "features": ["Feature 1", "Feature 2", "Feature 3"]
+    }
+  ]
+- "locationInfo": {
+      "airport": "Nearest airport and distance",
+      "railway": "Nearest railway station and distance",
+      "hotelCluster": "Nearby hotel clusters for guest accommodation"
+  }
+- "googleMapsUrl": "Link to Google Maps location"
+- "googlePlaceId": "Google Place ID (if identifiable)"
+
+### Vendor-Specific Details (Only if it's a Vendor)
+- "priceFrom": "Starting price (₹)"
+- "yearsExp": "Years of experience in the industry"
+- "tagline": "A short, catchy tagline or motto representing their work"
+- "completed": "Number of weddings or events completed"
+
+### Getaway-Specific Details (Only if it's a Getaway/Resort)
+- "capacityMin": "Number of rooms / cottages available"
+- "capacityMax": "Maximum guest capacity for the entire property"
+- "vegPlate": "Average weekday rate per night (₹)"
+- "nvPlate": "Average weekend rate per night (₹)"
+- "parking": "Number of car parking spaces"
+- "minGuarantee": "Minimum booking guarantee (₹) for property buyout"`;
+
+export function AdminJsonImporter({ onApply }: { onApply: (data: any) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [jsonText, setJsonText] = useState("");
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  function copyPrompt() {
+    navigator.clipboard.writeText(SCRAPING_PROMPT);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleApply() {
+    setError("");
+    if (!jsonText.trim()) return;
+    
+    // Attempt to extract JSON if they pasted the whole output including markdown
+    let cleanJson = jsonText.trim();
+    if (cleanJson.startsWith("\`\`\`json")) {
+      cleanJson = cleanJson.replace(/^\`\`\`json/, "");
+    } else if (cleanJson.startsWith("\`\`\`")) {
+      cleanJson = cleanJson.replace(/^\`\`\`/, "");
+    }
+    if (cleanJson.endsWith("\`\`\`")) {
+      cleanJson = cleanJson.replace(/\`\`\`$/, "");
+    }
+    
+    try {
+      const parsed = JSON.parse(cleanJson);
+      
+      // Cleanup values that say "N/A" back to empty string
+      const processValue = (val: any) => {
+        if (typeof val === 'string' && val.toUpperCase() === 'N/A') return '';
+        if (typeof val === 'string' && val.toLowerCase() === 'null') return '';
+        return val;
+      };
+
+      const cleaned: any = {};
+      for (const [k, v] of Object.entries(parsed)) {
+        if (Array.isArray(v)) {
+          // If it's an array of strings, clean "N/A"
+          if (v.length > 0 && typeof v[0] === 'string') {
+            cleaned[k] = v.filter(x => x && x.toUpperCase() !== 'N/A');
+          } else {
+            cleaned[k] = v; // halls, packages etc
+          }
+        } else if (typeof v === 'object' && v !== null) {
+          cleaned[k] = v; // locationInfo
+        } else {
+          cleaned[k] = processValue(v);
+        }
+      }
+      
+      onApply(cleaned);
+      setIsOpen(false);
+      setJsonText("");
+    } catch (err: any) {
+      setError("Invalid JSON format. Please ensure it's a valid JSON object.");
+    }
+  }
+
+  if (!isOpen) {
+    return (
+      <div style={{ marginBottom: 24, padding: "16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontWeight: 600, color: "#166534" }}>Admin: Auto-fill with AI</div>
+          <div style={{ fontSize: 13, color: "#15803d" }}>Quickly scrape venue details from a URL using ChatGPT to pre-fill this form.</div>
+        </div>
+        <button type="button" onClick={() => setIsOpen(true)} className="btn" style={{ background: "#22c55e", color: "#fff", border: "none", fontSize: 13, padding: "8px 16px" }}>
+          Open AI Importer
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: 24, padding: "20px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+        <div>
+          <div style={{ fontWeight: 600, color: "#166534", fontSize: 16 }}>Admin AI Importer</div>
+          <div style={{ fontSize: 13, color: "#15803d", marginTop: 4 }}>Copy this prompt to ChatGPT, paste the URL, and paste the resulting JSON back here.</div>
+        </div>
+        <button type="button" onClick={() => setIsOpen(false)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: "#15803d" }}>×</button>
+      </div>
+
+      <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 6, padding: 12, marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: "#166534", textTransform: "uppercase" }}>1. Copy Prompt</span>
+          <button type="button" onClick={copyPrompt} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, background: copied ? "#22c55e" : "#e2e8f0", color: copied ? "#fff" : "#334155", border: "none", cursor: "pointer", fontWeight: 600 }}>
+            {copied ? "Copied!" : "Copy to clipboard"}
+          </button>
+        </div>
+        <div style={{ maxHeight: 120, overflowY: "auto", fontSize: 12, fontFamily: "monospace", color: "#475569", whiteSpace: "pre-wrap", background: "#f8fafc", padding: 8, borderRadius: 4, border: "1px solid #e2e8f0" }}>
+          {SCRAPING_PROMPT}
+        </div>
+      </div>
+
+      <div>
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: "#166534", textTransform: "uppercase", display: "block", marginBottom: 8 }}>2. Paste JSON output</span>
+        <textarea
+          value={jsonText}
+          onChange={(e) => setJsonText(e.target.value)}
+          placeholder='{"businessName": "..."}'
+          style={{ width: "100%", height: 160, padding: 12, fontSize: 13, fontFamily: "monospace", border: "1px solid #bbf7d0", borderRadius: 6, boxSizing: "border-box", resize: "vertical" }}
+        />
+        {error && <div style={{ color: "#dc2626", fontSize: 13, marginTop: 8, fontWeight: 500 }}>{error}</div>}
+      </div>
+
+      <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
+        <button type="button" onClick={handleApply} className="btn" style={{ background: "#22c55e", color: "#fff", border: "none", padding: "10px 20px" }}>
+          Auto-fill form
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 // ── Main component ─────────────────────────────────────────────────────────
 export function ApplyForm({
   prefillEmail,
@@ -393,6 +582,9 @@ export function ApplyForm({
 
   return (
     <div style={{ maxWidth: 560, margin: "0 auto" }}>
+      {adminMode && step === 0 && (
+        <AdminJsonImporter onApply={(data) => setForm(f => ({ ...f, ...data }))} />
+      )}
       <Steps current={step} total={TOTAL_STEPS} />
 
       {/* ── Step 0: Type ── */}
