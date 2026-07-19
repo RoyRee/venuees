@@ -24,8 +24,13 @@ export default async function ListYourBusinessPage() {
 
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase!.auth.getUser();
-  const prefillEmail = user?.email ?? "";
-  const prefillName = user?.user_metadata?.full_name ?? "";
+  
+  if (!user) {
+    redirect("/login?redirect=/list-your-business");
+  }
+
+  const prefillEmail = user.email ?? "";
+  const prefillName = user.user_metadata?.full_name ?? "";
 
   // Only show listing types that are enabled in site_config
   const enabledTypes = (

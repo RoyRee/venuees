@@ -101,22 +101,26 @@ export function ApplyForm({
   prefillEmail,
   prefillName,
   enabledTypes,
+  adminMode,
 }: {
   prefillEmail?: string;
   prefillName?: string;
   /** Which listing types to show — driven by site_config feature flags */
   enabledTypes?: ListingType[];
+  /** When true, admin is listing on behalf of a venue owner */
+  adminMode?: boolean;
 }) {
   const availableTypes: ListingType[] = enabledTypes ?? ["venue", "vendor", "getaway"];
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>({ ...EMPTY, email: prefillEmail ?? "", contactName: prefillName ?? "" });
   const [media, setMedia] = useState<MediaFile[]>([]);
   const [error, setError] = useState("");
-  const [submitLabel, setSubmitLabel] = useState("Submit application");
+  const [submitLabel, setSubmitLabel] = useState(adminMode ? "List this business" : "Submit application");
   const [isPending, startTransition] = useTransition();
   const [submitted, setSubmitted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
+  const [ownerEmail, setOwnerEmail] = useState("");
 
   const [customAmenityInput, setCustomAmenityInput] = useState("");
   const [tempHallImage, setTempHallImage] = useState("");
@@ -328,12 +332,13 @@ export function ApplyForm({
             message: form.description,
             details,
             amenities: form.amenities,
+            ...(adminMode ? { adminSubmit: true, ownerEmail: ownerEmail.trim() } : {}),
           }),
         });
         if (!res1.ok) {
           const d = await res1.json().catch(() => ({}));
           setError(d.error ?? "Something went wrong. Please try again.");
-          setSubmitLabel("Submit application");
+          setSubmitLabel(adminMode ? "List this business" : "Submit application");
           return;
         }
         const { id } = await res1.json();
@@ -360,7 +365,7 @@ export function ApplyForm({
           });
           if (!res2.ok) {
             setError(`Failed to upload ${m.type}. Please try again.`);
-            setSubmitLabel("Submit application");
+            setSubmitLabel(adminMode ? "List this business" : "Submit application");
             return;
           }
         }
@@ -368,7 +373,7 @@ export function ApplyForm({
         setSubmitted(true);
       } catch {
         setError("Network error. Please check your connection and try again.");
-        setSubmitLabel("Submit application");
+        setSubmitLabel(adminMode ? "List this business" : "Submit application");
       }
     });
   }
@@ -429,6 +434,14 @@ export function ApplyForm({
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "var(--ink)", marginBottom: 6 }}>Basic details</h2>
             <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>How we reach you and identify your business.</p>
           </div>
+
+          {adminMode && (
+            <div style={{ background: "#f0f4ff", border: "1px solid #c7d4f0", borderRadius: 10, padding: 16, marginBottom: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5b6ea8", marginBottom: 8 }}>OWNER'S EMAIL (for onboarding)</div>
+              <input style={inp} type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} placeholder="owner@example.com — they will receive a listing notification" />
+              <p style={{ fontSize: 12, color: "#7889b5", marginTop: 6 }}>This person will receive an email inviting them to claim the listing. When they sign up with this email, the listing will appear in their account.</p>
+            </div>
+          )}
           <Field label="Business name"><input style={inp} value={form.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="e.g. Orange County Farms" /></Field>
           <Field label="Owner / manager name"><input style={inp} value={form.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="Your full name" /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -913,7 +926,7 @@ export function ApplyForm({
         ) : (
           <button type="button" onClick={submit} disabled={isPending}
             style={{ flex: 2, padding: "12px", borderRadius: 8, border: "none", background: isPending ? "var(--ink-mute)" : "var(--brand)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: isPending ? "not-allowed" : "pointer" }}>
-            {isPending ? submitLabel : "Submit application"}
+            {isPending ? submitLabel : (adminMode ? "List this business" : "Submit application")}
           </button>
         )}
       </div>

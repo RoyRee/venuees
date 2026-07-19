@@ -80,6 +80,11 @@ function AdminOverview({ name, totalEnquiries, newLeads, totalApps, pendingApps 
           <Link href="/dashboard/applications" style={{ fontSize: 13, color: "var(--brand)" }}>Review now →</Link>
         </section>
       )}
+      <section style={{ padding: "20px 20px", background: "var(--surface-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--line)", marginBottom: 24 }}>
+        <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>List a venue on behalf of an owner</div>
+        <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 12 }}>Fill in venue details and the owner will receive an onboarding email.</p>
+        <Link href="/dashboard/add-listing" className="btn btn-primary" style={{ fontSize: 13 }}>+ Add listing →</Link>
+      </section>
     </div>
   );
 }
