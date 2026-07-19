@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 const VALID_KINDS = new Set([
   "venue_enquiry",
   "homepage_lead",
+  "entry_lead",
   "contact",
   "partner_apply",
   "getaway_enquiry",

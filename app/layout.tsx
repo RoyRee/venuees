@@ -4,6 +4,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { WhatsAppFAB } from "@/components/whatsapp-fab";
 import { GoogleOneTap } from "@/components/google-one-tap";
 import { ExitIntentPopup } from "@/components/exit-intent-popup";
+import { EntryPopup } from "@/components/entry-popup";
 import { WelcomeBackModal } from "@/components/welcome-back-modal";
 import { CityProvider } from "@/components/city-context";
 import { db, citiesTable } from "@/lib/db";
@@ -65,6 +66,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </CityProvider>
         <WhatsAppFAB phone={process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919922151527"} />
         <GoogleOneTap />
+        <EntryPopup />
         <ExitIntentPopup />
         <WelcomeBackModal enabledSections={enabledSections} />
       </body>
