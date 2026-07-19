@@ -23,10 +23,16 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
   if (!user) redirect("/login");
 
   const role = await getUserRole(user.id, user.email!);
-  if (role !== "admin") redirect("/dashboard");
 
   const [app] = await db.select().from(listingApplicationsTable).where(eq(listingApplicationsTable.id, id));
   if (!app) return notFound();
+
+  // Allow admins, or the user who owns this application
+  if (role !== "admin" && app.userId !== user.id) {
+    redirect("/dashboard");
+  }
+
+  const isAdmin = role === "admin";
 
   const media = await db.select().from(listingApplicationMediaTable)
     .where(eq(listingApplicationMediaTable.applicationId, id))
@@ -99,6 +105,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
       keptImages={keptImages}
       removedImages={removedImages}
       statusStyle={st}
+      isAdmin={isAdmin}
     />
   );
 }

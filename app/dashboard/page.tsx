@@ -115,9 +115,20 @@ function VendorOverview({ name, applications, enquiries }: {
         </section>
       )}
       {app?.status === "pending" && (
-        <section style={{ padding: "20px 20px", background: "#fff8e8", borderRadius: "var(--radius-md)", border: "1px solid #f5d87a" }}>
+        <section style={{ padding: "20px 20px", background: "#fff8e8", borderRadius: "var(--radius-md)", border: "1px solid #f5d87a", marginBottom: 16 }}>
           <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Application under review</div>
           <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>We&rsquo;ll reach out within 48 hours. Submitted: {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
+        </section>
+      )}
+      {app && (
+        <section style={{ padding: "20px 20px", background: "var(--surface-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--line)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Manage your listings</div>
+              <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>Edit details, update photos, and view your live listings.</div>
+            </div>
+            <Link href="/dashboard/listings" className="btn btn-primary" style={{ fontSize: 13, whiteSpace: "nowrap" }}>My listings →</Link>
+          </div>
         </section>
       )}
     </div>

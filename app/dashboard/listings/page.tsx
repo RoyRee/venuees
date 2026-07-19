@@ -267,15 +267,26 @@ function VendorListings({ apps, venues, vendors }: {
         const st = STATUS_COLOR[app.status] ?? STATUS_COLOR.pending;
         return (
           <div key={app.id} style={{ padding: "20px 24px", border: "1px solid var(--line)", borderRadius: "var(--radius-md)", marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <span style={{ fontWeight: 700, fontSize: 16, color: "var(--ink)" }}>{app.businessName}</span>
-              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", background: st.bg, color: st.color }}>{app.status}</span>
-            </div>
-            <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 4 }}>{app.businessType}</div>
-            {app.status === "pending" && <div style={{ fontSize: 13, color: "var(--ink-mute)" }}>We&rsquo;ll review within 48 hours and contact you.</div>}
-            {app.status === "rejected" && app.rejectionNote && <div style={{ fontSize: 13, color: "#c00" }}>Reason: {app.rejectionNote}</div>}
-            <div style={{ fontSize: 11, color: "var(--ink-mute)", marginTop: 8 }}>
-              Applied {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                  <span style={{ fontWeight: 700, fontSize: 16, color: "var(--ink)" }}>{app.businessName}</span>
+                  <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", background: st.bg, color: st.color }}>{app.status}</span>
+                </div>
+                <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 4 }}>{app.businessType}</div>
+                {app.status === "pending" && <div style={{ fontSize: 13, color: "var(--ink-mute)" }}>We&rsquo;ll review within 48 hours and contact you.</div>}
+                {app.status === "rejected" && app.rejectionNote && <div style={{ fontSize: 13, color: "#c00" }}>Reason: {app.rejectionNote}</div>}
+                <div style={{ fontSize: 11, color: "var(--ink-mute)", marginTop: 8 }}>
+                  Applied {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {app.status === "pending" && (
+                  <Link href={`/dashboard/applications/${app.id}`} style={{ fontSize: 13, color: "var(--ink-soft)", textDecoration: "none", padding: "6px 14px", border: "1px solid var(--line)", borderRadius: 6 }}>
+                    View details
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         );
