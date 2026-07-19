@@ -227,7 +227,7 @@
   max-width: calc(100% - 0px);
 }
 @media (max-width: 900px) {
-  .hero-trust { grid-template-columns: repeat(3, 1fr); padding: 16px 12px; margin: 20px 10px; gap: 8px; }
+  .hero-trust { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); padding: 16px 12px; margin: 20px 10px; gap: 8px; }
   .hero-trust > div:nth-child(n+4) { display: none; }
   .hero-trust .num { font-size: 24px; }
   .hero-trust > div > span:last-child { font-size: 9px; letter-spacing: 0.1em; }
@@ -268,7 +268,7 @@
 /* Venue cards grid */
 .vgrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 22px;
 }
 @media (max-width: 1100px) { .vgrid { grid-template-columns: repeat(2, 1fr); } }
@@ -395,7 +395,7 @@
 .getaway-intro { padding-top: 30px; }
 .gcards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 18px;
 }
 @media (max-width: 900px) { .gcards { grid-template-columns: 1fr; } }
@@ -433,7 +433,7 @@
 }
 .destband-inner { max-width: var(--max-w); margin: 0 auto; position: relative; }
 .destband-head { max-width: 640px; margin: 0 0 40px; }
-.destgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.destgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
 @media (max-width: 900px) { .destgrid { grid-template-columns: 1fr 1fr; gap: 12px; } }
 .destcard {
   position: relative; border-radius: var(--radius-md); overflow: hidden; cursor: pointer;
@@ -460,7 +460,7 @@
 
 /* Steps */
 .steps {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 30px;
   position: relative;
 }
 @media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; gap: 24px; } }
@@ -646,7 +646,7 @@
 .vl-sort { font-size: 13px; color: var(--ink-soft); display: flex; align-items: center; gap: 8px; }
 .vl-sort select { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 13px; }
 
-.vl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.vl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
 @media (max-width: 700px) { .vl-grid { grid-template-columns: 1fr; } }
 
 /* ——— VENUE DETAIL ——— */
@@ -1007,7 +1007,7 @@
 .pkgs .rowlbl { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mute); }
 
 /* Halls */
-.halls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.halls { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 @media (max-width: 900px) { .halls { grid-template-columns: 1fr; } }
 .hallcard { background: var(--surface); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--line-soft); }
 .hallcard .ph { height: 180px; }
