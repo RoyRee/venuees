@@ -74,27 +74,24 @@ export function TopNavClient({ cfg }: { cfg: SiteConfig }) {
   return (
     <>
       <nav className="site-nav">
-        <Link href="/" className="logo">
-          <span className="mark">V</span>
-          <span><span>v<em>enuee</em>s</span><small>weddings · {city.name}</small></span>
-        </Link>
-        <ul>
-          {links.map((x) => {
-            const active = pathname === x.href || (x.href !== "/" && pathname.startsWith(x.href));
-            return <li key={x.n}><Link href={x.href} className={active ? "active" : ""}>{x.n}</Link></li>;
-          })}
-        </ul>
-        <div className="nav-right">
-          <Link href="/list-your-business" style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", marginRight: 16, textDecoration: "none" }}>List your business</Link>
-          {cfg.feature_search !== false && (
-            <button aria-label="Search" onClick={() => setSearchOpen(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", display: "flex", alignItems: "center" }}>
-              <I.Search width={18} height={18} />
-            </button>
-          )}
-          <span className="city"><I.Pin width={13} height={13} /> {city.name}</span>
+        <div className="header-left">
+          <Link href="/" className="logo">
+            <div className="logo-mark">V</div>
+            <div className="logo-text">venuees<span>.in</span></div>
+          </Link>
+          <ul className="nav-links">
+            {links.map((x) => {
+              const active = pathname === x.href || (x.href !== "/" && pathname.startsWith(x.href));
+              return <li key={x.n}><Link href={x.href} className={active ? "active" : ""}>{x.n}</Link></li>;
+            })}
+          </ul>
+        </div>
+        <div className="header-right">
+          <div className="location-search" onClick={() => setSearchOpen(true)}>
+            <span className="city"><I.Pin width={14} height={14} /> {city.name}</span>
+          </div>
           <NavUserButton />
-          <Link href="/contact" className="btn btn-primary btn-sm">Enquire</Link>
+          <Link href="/contact" className="btn btn-primary btn-enquire">Enquire</Link>
         </div>
       </nav>
       {searchOpen && cfg.feature_search !== false && <SearchOverlay onClose={() => setSearchOpen(false)} />}
