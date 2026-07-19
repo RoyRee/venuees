@@ -52,7 +52,7 @@ const VENUE_AMENITIES = [
   "Outside Catering Allowed", "DJ Allowed", "Valet Parking", "Bridal Suite",
   "Swimming Pool", "Accommodation", "Generator Backup", "Décor Allowed",
 ];
-const IMAGE_LIMIT = 5;
+const IMAGE_LIMIT = 80;
 const VIDEO_LIMIT = 1;
 const IMAGE_MAX_BYTES = 600 * 1024;
 const VIDEO_MAX_MB = 3;

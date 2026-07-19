@@ -88,13 +88,14 @@ interface AppDetailViewProps {
   keptImages: ExistingImage[];
   removedImages: ExistingImage[];
   statusStyle: { bg: string; color: string };
+  isAdmin?: boolean;
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export function AppDetailView(props: AppDetailViewProps) {
   const {
     app, details, media: initialMedia, existingImages, isEditRequest, linkedType, linkedId,
-    keptImages, removedImages, statusStyle
+    keptImages, removedImages, statusStyle, isAdmin = false
   } = props;
   
   const router = useRouter();
@@ -285,9 +286,11 @@ export function AppDetailView(props: AppDetailViewProps) {
     <div className="dash-page" style={{ maxWidth: 1100 }}>
       {/* Back and Edit Toggle */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <Link href="/dashboard/applications" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-mute)", textDecoration: "none" }}>
-          ← All applications
-        </Link>
+        <div style={{ marginBottom: 24 }}>
+          <Link href={isAdmin ? "/dashboard/applications" : "/dashboard/listings"} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-mute)", textDecoration: "none" }}>
+            <span>←</span> Back to {isAdmin ? "applications" : "listings"}
+          </Link>
+        </div>
         <button type="button" onClick={() => setIsEditing(!isEditing)} style={{
           padding: "6px 14px", borderRadius: 8, border: "1px solid var(--line)", 
           background: isEditing ? "color-mix(in srgb,var(--brand) 10%,#fff)" : "var(--surface)", 
@@ -845,7 +848,7 @@ export function AppDetailView(props: AppDetailViewProps) {
               )}
 
               {/* Decision Actions */}
-              {app.status === "pending" && (
+              {isAdmin && app.status === "pending" && (
                 <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 18 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 12 }}>Decision</div>
                   <ApplicationActions id={app.id} />
@@ -853,7 +856,7 @@ export function AppDetailView(props: AppDetailViewProps) {
               )}
 
               {/* Delete App */}
-              {app.status === "rejected" && (
+              {isAdmin && app.status === "rejected" && (
                 <div style={{ border: "1px solid #fcc", borderRadius: 12, padding: "14px 18px", background: "#fff8f8" }}>
                   {!showDelete ? (
                     <button type="button" onClick={() => setShowDelete(true)}
