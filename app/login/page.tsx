@@ -37,13 +37,18 @@ function LoginForm() {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) { setError(error.message); return; }
+        // Claim any unclaimed listing applications matching this email
+        fetch("/api/apply/claim", { method: "POST" }).catch(() => {});
         router.push(redirect);
         router.refresh();
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: name } },
+          options: {
+            data: { full_name: name },
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}`,
+          },
         });
         if (error) { setError(error.message); return; }
         setSuccess("Check your email to confirm your account, then log in.");
