@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, siteConfigTable } from "@/lib/db";
 import { sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 export async function GET() {
   try {
@@ -36,5 +37,6 @@ export async function POST(req: NextRequest) {
       });
   }
 
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true });
 }

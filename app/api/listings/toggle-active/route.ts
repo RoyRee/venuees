@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, venuesTable, vendorsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     await db.update(venuesTable).set({ isActive: !row.isActive }).where(eq(venuesTable.id, id));
+    revalidatePath("/", "layout");
     return NextResponse.json({ ok: true, isActive: !row.isActive });
   } else {
     const [row] = await db.select({ isActive: vendorsTable.isActive, ownerUserId: vendorsTable.ownerUserId })
@@ -34,6 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     await db.update(vendorsTable).set({ isActive: !row.isActive }).where(eq(vendorsTable.id, id));
+    revalidatePath("/", "layout");
     return NextResponse.json({ ok: true, isActive: !row.isActive });
   }
 }

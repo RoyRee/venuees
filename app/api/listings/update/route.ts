@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, listingApplicationsTable, venuesTable, vendorsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -64,5 +65,6 @@ export async function POST(request: NextRequest) {
     status: "pending",
   }).returning({ id: listingApplicationsTable.id });
 
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true, id: app.id });
 }
