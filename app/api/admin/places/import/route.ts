@@ -4,6 +4,7 @@ import { getUserRole } from "@/lib/auth/role";
 import { db } from "@/lib/db";
 import { venuesTable, venueImagesTable } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { getPlaceDetails } from "@/lib/google-places";
 
 export const dynamic = "force-dynamic";
@@ -81,5 +82,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true, slug: venue.slug });
 }

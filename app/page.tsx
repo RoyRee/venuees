@@ -1,4 +1,8 @@
-export const revalidate = 60; // ISR: rebuild at most once per minute
+// ISR: rebuild at most once per hour. Admin/vendor mutations that change
+// homepage content call revalidatePath("/") so edits still appear immediately.
+// (Was 60s — that regenerated the homepage up to 1,440×/day, burning Vercel
+// ISR-write quota; 3600s cuts idle ISR writes ~60× with no staleness in practice.)
+export const revalidate = 3600;
 import Link from "next/link";
 import { TopNav, MobileNav, MobileTabbar } from "@/components/nav";
 import { Footer } from "@/components/footer";

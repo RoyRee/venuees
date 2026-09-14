@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth/role";
 import { db, venuesTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -22,5 +23,6 @@ export async function POST(request: NextRequest) {
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await db.update(venuesTable).set({ isSignature: !row.isSignature }).where(eq(venuesTable.id, id));
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true, isSignature: !row.isSignature });
 }
